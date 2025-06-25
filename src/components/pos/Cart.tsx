@@ -2,9 +2,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { CartItem, Transaction } from '@/pages/Index';
-import { Minus, Plus, Trash2, Smartphone, Banknote } from 'lucide-react';
+import { CartItem, Transaction, PaymentSplit } from '@/types';
+import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split } from 'lucide-react';
 import { MPesaPayment } from './MPesaPayment';
 import { Receipt } from './Receipt';
 
@@ -12,12 +11,16 @@ interface CartProps {
   items: CartItem[];
   onUpdateItem: (id: string, quantity: number) => void;
   onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string) => Transaction;
+  onSplitPayment: () => void;
+  onHirePurchase: () => void;
 }
 
 export const Cart: React.FC<CartProps> = ({ 
   items, 
   onUpdateItem, 
-  onCompleteTransaction 
+  onCompleteTransaction,
+  onSplitPayment,
+  onHirePurchase
 }) => {
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -112,23 +115,38 @@ export const Cart: React.FC<CartProps> = ({
                 <span className="text-green-600">{formatPrice(total)}</span>
               </div>
 
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   onClick={() => setShowMPesaPayment(true)}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700"
                   disabled={items.length === 0}
                 >
                   <Smartphone className="h-4 w-4 mr-2" />
-                  Pay with M-Pesa
+                  M-Pesa
                 </Button>
                 <Button
                   onClick={handleCashPayment}
                   variant="outline"
-                  className="w-full"
                   disabled={items.length === 0}
                 >
                   <Banknote className="h-4 w-4 mr-2" />
-                  Cash Payment
+                  Cash
+                </Button>
+                <Button
+                  onClick={onSplitPayment}
+                  variant="outline"
+                  disabled={items.length === 0}
+                >
+                  <Split className="h-4 w-4 mr-2" />
+                  Split Pay
+                </Button>
+                <Button
+                  onClick={onHirePurchase}
+                  variant="outline"
+                  disabled={items.length === 0}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Hire Purchase
                 </Button>
               </div>
             </div>

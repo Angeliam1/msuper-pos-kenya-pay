@@ -1,34 +1,16 @@
-
 import React, { useState } from 'react';
 import { ProductCatalog } from '@/components/pos/ProductCatalog';
 import { Cart } from '@/components/pos/Cart';
 import { Dashboard } from '@/components/pos/Dashboard';
 import { TransactionHistory } from '@/components/pos/TransactionHistory';
 import { ProductManagement } from '@/components/pos/ProductManagement';
+import { CustomerManagement } from '@/components/pos/CustomerManagement';
+import { SplitPayment } from '@/components/pos/SplitPayment';
+import { HirePurchaseComponent } from '@/components/pos/HirePurchase';
+import { RoleManagement } from '@/components/pos/RoleManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, BarChart3, History, Package, Settings } from 'lucide-react';
-
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  stock: number;
-  image?: string;
-}
-
-export interface CartItem extends Product {
-  quantity: number;
-}
-
-export interface Transaction {
-  id: string;
-  items: CartItem[];
-  total: number;
-  paymentMethod: 'mpesa' | 'cash';
-  timestamp: Date;
-  mpesaReference?: string;
-}
+import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus } from 'lucide-react';
+import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
   { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50 },
@@ -41,10 +23,43 @@ const INITIAL_PRODUCTS: Product[] = [
   { id: '8', name: 'Eggs (12 pcs)', price: 380, category: 'Dairy', stock: 18 },
 ];
 
+const INITIAL_CUSTOMERS: Customer[] = [
+  {
+    id: '1',
+    name: 'John Kamau',
+    phone: '0712345678',
+    email: 'john@email.com',
+    creditLimit: 50000,
+    outstandingBalance: 0,
+    createdAt: new Date()
+  }
+];
+
+const INITIAL_ATTENDANTS: Attendant[] = [
+  {
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@msuper.com',
+    phone: '0700000000',
+    role: 'admin',
+    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings', 'hirePurchase', 'splitPayment'],
+    isActive: true,
+    createdAt: new Date()
+  }
+];
+
 const Index = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
+  const [attendants, setAttendants] = useState<Attendant[]>(INITIAL_ATTENDANTS);
+  const [hirePurchases, setHirePurchases] = useState<HirePurchase[]>([]);
+  const [currentAttendant] = useState<Attendant>(INITIAL_ATTENDANTS[0]);
+  
+  // Payment flow states
+  const [showSplitPayment, setShowSplitPayment] = useState(false);
+  const [showHirePurchase, setShowHirePurchase] = useState(false);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
@@ -74,14 +89,16 @@ const Index = () => {
     }
   };
 
-  const completeTransaction = (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string): Transaction => {
+  const completeTransaction = (paymentSplits: PaymentSplit[], customerId?: string, hirePurchaseId?: string): Transaction => {
     const transaction: Transaction = {
       id: Date.now().toString(),
       items: [...cartItems],
       total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-      paymentMethod,
+      paymentSplits,
+      customerId,
+      attendantId: currentAttendant.id,
       timestamp: new Date(),
-      mpesaReference
+      hirePurchaseId
     };
     
     // Update product stock
@@ -92,10 +109,51 @@ const Index = () => {
       }
       return product;
     }));
+
+    // Update customer outstanding balance if credit payment
+    if (customerId) {
+      const creditAmount = paymentSplits
+        .filter(split => split.method === 'credit')
+        .reduce((sum, split) => sum + split.amount, 0);
+      
+      if (creditAmount > 0) {
+        setCustomers(prev => prev.map(customer =>
+          customer.id === customerId
+            ? { ...customer, outstandingBalance: customer.outstandingBalance + creditAmount }
+            : customer
+        ));
+      }
+    }
     
     setTransactions(prev => [transaction, ...prev]);
     setCartItems([]);
     return transaction;
+  };
+
+  // Handle split payment completion
+  const handleSplitPaymentComplete = (splits: PaymentSplit[], customerId?: string) => {
+    completeTransaction(splits, customerId);
+    setShowSplitPayment(false);
+  };
+
+  // Handle hire purchase creation
+  const handleCreateHirePurchase = (hirePurchaseData: Omit<HirePurchase, 'id'>): string => {
+    const hirePurchase: HirePurchase = {
+      ...hirePurchaseData,
+      id: Date.now().toString()
+    };
+    
+    setHirePurchases(prev => [...prev, hirePurchase]);
+
+    // Create transaction with down payment
+    const splits: PaymentSplit[] = [
+      { method: 'cash', amount: hirePurchaseData.downPayment }
+    ];
+    
+    completeTransaction(splits, hirePurchaseData.customerId, hirePurchase.id);
+    setShowHirePurchase(false);
+    
+    return hirePurchase.id;
   };
 
   // Product management functions
@@ -115,8 +173,39 @@ const Index = () => {
 
   const deleteProduct = (id: string) => {
     setProducts(prev => prev.filter(product => product.id !== id));
-    // Also remove from cart if it exists
     setCartItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Customer management functions
+  const addCustomer = (customerData: Omit<Customer, 'id' | 'createdAt'>) => {
+    const newCustomer: Customer = {
+      ...customerData,
+      id: Date.now().toString(),
+      createdAt: new Date()
+    };
+    setCustomers(prev => [...prev, newCustomer]);
+  };
+
+  const updateCustomer = (id: string, customerData: Partial<Customer>) => {
+    setCustomers(prev => prev.map(customer =>
+      customer.id === id ? { ...customer, ...customerData } : customer
+    ));
+  };
+
+  // Staff management functions
+  const addAttendant = (attendantData: Omit<Attendant, 'id' | 'createdAt'>) => {
+    const newAttendant: Attendant = {
+      ...attendantData,
+      id: Date.now().toString(),
+      createdAt: new Date()
+    };
+    setAttendants(prev => [...prev, newAttendant]);
+  };
+
+  const updateAttendant = (id: string, attendantData: Partial<Attendant>) => {
+    setAttendants(prev => prev.map(attendant =>
+      attendant.id === id ? { ...attendant, ...attendantData } : attendant
+    ));
   };
 
   const totalSales = transactions.reduce((sum, transaction) => sum + transaction.total, 0);
@@ -124,18 +213,22 @@ const Index = () => {
     new Date(t.timestamp).toDateString() === new Date().toDateString()
   ).reduce((sum, transaction) => sum + transaction.total, 0);
 
+  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900">MSUPER POS</h1>
-          <p className="text-sm text-gray-600">Point of Sale System - Kenya</p>
+          <p className="text-sm text-gray-600">
+            Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
+          </p>
         </div>
       </header>
 
       <div className="container mx-auto p-6">
         <Tabs defaultValue="pos" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="pos" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               POS
@@ -152,22 +245,54 @@ const Index = () => {
               <Package className="h-4 w-4" />
               Products
             </TabsTrigger>
-            <TabsTrigger value="manage" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Manage
+            <TabsTrigger value="customers" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Customers
+            </TabsTrigger>
+            <TabsTrigger value="hire-purchase" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Hire Purchase
+            </TabsTrigger>
+            <TabsTrigger value="staff" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Staff
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pos" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <ProductCatalog products={products} onAddToCart={addToCart} />
+                {showSplitPayment ? (
+                  <SplitPayment
+                    totalAmount={cartTotal}
+                    customers={customers}
+                    onConfirmPayment={handleSplitPaymentComplete}
+                    onCancel={() => setShowSplitPayment(false)}
+                  />
+                ) : showHirePurchase ? (
+                  <HirePurchaseComponent
+                    totalAmount={cartTotal}
+                    customers={customers}
+                    hirePurchases={hirePurchases}
+                    onCreateHirePurchase={handleCreateHirePurchase}
+                    onCancel={() => setShowHirePurchase(false)}
+                  />
+                ) : (
+                  <ProductCatalog products={products} onAddToCart={addToCart} />
+                )}
               </div>
               <div>
                 <Cart 
                   items={cartItems}
                   onUpdateItem={updateCartItem}
-                  onCompleteTransaction={completeTransaction}
+                  onCompleteTransaction={(paymentMethod, mpesaReference) => {
+                    const splits: PaymentSplit[] = [
+                      { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
+                    ];
+                    return completeTransaction(splits);
+                  }}
+                  onSplitPayment={() => setShowSplitPayment(true)}
+                  onHirePurchase={() => setShowHirePurchase(true)}
                 />
               </div>
             </div>
@@ -187,15 +312,38 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="products">
-            <ProductCatalog products={products} onAddToCart={addToCart} showCatalogOnly />
-          </TabsContent>
-
-          <TabsContent value="manage">
             <ProductManagement
               products={products}
               onAddProduct={addProduct}
               onUpdateProduct={updateProduct}
               onDeleteProduct={deleteProduct}
+            />
+          </TabsContent>
+
+          <TabsContent value="customers">
+            <CustomerManagement
+              customers={customers}
+              onAddCustomer={addCustomer}
+              onUpdateCustomer={updateCustomer}
+            />
+          </TabsContent>
+
+          <TabsContent value="hire-purchase">
+            <HirePurchaseComponent
+              totalAmount={0}
+              customers={customers}
+              hirePurchases={hirePurchases}
+              onCreateHirePurchase={handleCreateHirePurchase}
+              onCancel={() => {}}
+            />
+          </TabsContent>
+
+          <TabsContent value="staff">
+            <RoleManagement
+              attendants={attendants}
+              currentAttendant={currentAttendant}
+              onAddAttendant={addAttendant}
+              onUpdateAttendant={updateAttendant}
             />
           </TabsContent>
         </Tabs>
