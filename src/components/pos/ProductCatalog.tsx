@@ -5,33 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Product } from '@/pages/Index';
-import { Plus, Search } from 'lucide-react';
+import { Search, AlertTriangle } from 'lucide-react';
 
 interface ProductCatalogProps {
+  products: Product[];
   onAddToCart: (product: Product) => void;
-  showManagement?: boolean;
+  showCatalogOnly?: boolean;
 }
 
-const SAMPLE_PRODUCTS: Product[] = [
-  { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50 },
-  { id: '2', name: 'White Bread', price: 60, category: 'Bakery', stock: 30 },
-  { id: '3', name: 'Milk 1L', price: 120, category: 'Dairy', stock: 25 },
-  { id: '4', name: 'Rice 2kg', price: 350, category: 'Groceries', stock: 20 },
-  { id: '5', name: 'Cooking Oil 1L', price: 280, category: 'Groceries', stock: 15 },
-  { id: '6', name: 'Sugar 2kg', price: 240, category: 'Groceries', stock: 40 },
-  { id: '7', name: 'Tea Leaves 250g', price: 150, category: 'Beverages', stock: 35 },
-  { id: '8', name: 'Eggs (12 pcs)', price: 380, category: 'Dairy', stock: 18 },
-];
-
-const CATEGORIES = ['All', 'Beverages', 'Bakery', 'Dairy', 'Groceries'];
-
 export const ProductCatalog: React.FC<ProductCatalogProps> = ({ 
+  products,
   onAddToCart, 
-  showManagement = false 
+  showCatalogOnly = false 
 }) => {
-  const [products] = useState<Product[]>(SAMPLE_PRODUCTS);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
@@ -45,14 +35,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Product Catalog
-            {showManagement && (
-              <Button className="bg-green-600 hover:bg-green-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-            )}
+          <CardTitle>
+            {showCatalogOnly ? 'Product Catalog' : 'Products'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -69,7 +53,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
           {/* Category Filters */}
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map(category => (
+            {categories.map(category => (
               <Badge
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
@@ -92,22 +76,41 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       <span className="text-lg font-bold text-green-600">
                         {formatPrice(product.price)}
                       </span>
-                      <Badge variant="outline" className="text-xs">
-                        Stock: {product.stock}
+                      <Badge 
+                        variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"}
+                        className="text-xs"
+                      >
+                        {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
                       </Badge>
                     </div>
-                    <Button
-                      onClick={() => onAddToCart(product)}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      disabled={product.stock === 0}
-                    >
-                      Add to Cart
-                    </Button>
+                    <p className="text-xs text-gray-600">{product.category}</p>
+                    {!showCatalogOnly && (
+                      <Button
+                        onClick={() => onAddToCart(product)}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        disabled={product.stock === 0}
+                      >
+                        {product.stock === 0 ? (
+                          <>
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Out of Stock
+                          </>
+                        ) : (
+                          'Add to Cart'
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No products found matching your criteria
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

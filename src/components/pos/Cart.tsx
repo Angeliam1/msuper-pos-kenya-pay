@@ -3,14 +3,15 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CartItem } from '@/pages/Index';
+import { CartItem, Transaction } from '@/pages/Index';
 import { Minus, Plus, Trash2, Smartphone, Banknote } from 'lucide-react';
 import { MPesaPayment } from './MPesaPayment';
+import { Receipt } from './Receipt';
 
 interface CartProps {
   items: CartItem[];
   onUpdateItem: (id: string, quantity: number) => void;
-  onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string) => void;
+  onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string) => Transaction;
 }
 
 export const Cart: React.FC<CartProps> = ({ 
@@ -19,18 +20,36 @@ export const Cart: React.FC<CartProps> = ({
   onCompleteTransaction 
 }) => {
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
   const handleCashPayment = () => {
-    onCompleteTransaction('cash');
+    const transaction = onCompleteTransaction('cash');
+    setCurrentTransaction(transaction);
+    setShowReceipt(true);
   };
 
   const handleMPesaPayment = (reference: string) => {
-    onCompleteTransaction('mpesa', reference);
+    const transaction = onCompleteTransaction('mpesa', reference);
+    setCurrentTransaction(transaction);
     setShowMPesaPayment(false);
+    setShowReceipt(true);
   };
+
+  if (showReceipt && currentTransaction) {
+    return (
+      <Receipt
+        transaction={currentTransaction}
+        onClose={() => {
+          setShowReceipt(false);
+          setCurrentTransaction(null);
+        }}
+      />
+    );
+  }
 
   if (showMPesaPayment) {
     return (
@@ -45,7 +64,7 @@ export const Cart: React.FC<CartProps> = ({
   return (
     <Card className="h-fit">
       <CardHeader>
-        <CardTitle>Shopping Cart</CardTitle>
+        <CardTitle>Shopping Cart ({items.length} items)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {items.length === 0 ? (

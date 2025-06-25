@@ -4,8 +4,9 @@ import { ProductCatalog } from '@/components/pos/ProductCatalog';
 import { Cart } from '@/components/pos/Cart';
 import { Dashboard } from '@/components/pos/Dashboard';
 import { TransactionHistory } from '@/components/pos/TransactionHistory';
+import { ProductManagement } from '@/components/pos/ProductManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, BarChart3, History, Package } from 'lucide-react';
+import { ShoppingCart, BarChart3, History, Package, Settings } from 'lucide-react';
 
 export interface Product {
   id: string;
@@ -29,11 +30,25 @@ export interface Transaction {
   mpesaReference?: string;
 }
 
+const INITIAL_PRODUCTS: Product[] = [
+  { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50 },
+  { id: '2', name: 'White Bread', price: 60, category: 'Bakery', stock: 30 },
+  { id: '3', name: 'Milk 1L', price: 120, category: 'Dairy', stock: 25 },
+  { id: '4', name: 'Rice 2kg', price: 350, category: 'Groceries', stock: 20 },
+  { id: '5', name: 'Cooking Oil 1L', price: 280, category: 'Groceries', stock: 15 },
+  { id: '6', name: 'Sugar 2kg', price: 240, category: 'Groceries', stock: 40 },
+  { id: '7', name: 'Tea Leaves 250g', price: 150, category: 'Beverages', stock: 35 },
+  { id: '8', name: 'Eggs (12 pcs)', price: 380, category: 'Dairy', stock: 18 },
+];
+
 const Index = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
 
   const addToCart = (product: Product) => {
+    if (product.stock <= 0) return;
+    
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       if (existingItem) {
@@ -59,7 +74,7 @@ const Index = () => {
     }
   };
 
-  const completeTransaction = (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string) => {
+  const completeTransaction = (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string): Transaction => {
     const transaction: Transaction = {
       id: Date.now().toString(),
       items: [...cartItems],
@@ -69,8 +84,39 @@ const Index = () => {
       mpesaReference
     };
     
+    // Update product stock
+    setProducts(prev => prev.map(product => {
+      const cartItem = cartItems.find(item => item.id === product.id);
+      if (cartItem) {
+        return { ...product, stock: product.stock - cartItem.quantity };
+      }
+      return product;
+    }));
+    
     setTransactions(prev => [transaction, ...prev]);
     setCartItems([]);
+    return transaction;
+  };
+
+  // Product management functions
+  const addProduct = (productData: Omit<Product, 'id'>) => {
+    const newProduct: Product = {
+      ...productData,
+      id: Date.now().toString()
+    };
+    setProducts(prev => [...prev, newProduct]);
+  };
+
+  const updateProduct = (id: string, productData: Partial<Product>) => {
+    setProducts(prev => prev.map(product =>
+      product.id === id ? { ...product, ...productData } : product
+    ));
+  };
+
+  const deleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(product => product.id !== id));
+    // Also remove from cart if it exists
+    setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
   const totalSales = transactions.reduce((sum, transaction) => sum + transaction.total, 0);
@@ -83,13 +129,13 @@ const Index = () => {
       <header className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900">MSUPER POS</h1>
-          <p className="text-sm text-gray-600">Point of Sale System</p>
+          <p className="text-sm text-gray-600">Point of Sale System - Kenya</p>
         </div>
       </header>
 
       <div className="container mx-auto p-6">
         <Tabs defaultValue="pos" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="pos" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               POS
@@ -106,12 +152,16 @@ const Index = () => {
               <Package className="h-4 w-4" />
               Products
             </TabsTrigger>
+            <TabsTrigger value="manage" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Manage
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pos" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <ProductCatalog onAddToCart={addToCart} />
+                <ProductCatalog products={products} onAddToCart={addToCart} />
               </div>
               <div>
                 <Cart 
@@ -137,7 +187,16 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="products">
-            <ProductCatalog onAddToCart={addToCart} showManagement />
+            <ProductCatalog products={products} onAddToCart={addToCart} showCatalogOnly />
+          </TabsContent>
+
+          <TabsContent value="manage">
+            <ProductManagement
+              products={products}
+              onAddProduct={addProduct}
+              onUpdateProduct={updateProduct}
+              onDeleteProduct={deleteProduct}
+            />
           </TabsContent>
         </Tabs>
       </div>
