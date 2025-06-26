@@ -10,6 +10,14 @@ interface ReceiptProps {
   onClose: () => void;
 }
 
+// Store configuration - can be made dynamic from backend later
+const STORE_CONFIG = {
+  name: 'TOPTEN ELECTRONICS LTD.',
+  location: 'GITHUNGURI TOWN OPP MAANDAMANO BAR',
+  phones: ['0725333337', '0735333394'],
+  mpesaTill: '9951109'
+};
+
 export const Receipt: React.FC<ReceiptProps> = ({ transaction, onClose }) => {
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
@@ -28,11 +36,18 @@ export const Receipt: React.FC<ReceiptProps> = ({ transaction, onClose }) => {
   return (
     <Card className="max-w-md mx-auto">
       <CardHeader className="text-center pb-4">
-        <CardTitle className="text-lg">MSUPER POS</CardTitle>
-        <p className="text-sm text-gray-600">Receipt</p>
-        <p className="text-xs text-gray-500">
-          Transaction #{transaction.id}
-        </p>
+        <CardTitle className="text-lg font-bold">{STORE_CONFIG.name}</CardTitle>
+        <div className="text-xs text-gray-600 space-y-1">
+          <p>{STORE_CONFIG.location}</p>
+          <p>Tel: {STORE_CONFIG.phones.join('/')}</p>
+          <p>M-Pesa Till: {STORE_CONFIG.mpesaTill}</p>
+        </div>
+        <div className="border-t pt-2 mt-2">
+          <p className="text-sm font-medium">RECEIPT</p>
+          <p className="text-xs text-gray-500">
+            Transaction #{transaction.id}
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-center border-b pb-2">
