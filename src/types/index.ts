@@ -63,6 +63,16 @@ export interface HirePurchase {
   status: 'active' | 'completed' | 'defaulted';
 }
 
+export interface HeldTransaction {
+  id: string;
+  items: CartItem[];
+  customerId?: string;
+  customerName?: string;
+  heldAt: Date;
+  heldBy: string;
+  note?: string;
+}
+
 export interface Transaction {
   id: string;
   items: CartItem[];

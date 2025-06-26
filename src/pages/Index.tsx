@@ -10,7 +10,7 @@ import { HirePurchaseComponent } from '@/components/pos/HirePurchase';
 import { RoleManagement } from '@/components/pos/RoleManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus } from 'lucide-react';
-import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase } from '@/types';
+import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
   { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50 },
@@ -55,11 +55,13 @@ const Index = () => {
   const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
   const [attendants, setAttendants] = useState<Attendant[]>(INITIAL_ATTENDANTS);
   const [hirePurchases, setHirePurchases] = useState<HirePurchase[]>([]);
+  const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
   const [currentAttendant] = useState<Attendant>(INITIAL_ATTENDANTS[0]);
   
   // Payment flow states
   const [showSplitPayment, setShowSplitPayment] = useState(false);
   const [showHirePurchase, setShowHirePurchase] = useState(false);
+  const [showHoldTransaction, setShowHoldTransaction] = useState(false);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
@@ -128,6 +130,35 @@ const Index = () => {
     setTransactions(prev => [transaction, ...prev]);
     setCartItems([]);
     return transaction;
+  };
+
+  // Hold and retrieve transaction functions
+  const handleHoldTransaction = (customerId?: string, customerName?: string, note?: string) => {
+    if (cartItems.length === 0) return;
+    
+    const heldTransaction: HeldTransaction = {
+      id: Date.now().toString(),
+      items: [...cartItems],
+      customerId,
+      customerName,
+      heldAt: new Date(),
+      heldBy: currentAttendant.name,
+      note
+    };
+    
+    setHeldTransactions(prev => [...prev, heldTransaction]);
+    setCartItems([]);
+    setShowHoldTransaction(false);
+  };
+
+  const handleRetrieveTransaction = (heldTransaction: HeldTransaction) => {
+    setCartItems([...heldTransaction.items]);
+    setHeldTransactions(prev => prev.filter(held => held.id !== heldTransaction.id));
+    setShowHoldTransaction(false);
+  };
+
+  const handleDeleteHeldTransaction = (id: string) => {
+    setHeldTransactions(prev => prev.filter(held => held.id !== id));
   };
 
   // Handle split payment completion
@@ -277,6 +308,17 @@ const Index = () => {
                     onCreateHirePurchase={handleCreateHirePurchase}
                     onCancel={() => setShowHirePurchase(false)}
                   />
+                ) : showHoldTransaction ? (
+                  <HoldTransaction
+                    items={cartItems}
+                    customers={customers}
+                    heldTransactions={heldTransactions}
+                    currentAttendant={currentAttendant.name}
+                    onHoldTransaction={handleHoldTransaction}
+                    onRetrieveTransaction={handleRetrieveTransaction}
+                    onDeleteHeldTransaction={handleDeleteHeldTransaction}
+                    onCancel={() => setShowHoldTransaction(false)}
+                  />
                 ) : (
                   <ProductCatalog products={products} onAddToCart={addToCart} />
                 )}
@@ -293,6 +335,7 @@ const Index = () => {
                   }}
                   onSplitPayment={() => setShowSplitPayment(true)}
                   onHirePurchase={() => setShowHirePurchase(true)}
+                  onHoldTransaction={() => setShowHoldTransaction(true)}
                 />
               </div>
             </div>
