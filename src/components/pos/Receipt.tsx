@@ -22,6 +22,9 @@ export const Receipt: React.FC<ReceiptProps> = ({ transaction, onClose }) => {
     console.log('Downloading receipt...');
   };
 
+  const primaryPaymentMethod = transaction.paymentSplits[0]?.method || 'cash';
+  const mpesaPayment = transaction.paymentSplits.find(split => split.method === 'mpesa');
+
   return (
     <Card className="max-w-md mx-auto">
       <CardHeader className="text-center pb-4">
@@ -61,13 +64,19 @@ export const Receipt: React.FC<ReceiptProps> = ({ transaction, onClose }) => {
           </div>
         </div>
 
-        <div className="border-t pt-2 text-center">
-          <p className="text-sm font-medium">
-            Payment Method: {transaction.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
-          </p>
-          {transaction.mpesaReference && (
-            <p className="text-xs text-gray-600">
-              Ref: {transaction.mpesaReference}
+        <div className="border-t pt-2">
+          <p className="text-sm font-medium mb-2">Payment Methods:</p>
+          {transaction.paymentSplits.map((split, index) => (
+            <div key={index} className="flex justify-between text-sm mb-1">
+              <span className="capitalize">
+                {split.method === 'mpesa' ? 'M-Pesa' : split.method}:
+              </span>
+              <span>{formatPrice(split.amount)}</span>
+            </div>
+          ))}
+          {mpesaPayment?.reference && (
+            <p className="text-xs text-gray-600 mt-2">
+              M-Pesa Ref: {mpesaPayment.reference}
             </p>
           )}
         </div>

@@ -19,8 +19,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
-  const mpesaTransactions = transactions.filter(t => t.paymentMethod === 'mpesa').length;
-  const cashTransactions = transactions.filter(t => t.paymentMethod === 'cash').length;
+  const mpesaTransactions = transactions.filter(t => 
+    t.paymentSplits.some(split => split.method === 'mpesa')
+  ).length;
+  const cashTransactions = transactions.filter(t => 
+    t.paymentSplits.some(split => split.method === 'cash')
+  ).length;
 
   const todayTransactions = transactions.filter(t => 
     new Date(t.timestamp).toDateString() === new Date().toDateString()
@@ -105,24 +109,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {transactions.slice(0, 5).map(transaction => (
-                <div key={transaction.id} className="flex items-center justify-between p-2 border rounded">
-                  <div>
-                    <p className="font-medium text-sm">{formatPrice(transaction.total)}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(transaction.timestamp).toLocaleTimeString()}
-                    </p>
+              {transactions.slice(0, 5).map(transaction => {
+                const primaryPaymentMethod = transaction.paymentSplits[0]?.method || 'cash';
+                return (
+                  <div key={transaction.id} className="flex items-center justify-between p-2 border rounded">
+                    <div>
+                      <p className="font-medium text-sm">{formatPrice(transaction.total)}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(transaction.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {primaryPaymentMethod === 'mpesa' ? (
+                        <Smartphone className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <DollarSign className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className="text-xs capitalize">{primaryPaymentMethod}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {transaction.paymentMethod === 'mpesa' ? (
-                      <Smartphone className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <DollarSign className="h-4 w-4 text-gray-600" />
-                    )}
-                    <span className="text-xs capitalize">{transaction.paymentMethod}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
