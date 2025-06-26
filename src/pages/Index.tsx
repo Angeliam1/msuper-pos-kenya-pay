@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ProductCatalog } from '@/components/pos/ProductCatalog';
 import { Cart } from '@/components/pos/Cart';
@@ -11,18 +10,21 @@ import { HirePurchaseComponent } from '@/components/pos/HirePurchase';
 import { HoldTransaction } from '@/components/pos/HoldTransaction';
 import { RoleManagement } from '@/components/pos/RoleManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus } from 'lucide-react';
+import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban } from 'lucide-react';
 import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
+import { LowStockAlerts } from '@/components/pos/LowStockAlerts';
+import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
+import { VoidRefundTransaction } from '@/components/pos/VoidRefundTransaction';
 
 const INITIAL_PRODUCTS: Product[] = [
-  { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50 },
-  { id: '2', name: 'White Bread', price: 60, category: 'Bakery', stock: 30 },
-  { id: '3', name: 'Milk 1L', price: 120, category: 'Dairy', stock: 25 },
-  { id: '4', name: 'Rice 2kg', price: 350, category: 'Groceries', stock: 20 },
-  { id: '5', name: 'Cooking Oil 1L', price: 280, category: 'Groceries', stock: 15 },
-  { id: '6', name: 'Sugar 2kg', price: 240, category: 'Groceries', stock: 40 },
-  { id: '7', name: 'Tea Leaves 250g', price: 150, category: 'Beverages', stock: 35 },
-  { id: '8', name: 'Eggs (12 pcs)', price: 380, category: 'Dairy', stock: 18 },
+  { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50, barcode: '1234567890123', lowStockThreshold: 20 },
+  { id: '2', name: 'White Bread', price: 60, category: 'Bakery', stock: 30, barcode: '2345678901234', lowStockThreshold: 10 },
+  { id: '3', name: 'Milk 1L', price: 120, category: 'Dairy', stock: 25, barcode: '3456789012345', lowStockThreshold: 15 },
+  { id: '4', name: 'Rice 2kg', price: 350, category: 'Groceries', stock: 20, barcode: '4567890123456', lowStockThreshold: 5 },
+  { id: '5', name: 'Cooking Oil 1L', price: 280, category: 'Groceries', stock: 15, barcode: '5678901234567', lowStockThreshold: 8 },
+  { id: '6', name: 'Sugar 2kg', price: 240, category: 'Groceries', stock: 40, barcode: '6789012345678', lowStockThreshold: 12 },
+  { id: '7', name: 'Tea Leaves 250g', price: 150, category: 'Beverages', stock: 35, barcode: '7890123456789', lowStockThreshold: 15 },
+  { id: '8', name: 'Eggs (12 pcs)', price: 380, category: 'Dairy', stock: 18, barcode: '8901234567890', lowStockThreshold: 6 },
 ];
 
 const INITIAL_CUSTOMERS: Customer[] = [
@@ -65,6 +67,10 @@ const Index = () => {
   const [showHirePurchase, setShowHirePurchase] = useState(false);
   const [showHoldTransaction, setShowHoldTransaction] = useState(false);
 
+  // New state for additional features
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [showVoidRefund, setShowVoidRefund] = useState(false);
+
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
     
@@ -102,7 +108,8 @@ const Index = () => {
       customerId,
       attendantId: currentAttendant.id,
       timestamp: new Date(),
-      hirePurchaseId
+      hirePurchaseId,
+      status: 'completed'
     };
     
     // Update product stock
@@ -241,6 +248,55 @@ const Index = () => {
     ));
   };
 
+  const handleVoidTransaction = (transactionId: string, reason: string) => {
+    setTransactions(prev => prev.map(transaction =>
+      transaction.id === transactionId
+        ? {
+            ...transaction,
+            status: 'voided' as const,
+            voidedAt: new Date(),
+            voidReason: reason
+          }
+        : transaction
+    ));
+    setShowVoidRefund(false);
+  };
+
+  const handleRefundTransaction = (transactionId: string, reason: string) => {
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (transaction) {
+      // Restore stock for refunded items
+      setProducts(prev => prev.map(product => {
+        const refundedItem = transaction.items.find(item => item.id === product.id);
+        if (refundedItem) {
+          return { ...product, stock: product.stock + refundedItem.quantity };
+        }
+        return product;
+      }));
+
+      // Update transaction status
+      setTransactions(prev => prev.map(t =>
+        t.id === transactionId
+          ? {
+              ...t,
+              status: 'refunded' as const,
+              refundedAt: new Date(),
+              refundReason: reason
+            }
+          : t
+      ));
+    }
+    setShowVoidRefund(false);
+  };
+
+  // Barcode scanner function
+  const handleBarcodeProductFound = (product: Product) => {
+    if (product.stock > 0) {
+      addToCart(product);
+      setShowBarcodeScanner(false);
+    }
+  };
+
   const totalSales = transactions.reduce((sum, transaction) => sum + transaction.total, 0);
   const todaySales = transactions.filter(t => 
     new Date(t.timestamp).toDateString() === new Date().toDateString()
@@ -261,7 +317,7 @@ const Index = () => {
 
       <div className="container mx-auto p-6">
         <Tabs defaultValue="pos" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-8 mb-6">
             <TabsTrigger value="pos" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               POS
@@ -289,6 +345,10 @@ const Index = () => {
             <TabsTrigger value="staff" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Staff
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Alerts
             </TabsTrigger>
           </TabsList>
 
@@ -321,11 +381,42 @@ const Index = () => {
                     onDeleteHeldTransaction={handleDeleteHeldTransaction}
                     onCancel={() => setShowHoldTransaction(false)}
                   />
+                ) : showBarcodeScanner ? (
+                  <BarcodeScanner
+                    products={products}
+                    onProductFound={handleBarcodeProductFound}
+                    onClose={() => setShowBarcodeScanner(false)}
+                  />
+                ) : showVoidRefund ? (
+                  <VoidRefundTransaction
+                    transactions={transactions}
+                    onVoidTransaction={handleVoidTransaction}
+                    onRefundTransaction={handleRefundTransaction}
+                    onClose={() => setShowVoidRefund(false)}
+                  />
                 ) : (
                   <ProductCatalog products={products} onAddToCart={addToCart} />
                 )}
               </div>
-              <div>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowBarcodeScanner(true)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Scan className="h-4 w-4" />
+                    Scanner
+                  </Button>
+                  <Button
+                    onClick={() => setShowVoidRefund(true)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Ban className="h-4 w-4" />
+                    Void/Refund
+                  </Button>
+                </div>
                 <Cart 
                   items={cartItems}
                   onUpdateItem={updateCartItem}
@@ -390,6 +481,10 @@ const Index = () => {
               onAddAttendant={addAttendant}
               onUpdateAttendant={updateAttendant}
             />
+          </TabsContent>
+
+          <TabsContent value="alerts">
+            <LowStockAlerts products={products} />
           </TabsContent>
         </Tabs>
       </div>

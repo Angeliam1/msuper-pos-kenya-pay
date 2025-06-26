@@ -7,6 +7,8 @@ export interface Product {
   stock: number;
   image?: string;
   supplierId?: string;
+  barcode?: string;
+  lowStockThreshold?: number;
 }
 
 export interface CartItem extends Product {
@@ -82,4 +84,18 @@ export interface Transaction {
   attendantId: string;
   timestamp: Date;
   hirePurchaseId?: string;
+  status: 'completed' | 'voided' | 'refunded';
+  voidedAt?: Date;
+  refundedAt?: Date;
+  voidReason?: string;
+  refundReason?: string;
+}
+
+export interface LowStockAlert {
+  id: string;
+  productId: string;
+  productName: string;
+  currentStock: number;
+  threshold: number;
+  createdAt: Date;
 }

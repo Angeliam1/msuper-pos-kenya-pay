@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/types';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface ProductManagementProps {
@@ -28,13 +28,22 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     name: '',
     price: '',
     category: '',
-    stock: ''
+    stock: '',
+    barcode: '',
+    lowStockThreshold: ''
   });
 
   const categories = ['Beverages', 'Bakery', 'Dairy', 'Groceries', 'Electronics', 'Clothing'];
 
   const resetForm = () => {
-    setFormData({ name: '', price: '', category: '', stock: '' });
+    setFormData({ 
+      name: '', 
+      price: '', 
+      category: '', 
+      stock: '', 
+      barcode: '', 
+      lowStockThreshold: '' 
+    });
     setEditingProduct(null);
   };
 
@@ -45,7 +54,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       name: formData.name,
       price: parseFloat(formData.price),
       category: formData.category,
-      stock: parseInt(formData.stock)
+      stock: parseInt(formData.stock),
+      barcode: formData.barcode || undefined,
+      lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 10
     };
 
     if (editingProduct) {
@@ -64,12 +75,21 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       name: product.name,
       price: product.price.toString(),
       category: product.category,
-      stock: product.stock.toString()
+      stock: product.stock.toString(),
+      barcode: product.barcode || '',
+      lowStockThreshold: (product.lowStockThreshold || 10).toString()
     });
     setIsOpen(true);
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+
+  const getStockStatus = (product: Product) => {
+    const threshold = product.lowStockThreshold || 10;
+    if (product.stock === 0) return { variant: 'destructive' as const, text: 'Out of stock' };
+    if (product.stock <= threshold) return { variant: 'secondary' as const, text: `Low stock (${product.stock})` };
+    return { variant: 'default' as const, text: `${product.stock} in stock` };
+  };
 
   return (
     <div className="space-y-4">
@@ -82,7 +102,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -98,16 +118,28 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="price">Price (KES)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="price">Price (KES)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="stock">Stock Quantity</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData(prev => ({ ...prev, stock: e.target.value }))}
+                    required
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="category">Category</Label>
@@ -125,13 +157,22 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                 </select>
               </div>
               <div>
-                <Label htmlFor="stock">Stock Quantity</Label>
+                <Label htmlFor="barcode">Barcode (Optional)</Label>
                 <Input
-                  id="stock"
+                  id="barcode"
+                  value={formData.barcode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, barcode: e.target.value }))}
+                  placeholder="Enter product barcode"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lowStockThreshold">Low Stock Alert (Default: 10)</Label>
+                <Input
+                  id="lowStockThreshold"
                   type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData(prev => ({ ...prev, stock: e.target.value }))}
-                  required
+                  value={formData.lowStockThreshold}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lowStockThreshold: e.target.value }))}
+                  placeholder="10"
                 />
               </div>
               <div className="flex gap-2">
@@ -148,42 +189,56 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map(product => (
-          <Card key={product.id}>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-semibold">{product.name}</h3>
-                  <Badge variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"}>
-                    {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                  </Badge>
+        {products.map(product => {
+          const stockStatus = getStockStatus(product);
+          return (
+            <Card key={product.id}>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-semibold">{product.name}</h3>
+                    <div className="flex items-center gap-1">
+                      {stockStatus.variant !== 'default' && (
+                        <AlertTriangle className="h-3 w-3 text-orange-500" />
+                      )}
+                      <Badge variant={stockStatus.variant}>
+                        {stockStatus.text}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-green-600">{formatPrice(product.price)}</p>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>{product.category}</p>
+                    {product.barcode && (
+                      <p className="font-mono text-xs">Barcode: {product.barcode}</p>
+                    )}
+                    <p>Alert threshold: {product.lowStockThreshold || 10}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(product)}
+                      className="flex-1"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => onDeleteProduct(product.id)}
+                      className="flex-1"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-lg font-bold text-green-600">{formatPrice(product.price)}</p>
-                <p className="text-sm text-gray-600">{product.category}</p>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(product)}
-                    className="flex-1"
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => onDeleteProduct(product.id)}
-                    className="flex-1"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
