@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Transaction } from '@/pages/Index';
+import { Transaction } from '@/types';
 import { Smartphone, Banknote } from 'lucide-react';
 
 interface TransactionHistoryProps {

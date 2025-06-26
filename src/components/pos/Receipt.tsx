@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Transaction } from '@/pages/Index';
+import { Transaction } from '@/types';
 import { Printer, Download } from 'lucide-react';
 
 interface ReceiptProps {

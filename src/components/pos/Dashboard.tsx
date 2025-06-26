@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Transaction } from '@/pages/Index';
+import { Transaction } from '@/types';
 import { TrendingUp, DollarSign, ShoppingBag, Smartphone } from 'lucide-react';
 
 interface DashboardProps {
