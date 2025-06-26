@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { CartItem, HeldTransaction, Customer } from '@/types';
-import { Hold, Search, Clock, User, FileText, Trash2, ShoppingCart } from 'lucide-react';
+import { Pause, Search, Clock, User, FileText, Trash2, ShoppingCart } from 'lucide-react';
 
 interface HoldTransactionProps {
   items: CartItem[];
@@ -61,7 +60,7 @@ export const HoldTransaction: React.FC<HoldTransactionProps> = ({
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Hold className="h-5 w-5" />
+          <Pause className="h-5 w-5" />
           Hold & Retrieve Transactions
         </CardTitle>
         <div className="flex gap-2">
@@ -70,7 +69,7 @@ export const HoldTransaction: React.FC<HoldTransactionProps> = ({
             onClick={() => setActiveTab('hold')}
             className="flex items-center gap-2"
           >
-            <Hold className="h-4 w-4" />
+            <Pause className="h-4 w-4" />
             Hold Current Transaction
           </Button>
           <Button
@@ -160,7 +159,7 @@ export const HoldTransaction: React.FC<HoldTransactionProps> = ({
                 className="flex items-center gap-2"
                 disabled={items.length === 0}
               >
-                <Hold className="h-4 w-4" />
+                <Pause className="h-4 w-4" />
                 Hold Transaction
               </Button>
               <Button onClick={onCancel} variant="outline">

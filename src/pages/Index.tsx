@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ProductCatalog } from '@/components/pos/ProductCatalog';
 import { Cart } from '@/components/pos/Cart';
@@ -7,6 +8,7 @@ import { ProductManagement } from '@/components/pos/ProductManagement';
 import { CustomerManagement } from '@/components/pos/CustomerManagement';
 import { SplitPayment } from '@/components/pos/SplitPayment';
 import { HirePurchaseComponent } from '@/components/pos/HirePurchase';
+import { HoldTransaction } from '@/components/pos/HoldTransaction';
 import { RoleManagement } from '@/components/pos/RoleManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus } from 'lucide-react';
