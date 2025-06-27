@@ -14,7 +14,7 @@ import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
 import { VoidRefundTransaction } from '@/components/pos/VoidRefundTransaction';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban } from 'lucide-react';
+import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban, Settings as SettingsIcon, FileText } from 'lucide-react';
 import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
@@ -305,6 +305,12 @@ const Index = () => {
 
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  // Settings management
+  const handleSaveSettings = (newSettings: any) => {
+    console.log('Settings saved:', newSettings);
+    // Here you would typically save to localStorage or send to backend
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -318,7 +324,7 @@ const Index = () => {
 
       <div className="container mx-auto p-6">
         <Tabs defaultValue="pos" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 mb-6">
+          <TabsList className="grid w-full grid-cols-10 mb-6">
             <TabsTrigger value="pos" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               POS
@@ -326,6 +332,10 @@ const Index = () => {
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Reports
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <History className="h-4 w-4" />
@@ -350,6 +360,10 @@ const Index = () => {
             <TabsTrigger value="alerts" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Alerts
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <SettingsIcon className="h-4 w-4" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -444,6 +458,14 @@ const Index = () => {
             />
           </TabsContent>
 
+          <TabsContent value="reports">
+            <Reports 
+              transactions={transactions}
+              products={products}
+              attendants={attendants}
+            />
+          </TabsContent>
+
           <TabsContent value="history">
             <TransactionHistory transactions={transactions} />
           </TabsContent>
@@ -486,6 +508,10 @@ const Index = () => {
 
           <TabsContent value="alerts">
             <LowStockAlerts products={products} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Settings onSaveSettings={handleSaveSettings} />
           </TabsContent>
         </Tabs>
       </div>
