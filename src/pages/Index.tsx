@@ -9,12 +9,13 @@ import { SplitPayment } from '@/components/pos/SplitPayment';
 import { HirePurchaseComponent } from '@/components/pos/HirePurchase';
 import { HoldTransaction } from '@/components/pos/HoldTransaction';
 import { RoleManagement } from '@/components/pos/RoleManagement';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban } from 'lucide-react';
-import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
 import { LowStockAlerts } from '@/components/pos/LowStockAlerts';
 import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
 import { VoidRefundTransaction } from '@/components/pos/VoidRefundTransaction';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban } from 'lucide-react';
+import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
   { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50, barcode: '1234567890123', lowStockThreshold: 20 },
