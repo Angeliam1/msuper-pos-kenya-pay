@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ProductCatalog } from '@/components/pos/ProductCatalog';
 import { Cart } from '@/components/pos/Cart';
@@ -12,6 +13,8 @@ import { RoleManagement } from '@/components/pos/RoleManagement';
 import { LowStockAlerts } from '@/components/pos/LowStockAlerts';
 import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
 import { VoidRefundTransaction } from '@/components/pos/VoidRefundTransaction';
+import { Reports } from '@/components/pos/Reports';
+import { Settings } from '@/components/pos/Settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban, Settings as SettingsIcon, FileText } from 'lucide-react';
