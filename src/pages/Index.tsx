@@ -317,61 +317,63 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">MSUPER POS</h1>
-          <p className="text-sm text-gray-600">
+        <div className="px-4 py-3">
+          <h1 className="text-xl font-bold text-gray-900">MSUPER POS</h1>
+          <p className="text-xs text-gray-600">
             Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
           </p>
         </div>
       </header>
 
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4">
         <Tabs defaultValue="pos" className="w-full">
-          <TabsList className="grid w-full grid-cols-10 mb-6">
-            <TabsTrigger value="pos" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              POS
-            </TabsTrigger>
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              History
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Products
-            </TabsTrigger>
-            <TabsTrigger value="customers" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Customers
-            </TabsTrigger>
-            <TabsTrigger value="hire-purchase" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Hire Purchase
-            </TabsTrigger>
-            <TabsTrigger value="staff" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Staff
-            </TabsTrigger>
-            <TabsTrigger value="alerts" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Alerts
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <SettingsIcon className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto mb-4">
+            <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg min-w-max">
+              <TabsTrigger value="pos" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <ShoppingCart className="h-4 w-4" />
+                <span className="hidden sm:inline">POS</span>
+              </TabsTrigger>
+              <TabsTrigger value="dashboard" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Reports</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">History</span>
+              </TabsTrigger>
+              <TabsTrigger value="products" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline">Products</span>
+              </TabsTrigger>
+              <TabsTrigger value="customers" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Customers</span>
+              </TabsTrigger>
+              <TabsTrigger value="hire-purchase" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:inline">Hire Purchase</span>
+              </TabsTrigger>
+              <TabsTrigger value="staff" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Staff</span>
+              </TabsTrigger>
+              <TabsTrigger value="alerts" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="hidden sm:inline">Alerts</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
+                <SettingsIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="pos" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <TabsContent value="pos" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">
                 {showSplitPayment ? (
                   <SplitPayment
@@ -421,18 +423,20 @@ const Index = () => {
                   <Button
                     onClick={() => setShowBarcodeScanner(true)}
                     variant="outline"
+                    size="sm"
                     className="flex items-center gap-2"
                   >
                     <Scan className="h-4 w-4" />
-                    Scanner
+                    <span className="hidden sm:inline">Scanner</span>
                   </Button>
                   <Button
                     onClick={() => setShowVoidRefund(true)}
                     variant="outline"
+                    size="sm"
                     className="flex items-center gap-2"
                   >
                     <Ban className="h-4 w-4" />
-                    Void/Refund
+                    <span className="hidden sm:inline">Void/Refund</span>
                   </Button>
                 </div>
                 <Cart 
