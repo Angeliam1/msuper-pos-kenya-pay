@@ -5,12 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Receipt, Printer, Search, RotateCcw } from 'lucide-react';
-import { Transaction } from '@/types';
+import { Transaction, CartItem } from '@/types';
 
 interface ReturnsManagementProps {
   transactions: Transaction[];
-  onRefundTransaction: (transactionId: string, reason: string) => void;
+  onRefundTransaction: (transactionId: string, reason: string, returnedItems?: CartItem[]) => void;
+}
+
+interface ReturnItem extends CartItem {
+  returnQuantity: number;
+  selected: boolean;
 }
 
 export const ReturnsManagement: React.FC<ReturnsManagementProps> = ({
@@ -20,17 +26,79 @@ export const ReturnsManagement: React.FC<ReturnsManagementProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [returnReason, setReturnReason] = useState('');
+  const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
 
   const filteredTransactions = transactions.filter(transaction =>
     transaction.id.includes(searchTerm) ||
     transaction.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleReturn = () => {
+  const handleSelectTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setReturnItems(
+      transaction.items.map(item => ({
+        ...item,
+        returnQuantity: 0,
+        selected: false
+      }))
+    );
+    setReturnReason('');
+  };
+
+  const handleItemSelect = (itemId: string, selected: boolean) => {
+    setReturnItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          selected,
+          returnQuantity: selected ? 1 : 0
+        };
+      }
+      return item;
+    }));
+  };
+
+  const handleQuantityChange = (itemId: string, quantity: number) => {
+    setReturnItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const maxQuantity = item.quantity;
+        const validQuantity = Math.max(0, Math.min(quantity, maxQuantity));
+        return {
+          ...item,
+          returnQuantity: validQuantity,
+          selected: validQuantity > 0
+        };
+      }
+      return item;
+    }));
+  };
+
+  const handlePartialReturn = () => {
+    if (selectedTransaction && returnReason) {
+      const itemsToReturn = returnItems
+        .filter(item => item.selected && item.returnQuantity > 0)
+        .map(item => ({
+          ...item,
+          quantity: item.returnQuantity
+        }));
+
+      if (itemsToReturn.length > 0) {
+        onRefundTransaction(selectedTransaction.id, returnReason, itemsToReturn);
+        setSelectedTransaction(null);
+        setReturnReason('');
+        setReturnItems([]);
+      } else {
+        alert('Please select at least one item to return');
+      }
+    }
+  };
+
+  const handleFullReturn = () => {
     if (selectedTransaction && returnReason) {
       onRefundTransaction(selectedTransaction.id, returnReason);
       setSelectedTransaction(null);
       setReturnReason('');
+      setReturnItems([]);
     }
   };
 
@@ -41,6 +109,12 @@ export const ReturnsManagement: React.FC<ReturnsManagementProps> = ({
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+
+  const calculatePartialReturnTotal = () => {
+    return returnItems
+      .filter(item => item.selected && item.returnQuantity > 0)
+      .reduce((sum, item) => sum + (item.price * item.returnQuantity), 0);
+  };
 
   return (
     <div className="space-y-6">
@@ -104,7 +178,7 @@ export const ReturnsManagement: React.FC<ReturnsManagementProps> = ({
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => setSelectedTransaction(transaction)}
+                      onClick={() => handleSelectTransaction(transaction)}
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Process Return
@@ -124,6 +198,50 @@ export const ReturnsManagement: React.FC<ReturnsManagementProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <Label>Select Items to Return</Label>
+              <div className="space-y-3 mt-2 border rounded-lg p-4 max-h-64 overflow-y-auto">
+                {returnItems.map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={item.selected}
+                        onCheckedChange={(checked) => handleItemSelect(item.id, !!checked)}
+                      />
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-600">
+                          {formatPrice(item.price)} each • Available: {item.quantity}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {item.selected && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm">Qty:</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={item.quantity}
+                          value={item.returnQuantity}
+                          onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 0)}
+                          className="w-16 h-8"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {calculatePartialReturnTotal() > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                  <p className="font-semibold text-blue-800">
+                    Partial Return Total: {formatPrice(calculatePartialReturnTotal())}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div>
               <Label>Return Reason</Label>
               <Input
                 value={returnReason}
@@ -131,15 +249,28 @@ export const ReturnsManagement: React.FC<ReturnsManagementProps> = ({
                 placeholder="Enter reason for return..."
               />
             </div>
+
             <div className="flex gap-2">
-              <Button onClick={handleReturn} variant="destructive">
-                Confirm Return
+              <Button 
+                onClick={handlePartialReturn} 
+                variant="destructive"
+                disabled={!returnReason || calculatePartialReturnTotal() === 0}
+              >
+                Process Partial Return
+              </Button>
+              <Button 
+                onClick={handleFullReturn} 
+                variant="destructive"
+                disabled={!returnReason}
+              >
+                Return All Items
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
                   setSelectedTransaction(null);
                   setReturnReason('');
+                  setReturnItems([]);
                 }}
               >
                 Cancel

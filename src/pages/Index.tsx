@@ -305,29 +305,54 @@ const Index = () => {
     setShowVoidRefund(false);
   };
 
-  const handleRefundTransaction = (transactionId: string, reason: string) => {
+  const handleRefundTransaction = (transactionId: string, reason: string, returnedItems?: CartItem[]) => {
     const transaction = transactions.find(t => t.id === transactionId);
     if (transaction) {
-      // Restore stock for refunded items
-      setProducts(prev => prev.map(product => {
-        const refundedItem = transaction.items.find(item => item.id === product.id);
-        if (refundedItem) {
-          return { ...product, stock: product.stock + refundedItem.quantity };
-        }
-        return product;
-      }));
+      if (returnedItems && returnedItems.length > 0) {
+        // Partial return - restore stock for returned items only
+        setProducts(prev => prev.map(product => {
+          const returnedItem = returnedItems.find(item => item.id === product.id);
+          if (returnedItem) {
+            return { ...product, stock: product.stock + returnedItem.quantity };
+          }
+          return product;
+        }));
 
-      // Update transaction status
-      setTransactions(prev => prev.map(t =>
-        t.id === transactionId
-          ? {
-              ...t,
-              status: 'refunded' as const,
-              refundedAt: new Date(),
-              refundReason: reason
-            }
-          : t
-      ));
+        // Create a new transaction for the partial refund
+        const partialRefundTransaction: Transaction = {
+          ...transaction,
+          id: `${transactionId}-partial-${Date.now()}`,
+          items: returnedItems,
+          total: returnedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+          status: 'refunded' as const,
+          refundedAt: new Date(),
+          refundReason: reason,
+          timestamp: new Date()
+        };
+
+        setTransactions(prev => [partialRefundTransaction, ...prev]);
+      } else {
+        // Full return - restore stock for all items
+        setProducts(prev => prev.map(product => {
+          const refundedItem = transaction.items.find(item => item.id === product.id);
+          if (refundedItem) {
+            return { ...product, stock: product.stock + refundedItem.quantity };
+          }
+          return product;
+        }));
+
+        // Update original transaction status
+        setTransactions(prev => prev.map(t =>
+          t.id === transactionId
+            ? {
+                ...t,
+                status: 'refunded' as const,
+                refundedAt: new Date(),
+                refundReason: reason
+              }
+            : t
+        ));
+      }
     }
     setShowVoidRefund(false);
   };
