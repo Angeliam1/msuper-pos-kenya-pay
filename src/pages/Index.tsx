@@ -14,6 +14,9 @@ import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
 import { VoidRefundTransaction } from '@/components/pos/VoidRefundTransaction';
 import { Reports } from '@/components/pos/Reports';
 import { Settings } from '@/components/pos/Settings';
+import { LoyaltyManagement } from '@/components/pos/LoyaltyManagement';
+import { MultiStoreManagement } from '@/components/pos/MultiStoreManagement';
+import { ReturnsManagement } from '@/components/pos/ReturnsManagement';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, Scan, Ban } from 'lucide-react';
@@ -327,6 +330,18 @@ const Index = () => {
     console.log('Settings saved:', newSettings);
   };
 
+  const updateProductPrice = (id: string, newPrice: number) => {
+    setProducts(prev => prev.map(product => {
+      if (product.id === id) {
+        const originalPrice = product.price;
+        // Prevent price from going below original price
+        const adjustedPrice = Math.max(originalPrice, newPrice);
+        return { ...product, price: adjustedPrice };
+      }
+      return product;
+    }));
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'pos':
@@ -373,7 +388,7 @@ const Index = () => {
                   onClose={() => setShowVoidRefund(false)}
                 />
               ) : (
-                <ProductList products={products} />
+                <ProductList products={products} onAddToCart={addToCart} />
               )}
             </div>
             <div className="space-y-4">
@@ -423,6 +438,20 @@ const Index = () => {
         return <ProductManagement products={products} onAddProduct={addProduct} onUpdateProduct={updateProduct} onDeleteProduct={deleteProduct} />;
       case 'customers':
         return <CustomerManagement customers={customers} onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} />;
+      case 'loyalty':
+        return <LoyaltyManagement customers={customers} onUpdateCustomer={updateCustomer} />;
+      case 'stores':
+        return <MultiStoreManagement />;
+      case 'returns':
+        return <ReturnsManagement transactions={transactions} onRefundTransaction={handleRefundTransaction} />;
+      case 'expenses':
+        return <div className="p-8 text-center text-gray-500">Expenses Management - Coming Soon</div>;
+      case 'purchases':
+        return <div className="p-8 text-center text-gray-500">Purchase Orders Management - Coming Soon</div>;
+      case 'stock-take':
+        return <div className="p-8 text-center text-gray-500">Stock Take Management - Coming Soon</div>;
+      case 'sms':
+        return <div className="p-8 text-center text-gray-500">SMS Center - Coming Soon</div>;
       case 'hire-purchase':
         return <HirePurchaseComponent totalAmount={0} customers={customers} hirePurchases={hirePurchases} onCreateHirePurchase={handleCreateHirePurchase} onCancel={() => {}} />;
       case 'staff':

@@ -14,7 +14,14 @@ import {
   Settings as SettingsIcon, 
   FileText,
   Menu,
-  X
+  X,
+  Gift,
+  Store,
+  Receipt,
+  DollarSign,
+  ShoppingBag,
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,6 +38,13 @@ const navigationItems = [
   { id: 'history', label: 'History', icon: History },
   { id: 'products', label: 'Products', icon: Package },
   { id: 'customers', label: 'Customers', icon: Users },
+  { id: 'loyalty', label: 'Loyalty Points', icon: Gift },
+  { id: 'stores', label: 'Multi Store', icon: Store },
+  { id: 'returns', label: 'Returns', icon: Receipt },
+  { id: 'expenses', label: 'Expenses', icon: DollarSign },
+  { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
+  { id: 'stock-take', label: 'Stock Take', icon: TrendingUp },
+  { id: 'sms', label: 'SMS Center', icon: MessageSquare },
   { id: 'hire-purchase', label: 'Hire Purchase', icon: CreditCard },
   { id: 'staff', label: 'Staff', icon: Shield },
   { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
@@ -69,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen
           </div>
         </div>
         
-        <nav className="p-4">
+        <nav className="p-4 overflow-y-auto max-h-[calc(100vh-80px)]">
           <ul className="space-y-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
@@ -77,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen
                 <li key={item.id}>
                   <Button
                     variant={activeTab === item.id ? "default" : "ghost"}
-                    className="w-full justify-start"
+                    className="w-full justify-start text-sm"
                     onClick={() => {
                       onTabChange(item.id);
                       // Close sidebar on mobile after selection
