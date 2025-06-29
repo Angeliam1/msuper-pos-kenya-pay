@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ProductList } from '@/components/pos/ProductList';
 import { Cart } from '@/components/pos/Cart';
@@ -17,6 +18,7 @@ import { Settings } from '@/components/pos/Settings';
 import { LoyaltyManagement } from '@/components/pos/LoyaltyManagement';
 import { MultiStoreManagement } from '@/components/pos/MultiStoreManagement';
 import { ReturnsManagement } from '@/components/pos/ReturnsManagement';
+import { QuickAddProduct } from '@/components/pos/QuickAddProduct';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, Scan, Ban, Plus } from 'lucide-react';
