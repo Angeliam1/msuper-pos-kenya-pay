@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,29 @@ interface CartProps {
   onSplitPayment: () => void;
   onHirePurchase: () => void;
   onHoldTransaction: () => void;
+  storeSettings: {
+    storeName: string;
+    storeAddress: string;
+    storePhone: string;
+    storeEmail: string;
+    paybill: string;
+    showStoreName: boolean;
+    showStoreAddress: boolean;
+    showStorePhone: boolean;
+    showCustomerName: boolean;
+    showCustomerPhone: boolean;
+    showCustomerAddress: boolean;
+    showNotes: boolean;
+    receiptHeader: string;
+    receiptFooter: string;
+    showBarcode: boolean;
+  };
+  customer?: {
+    name: string;
+    phone: string;
+    address: string;
+  };
+  notes?: string;
 }
 
 export const Cart: React.FC<CartProps> = ({ 
@@ -25,7 +47,10 @@ export const Cart: React.FC<CartProps> = ({
   onCompleteTransaction,
   onSplitPayment,
   onHirePurchase,
-  onHoldTransaction
+  onHoldTransaction,
+  storeSettings,
+  customer,
+  notes
 }) => {
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -88,6 +113,9 @@ export const Cart: React.FC<CartProps> = ({
           setShowReceipt(false);
           setCurrentTransaction(null);
         }}
+        storeSettings={storeSettings}
+        customer={customer}
+        notes={notes}
       />
     );
   }
