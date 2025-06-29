@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ProductList } from '@/components/pos/ProductList';
 import { Cart } from '@/components/pos/Cart';
@@ -81,6 +80,25 @@ const Index = () => {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showVoidRefund, setShowVoidRefund] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+
+  // Store settings state
+  const [storeSettings, setStoreSettings] = useState({
+    storeName: 'TOPTEN ELECTRONICS LTD',
+    storeAddress: 'Githunguri Town Next To Main Market',
+    storePhone: '0725333337',
+    storeEmail: 'info@topten.com',
+    paybill: 'Paybill 247247 Acc 333337',
+    showStoreName: true,
+    showStoreAddress: true,
+    showStorePhone: true,
+    showCustomerName: true,
+    showCustomerPhone: true,
+    showCustomerAddress: true,
+    showNotes: true,
+    receiptHeader: 'Thank you for shopping with us!',
+    receiptFooter: 'Visit us again soon!',
+    showBarcode: true
+  });
 
   const addToCart = (product: Product) => {
     // Prevent adding out of stock items
@@ -330,6 +348,7 @@ const Index = () => {
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const handleSaveSettings = (newSettings: any) => {
+    setStoreSettings(newSettings);
     console.log('Settings saved:', newSettings);
   };
 
@@ -458,6 +477,7 @@ const Index = () => {
                 onSplitPayment={() => setShowSplitPayment(true)}
                 onHirePurchase={() => setShowHirePurchase(true)}
                 onHoldTransaction={() => setShowHoldTransaction(true)}
+                storeSettings={storeSettings}
               />
             </div>
           </div>
