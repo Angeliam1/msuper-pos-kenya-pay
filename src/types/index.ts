@@ -1,4 +1,3 @@
-
 export interface Product {
   id: string;
   name: string;
@@ -23,6 +22,7 @@ export interface Customer {
   address?: string;
   creditLimit: number;
   outstandingBalance: number;
+  loyaltyPoints?: number;
   createdAt: Date;
 }
 
