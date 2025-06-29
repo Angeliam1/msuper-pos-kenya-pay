@@ -2,14 +2,16 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { CartItem, Transaction, PaymentSplit } from '@/types';
-import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split, Pause } from 'lucide-react';
+import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split, Pause, Edit3 } from 'lucide-react';
 import { MPesaPayment } from './MPesaPayment';
 import { Receipt } from './Receipt';
 
 interface CartProps {
   items: CartItem[];
   onUpdateItem: (id: string, quantity: number) => void;
+  onUpdateItemPrice: (id: string, newPrice: number) => void;
   onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string) => Transaction;
   onSplitPayment: () => void;
   onHirePurchase: () => void;
@@ -18,7 +20,8 @@ interface CartProps {
 
 export const Cart: React.FC<CartProps> = ({ 
   items, 
-  onUpdateItem, 
+  onUpdateItem,
+  onUpdateItemPrice,
   onCompleteTransaction,
   onSplitPayment,
   onHirePurchase,
@@ -27,15 +30,15 @@ export const Cart: React.FC<CartProps> = ({
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
+  const [tempPrice, setTempPrice] = useState<string>('');
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
   const handleQuantityChange = (id: string, newQuantity: number) => {
-    // Prevent negative quantities
     if (newQuantity < 0) return;
     
-    // Find the item to check stock
     const item = items.find(i => i.id === id);
     if (item && newQuantity > item.stock) {
       alert(`Cannot add more items. Only ${item.stock} in stock.`);
@@ -43,6 +46,25 @@ export const Cart: React.FC<CartProps> = ({
     }
     
     onUpdateItem(id, newQuantity);
+  };
+
+  const handlePriceEdit = (item: CartItem) => {
+    setEditingPrice(item.id);
+    setTempPrice(item.price.toString());
+  };
+
+  const handlePriceUpdate = (item: CartItem) => {
+    const newPrice = parseFloat(tempPrice);
+    const originalPrice = item.price; // This should be the original set price from the product
+    
+    if (isNaN(newPrice) || newPrice < originalPrice) {
+      alert(`Price cannot be lower than the original price of KES ${originalPrice.toLocaleString()}`);
+      setEditingPrice(null);
+      return;
+    }
+    
+    onUpdateItemPrice(item.id, newPrice);
+    setEditingPrice(null);
   };
 
   const handleCashPayment = () => {
@@ -82,54 +104,112 @@ export const Cart: React.FC<CartProps> = ({
 
   return (
     <Card className="h-fit">
-      <CardHeader>
-        <CardTitle>Shopping Cart ({items.length} items)</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">
+          Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4">
         {items.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">Cart is empty</p>
+          <p className="text-gray-500 text-center py-6 sm:py-8 text-sm">Cart is empty</p>
         ) : (
           <>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
               {items.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm">{item.name}</h4>
-                    <p className="text-green-600 font-semibold">{formatPrice(item.price)}</p>
-                    <p className="text-xs text-gray-500">Stock: {item.stock}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">{item.quantity}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                      disabled={item.quantity >= item.stock}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => onUpdateItem(item.id, 0)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                <div key={item.id} className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-xs sm:text-sm truncate">{item.name}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          {editingPrice === item.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={tempPrice}
+                                onChange={(e) => setTempPrice(e.target.value)}
+                                className="h-6 w-20 text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => handlePriceUpdate(item)}
+                                className="h-6 px-2 text-xs"
+                              >
+                                ✓
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingPrice(null)}
+                                className="h-6 px-2 text-xs"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <span className="text-green-600 font-semibold text-xs sm:text-sm">
+                                {formatPrice(item.price)}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handlePriceEdit(item)}
+                                className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">Stock: {item.stock}</p>
+                      </div>
+                      
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onUpdateItem(item.id, 0)}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-6 sm:w-8 text-center font-medium text-sm">{item.quantity}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                          disabled={item.quantity >= item.stock}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      <span className="font-semibold text-xs sm:text-sm text-green-600">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="border-t pt-4 space-y-4">
-              <div className="flex justify-between items-center text-lg font-bold">
+            <div className="border-t pt-3 sm:pt-4 space-y-3 sm:space-y-4">
+              <div className="flex justify-between items-center text-base sm:text-lg font-bold">
                 <span>Total:</span>
                 <span className="text-green-600">{formatPrice(total)}</span>
               </div>
@@ -137,34 +217,37 @@ export const Cart: React.FC<CartProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   onClick={() => setShowMPesaPayment(true)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10"
                   disabled={items.length === 0}
                 >
-                  <Smartphone className="h-4 w-4 mr-2" />
+                  <Smartphone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   M-Pesa
                 </Button>
                 <Button
                   onClick={handleCashPayment}
                   variant="outline"
                   disabled={items.length === 0}
+                  className="text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <Banknote className="h-4 w-4 mr-2" />
+                  <Banknote className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Cash
                 </Button>
                 <Button
                   onClick={onSplitPayment}
                   variant="outline"
                   disabled={items.length === 0}
+                  className="text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <Split className="h-4 w-4 mr-2" />
+                  <Split className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Split Pay
                 </Button>
                 <Button
                   onClick={onHirePurchase}
                   variant="outline"
                   disabled={items.length === 0}
+                  className="text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
+                  <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Hire Purchase
                 </Button>
               </div>
@@ -172,10 +255,10 @@ export const Cart: React.FC<CartProps> = ({
               <Button
                 onClick={onHoldTransaction}
                 variant="secondary"
-                className="w-full"
+                className="w-full text-xs sm:text-sm h-9 sm:h-10"
                 disabled={items.length === 0}
               >
-                <Pause className="h-4 w-4 mr-2" />
+                <Pause className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Hold Transaction
               </Button>
             </div>

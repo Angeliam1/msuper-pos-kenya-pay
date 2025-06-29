@@ -19,7 +19,7 @@ import { MultiStoreManagement } from '@/components/pos/MultiStoreManagement';
 import { ReturnsManagement } from '@/components/pos/ReturnsManagement';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
-import { Menu, Scan, Ban } from 'lucide-react';
+import { Menu, Scan, Ban, Plus } from 'lucide-react';
 import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
@@ -78,6 +78,7 @@ const Index = () => {
   const [showHoldTransaction, setShowHoldTransaction] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showVoidRefund, setShowVoidRefund] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   const addToCart = (product: Product) => {
     // Prevent adding out of stock items
@@ -333,21 +334,34 @@ const Index = () => {
   const updateProductPrice = (id: string, newPrice: number) => {
     setProducts(prev => prev.map(product => {
       if (product.id === id) {
-        const originalPrice = product.price;
+        // Get original price (this should come from a separate originalPrice field in real app)
+        const originalPrice = INITIAL_PRODUCTS.find(p => p.id === id)?.price || product.price;
+        
         // Prevent price from going below original price
-        const adjustedPrice = Math.max(originalPrice, newPrice);
-        return { ...product, price: adjustedPrice };
+        if (newPrice < originalPrice) {
+          alert(`Price cannot be lower than the original price of KES ${originalPrice.toLocaleString()}`);
+          return product;
+        }
+        
+        return { ...product, price: newPrice };
       }
       return product;
     }));
+
+    // Update cart items with new price
+    setCartItems(prev => prev.map(item => 
+      item.id === id ? { ...item, price: newPrice } : item
+    ));
   };
 
+  const categories = Array.from(new Set(products.map(p => p.category)));
+  
   const renderContent = () => {
     switch (activeTab) {
       case 'pos':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="lg:col-span-2 order-2 lg:order-1">
               {showSplitPayment ? (
                 <SplitPayment
                   totalAmount={cartTotal}
@@ -388,33 +402,51 @@ const Index = () => {
                   onClose={() => setShowVoidRefund(false)}
                 />
               ) : (
-                <ProductList products={products} onAddToCart={addToCart} />
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Products</h3>
+                    <Button
+                      onClick={() => setShowQuickAdd(true)}
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                    >
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      Quick Add
+                    </Button>
+                  </div>
+                  <ProductList products={products} onAddToCart={addToCart} />
+                </>
               )}
             </div>
-            <div className="space-y-4">
-              <div className="flex gap-2">
+            
+            <div className="order-1 lg:order-2 space-y-3 sm:space-y-4">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => setShowBarcodeScanner(true)}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Scan className="h-4 w-4" />
+                  <Scan className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Scanner</span>
+                  <span className="sm:hidden">Scan</span>
                 </Button>
                 <Button
                   onClick={() => setShowVoidRefund(true)}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Ban className="h-4 w-4" />
+                  <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Void/Refund</span>
+                  <span className="sm:hidden">Void</span>
                 </Button>
               </div>
+              
               <Cart 
                 items={cartItems}
                 onUpdateItem={updateCartItem}
+                onUpdateItemPrice={updateProductPrice}
                 onCompleteTransaction={(paymentMethod, mpesaReference) => {
                   const splits: PaymentSplit[] = [
                     { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
@@ -476,18 +508,18 @@ const Index = () => {
       
       <div className="flex-1 flex flex-col">
         <header className="bg-white shadow-sm border-b">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden"
+                className="lg:hidden h-8 w-8 p-0"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">MSUPER POS</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">MSUPER POS</h1>
                 <p className="text-xs text-gray-600">
                   Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
                 </p>
@@ -496,10 +528,18 @@ const Index = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:ml-0">
+        <main className="flex-1 p-3 sm:p-4 lg:ml-0">
           {renderContent()}
         </main>
       </div>
+
+      {showQuickAdd && (
+        <QuickAddProduct
+          onAddProduct={addProduct}
+          onClose={() => setShowQuickAdd(false)}
+          categories={categories}
+        />
+      )}
     </div>
   );
 };
