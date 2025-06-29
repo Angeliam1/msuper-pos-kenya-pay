@@ -92,6 +92,25 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     alert('Test print sent to printer!');
   };
 
+  // Export settings for use by other components
+  const getStoreSettings = () => ({
+    storeName: settings.storeName,
+    storeAddress: settings.storeAddress,
+    storePhone: settings.storePhone,
+    storeEmail: settings.storeEmail,
+    paybill: settings.paybill,
+    showStoreName: settings.showStoreName,
+    showStoreAddress: settings.showStoreAddress,
+    showStorePhone: settings.showStorePhone,
+    showCustomerName: settings.showCustomerName,
+    showCustomerPhone: settings.showCustomerPhone,
+    showCustomerAddress: settings.showCustomerAddress,
+    showNotes: settings.showNotes,
+    receiptHeader: settings.receiptHeader,
+    receiptFooter: settings.receiptFooter,
+    showBarcode: settings.showBarcode
+  });
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

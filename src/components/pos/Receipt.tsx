@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Transaction } from '@/types';
-import { Printer, Download } from 'lucide-react';
+import { Printer, Download, QrCode } from 'lucide-react';
 
 interface ReceiptProps {
   transaction: Transaction;
   onClose: () => void;
-  storeSettings?: {
+  storeSettings: {
     storeName: string;
     storeAddress: string;
     storePhone: string;
+    storeEmail: string;
     paybill: string;
     showStoreName: boolean;
     showStoreAddress: boolean;
@@ -21,6 +22,9 @@ interface ReceiptProps {
     showCustomerPhone: boolean;
     showCustomerAddress: boolean;
     showNotes: boolean;
+    receiptHeader: string;
+    receiptFooter: string;
+    showBarcode: boolean;
   };
   customer?: {
     name: string;
@@ -33,19 +37,7 @@ interface ReceiptProps {
 export const Receipt: React.FC<ReceiptProps> = ({ 
   transaction, 
   onClose, 
-  storeSettings = {
-    storeName: 'TOPTEN ELECTRONICS LTD',
-    storeAddress: 'Githunguri Town Next To Main Market',
-    storePhone: '0725333337',
-    paybill: 'Paybill 247247 Acc 333337',
-    showStoreName: true,
-    showStoreAddress: true,
-    showStorePhone: true,
-    showCustomerName: true,
-    showCustomerPhone: true,
-    showCustomerAddress: true,
-    showNotes: true
-  },
+  storeSettings,
   customer,
   notes
 }) => {
@@ -59,18 +51,41 @@ export const Receipt: React.FC<ReceiptProps> = ({
     console.log('Downloading receipt...');
   };
 
+  // Generate QR code data with transaction info for quick search
+  const generateQRData = () => {
+    const qrData = {
+      transactionId: transaction.id,
+      store: storeSettings.storeName,
+      date: new Date(transaction.timestamp).toISOString().split('T')[0],
+      total: transaction.total,
+      items: transaction.items.length,
+      customer: customer?.name || 'Walk-in'
+    };
+    return JSON.stringify(qrData);
+  };
+
+  const qrCodeData = generateQRData();
+
   return (
     <Card className="max-w-md mx-auto bg-white">
       <CardHeader className="text-center pb-2">
+        {storeSettings.receiptHeader && (
+          <div className="text-xs sm:text-sm text-gray-600 mb-2">
+            {storeSettings.receiptHeader}
+          </div>
+        )}
+        
         {storeSettings.showStoreName && (
           <CardTitle className="text-lg sm:text-xl font-bold uppercase tracking-wide">
             {storeSettings.storeName}
           </CardTitle>
         )}
+        
         <div className="text-xs sm:text-sm text-gray-800 space-y-1">
           {storeSettings.showStoreAddress && <p>{storeSettings.storeAddress}</p>}
           <p>{storeSettings.paybill}</p>
           {storeSettings.showStorePhone && <p>{storeSettings.storePhone}</p>}
+          {storeSettings.storeEmail && <p>{storeSettings.storeEmail}</p>}
         </div>
       </CardHeader>
       
@@ -78,14 +93,15 @@ export const Receipt: React.FC<ReceiptProps> = ({
         <div className="border-t border-dashed border-gray-400"></div>
         
         <div className="text-xs sm:text-sm text-gray-800">
+          <p>Receipt #: {transaction.id}</p>
           <p>Date: {new Date(transaction.timestamp).toLocaleDateString('en-GB')} {new Date(transaction.timestamp).toLocaleTimeString('en-GB', { hour12: false })}</p>
         </div>
 
         {customer && (
           <div className="text-xs sm:text-sm text-gray-800 space-y-1">
-            {storeSettings.showCustomerName && <p>Customer: {customer.name}</p>}
-            {storeSettings.showCustomerPhone && <p>Phone Number: {customer.phone}</p>}
-            {storeSettings.showCustomerAddress && <p>Address: {customer.address}</p>}
+            {storeSettings.showCustomerName && customer.name && <p>Customer: {customer.name}</p>}
+            {storeSettings.showCustomerPhone && customer.phone && <p>Phone: {customer.phone}</p>}
+            {storeSettings.showCustomerAddress && customer.address && <p>Address: {customer.address}</p>}
           </div>
         )}
 
@@ -140,16 +156,27 @@ export const Receipt: React.FC<ReceiptProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-center py-3 sm:py-4">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-black flex items-center justify-center">
-            <div className="text-white text-xs text-center">
-              QR<br/>CODE
+        {storeSettings.showBarcode && (
+          <div className="flex justify-center py-3 sm:py-4">
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-black flex items-center justify-center mb-2">
+                <QrCode className="text-white h-12 w-12 sm:h-16 sm:w-16" />
+              </div>
+              <div className="text-xs text-gray-600 text-center max-w-[200px] break-all">
+                Transaction: {transaction.id}
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {storeSettings.receiptFooter && (
+          <div className="text-center text-xs sm:text-sm text-gray-600 border-t border-dashed border-gray-400 pt-3">
+            <p>{storeSettings.receiptFooter}</p>
+          </div>
+        )}
 
         <div className="text-center text-xs sm:text-sm text-gray-600">
-          <p>{new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-GB', { hour12: false })}</p>
+          <p>Printed: {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-GB', { hour12: false })}</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 pt-4">

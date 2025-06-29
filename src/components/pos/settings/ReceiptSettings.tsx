@@ -23,6 +23,32 @@ export const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ settings, onSe
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
+          <h4 className="font-medium">Receipt Header & Footer</h4>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="receiptHeader">Header Message</Label>
+              <Input
+                id="receiptHeader"
+                value={settings.receiptHeader}
+                onChange={(e) => onSettingChange('receiptHeader', e.target.value)}
+                placeholder="Thank you for shopping with us!"
+              />
+            </div>
+            <div>
+              <Label htmlFor="receiptFooter">Footer Message</Label>
+              <Input
+                id="receiptFooter"
+                value={settings.receiptFooter}
+                onChange={(e) => onSettingChange('receiptFooter', e.target.value)}
+                placeholder="Visit us again soon!"
+              />
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
           <h4 className="font-medium">Store Information Display</h4>
           <div className="grid grid-cols-1 gap-4">
             <div className="flex items-center justify-between">
@@ -91,29 +117,25 @@ export const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ settings, onSe
         <Separator />
 
         <div className="space-y-4">
-          <h4 className="font-medium">Additional Information</h4>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="showNotes">Show Transaction Notes</Label>
-            <Switch
-              id="showNotes"
-              checked={settings.showNotes}
-              onCheckedChange={(checked) => onSettingChange('showNotes', checked)}
-            />
-          </div>
-        </div>
+          <h4 className="font-medium">Additional Elements</h4>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showNotes">Show Transaction Notes</Label>
+              <Switch
+                id="showNotes"
+                checked={settings.showNotes}
+                onCheckedChange={(checked) => onSettingChange('showNotes', checked)}
+              />
+            </div>
 
-        <Separator />
-
-        <div className="space-y-4">
-          <h4 className="font-medium">Receipt Footer</h4>
-          <div>
-            <Label htmlFor="receiptFooter">Footer Message</Label>
-            <Input
-              id="receiptFooter"
-              value={settings.receiptFooter}
-              onChange={(e) => onSettingChange('receiptFooter', e.target.value)}
-              placeholder="Thank you for shopping with us!"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showBarcode">Show QR Code/Barcode</Label>
+              <Switch
+                id="showBarcode"
+                checked={settings.showBarcode}
+                onCheckedChange={(checked) => onSettingChange('showBarcode', checked)}
+              />
+            </div>
           </div>
         </div>
       </CardContent>
