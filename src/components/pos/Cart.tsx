@@ -31,6 +31,20 @@ export const Cart: React.FC<CartProps> = ({
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
+  const handleQuantityChange = (id: string, newQuantity: number) => {
+    // Prevent negative quantities
+    if (newQuantity < 0) return;
+    
+    // Find the item to check stock
+    const item = items.find(i => i.id === id);
+    if (item && newQuantity > item.stock) {
+      alert(`Cannot add more items. Only ${item.stock} in stock.`);
+      return;
+    }
+    
+    onUpdateItem(id, newQuantity);
+  };
+
   const handleCashPayment = () => {
     const transaction = onCompleteTransaction('cash');
     setCurrentTransaction(transaction);
@@ -82,12 +96,14 @@ export const Cart: React.FC<CartProps> = ({
                   <div className="flex-1">
                     <h4 className="font-medium text-sm">{item.name}</h4>
                     <p className="text-green-600 font-semibold">{formatPrice(item.price)}</p>
+                    <p className="text-xs text-gray-500">Stock: {item.stock}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onUpdateItem(item.id, item.quantity - 1)}
+                      onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -95,7 +111,8 @@ export const Cart: React.FC<CartProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onUpdateItem(item.id, item.quantity + 1)}
+                      onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                      disabled={item.quantity >= item.stock}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>

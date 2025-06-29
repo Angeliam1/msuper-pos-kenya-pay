@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { ProductCatalog } from '@/components/pos/ProductCatalog';
+import { ProductList } from '@/components/pos/ProductList';
 import { Cart } from '@/components/pos/Cart';
 import { Dashboard } from '@/components/pos/Dashboard';
 import { TransactionHistory } from '@/components/pos/TransactionHistory';
@@ -15,9 +14,9 @@ import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
 import { VoidRefundTransaction } from '@/components/pos/VoidRefundTransaction';
 import { Reports } from '@/components/pos/Reports';
 import { Settings } from '@/components/pos/Settings';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, BarChart3, History, Package, Users, CreditCard, Shield, UserPlus, AlertTriangle, Scan, Ban, Settings as SettingsIcon, FileText } from 'lucide-react';
+import { Menu, Scan, Ban } from 'lucide-react';
 import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
@@ -66,21 +65,32 @@ const Index = () => {
   const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
   const [currentAttendant] = useState<Attendant>(INITIAL_ATTENDANTS[0]);
   
+  // UI State
+  const [activeTab, setActiveTab] = useState('pos');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   // Payment flow states
   const [showSplitPayment, setShowSplitPayment] = useState(false);
   const [showHirePurchase, setShowHirePurchase] = useState(false);
   const [showHoldTransaction, setShowHoldTransaction] = useState(false);
-
-  // New state for additional features
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showVoidRefund, setShowVoidRefund] = useState(false);
 
   const addToCart = (product: Product) => {
-    if (product.stock <= 0) return;
+    // Prevent adding out of stock items
+    if (product.stock <= 0) {
+      alert(`${product.name} is out of stock!`);
+      return;
+    }
     
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       if (existingItem) {
+        // Check if we can add more
+        if (existingItem.quantity >= product.stock) {
+          alert(`Cannot add more ${product.name}. Only ${product.stock} in stock.`);
+          return prev;
+        }
         return prev.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
@@ -95,6 +105,11 @@ const Index = () => {
     if (quantity <= 0) {
       setCartItems(prev => prev.filter(item => item.id !== id));
     } else {
+      const product = products.find(p => p.id === id);
+      if (product && quantity > product.stock) {
+        alert(`Cannot add more items. Only ${product.stock} in stock.`);
+        return;
+      }
       setCartItems(prev =>
         prev.map(item =>
           item.id === id ? { ...item, quantity } : item
@@ -308,219 +323,153 @@ const Index = () => {
 
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  // Settings management
   const handleSaveSettings = (newSettings: any) => {
     console.log('Settings saved:', newSettings);
-    // Here you would typically save to localStorage or send to backend
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'pos':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              {showSplitPayment ? (
+                <SplitPayment
+                  totalAmount={cartTotal}
+                  customers={customers}
+                  onConfirmPayment={handleSplitPaymentComplete}
+                  onCancel={() => setShowSplitPayment(false)}
+                />
+              ) : showHirePurchase ? (
+                <HirePurchaseComponent
+                  totalAmount={cartTotal}
+                  customers={customers}
+                  hirePurchases={hirePurchases}
+                  onCreateHirePurchase={handleCreateHirePurchase}
+                  onCancel={() => setShowHirePurchase(false)}
+                />
+              ) : showHoldTransaction ? (
+                <HoldTransaction
+                  items={cartItems}
+                  customers={customers}
+                  heldTransactions={heldTransactions}
+                  currentAttendant={currentAttendant.name}
+                  onHoldTransaction={handleHoldTransaction}
+                  onRetrieveTransaction={handleRetrieveTransaction}
+                  onDeleteHeldTransaction={handleDeleteHeldTransaction}
+                  onCancel={() => setShowHoldTransaction(false)}
+                />
+              ) : showBarcodeScanner ? (
+                <BarcodeScanner
+                  products={products}
+                  onProductFound={handleBarcodeProductFound}
+                  onClose={() => setShowBarcodeScanner(false)}
+                />
+              ) : showVoidRefund ? (
+                <VoidRefundTransaction
+                  transactions={transactions}
+                  onVoidTransaction={handleVoidTransaction}
+                  onRefundTransaction={handleRefundTransaction}
+                  onClose={() => setShowVoidRefund(false)}
+                />
+              ) : (
+                <ProductList products={products} />
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowBarcodeScanner(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Scan className="h-4 w-4" />
+                  <span className="hidden sm:inline">Scanner</span>
+                </Button>
+                <Button
+                  onClick={() => setShowVoidRefund(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Ban className="h-4 w-4" />
+                  <span className="hidden sm:inline">Void/Refund</span>
+                </Button>
+              </div>
+              <Cart 
+                items={cartItems}
+                onUpdateItem={updateCartItem}
+                onCompleteTransaction={(paymentMethod, mpesaReference) => {
+                  const splits: PaymentSplit[] = [
+                    { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
+                  ];
+                  return completeTransaction(splits);
+                }}
+                onSplitPayment={() => setShowSplitPayment(true)}
+                onHirePurchase={() => setShowHirePurchase(true)}
+                onHoldTransaction={() => setShowHoldTransaction(true)}
+              />
+            </div>
+          </div>
+        );
+      case 'dashboard':
+        return <Dashboard totalSales={totalSales} todaySales={todaySales} transactionCount={transactions.length} transactions={transactions} />;
+      case 'reports':
+        return <Reports transactions={transactions} products={products} attendants={attendants} />;
+      case 'history':
+        return <TransactionHistory transactions={transactions} />;
+      case 'products':
+        return <ProductManagement products={products} onAddProduct={addProduct} onUpdateProduct={updateProduct} onDeleteProduct={deleteProduct} />;
+      case 'customers':
+        return <CustomerManagement customers={customers} onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} />;
+      case 'hire-purchase':
+        return <HirePurchaseComponent totalAmount={0} customers={customers} hirePurchases={hirePurchases} onCreateHirePurchase={handleCreateHirePurchase} onCancel={() => {}} />;
+      case 'staff':
+        return <RoleManagement attendants={attendants} currentAttendant={currentAttendant} onAddAttendant={addAttendant} onUpdateAttendant={updateAttendant} />;
+      case 'alerts':
+        return <LowStockAlerts products={products} />;
+      case 'settings':
+        return <Settings onSaveSettings={handleSaveSettings} />;
+      default:
+        return <div>Page not found</div>;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="px-4 py-3">
-          <h1 className="text-xl font-bold text-gray-900">MSUPER POS</h1>
-          <p className="text-xs text-gray-600">
-            Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
-          </p>
-        </div>
-      </header>
-
-      <div className="container mx-auto p-4">
-        <Tabs defaultValue="pos" className="w-full">
-          <div className="overflow-x-auto mb-4">
-            <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg min-w-max">
-              <TabsTrigger value="pos" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <ShoppingCart className="h-4 w-4" />
-                <span className="hidden sm:inline">POS</span>
-              </TabsTrigger>
-              <TabsTrigger value="dashboard" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Reports</span>
-              </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <History className="h-4 w-4" />
-                <span className="hidden sm:inline">History</span>
-              </TabsTrigger>
-              <TabsTrigger value="products" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">Products</span>
-              </TabsTrigger>
-              <TabsTrigger value="customers" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Customers</span>
-              </TabsTrigger>
-              <TabsTrigger value="hire-purchase" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <CreditCard className="h-4 w-4" />
-                <span className="hidden sm:inline">Hire Purchase</span>
-              </TabsTrigger>
-              <TabsTrigger value="staff" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Staff</span>
-              </TabsTrigger>
-              <TabsTrigger value="alerts" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="hidden sm:inline">Alerts</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-1 px-3 py-2 text-xs whitespace-nowrap">
-                <SettingsIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Settings</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="pos" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                {showSplitPayment ? (
-                  <SplitPayment
-                    totalAmount={cartTotal}
-                    customers={customers}
-                    onConfirmPayment={handleSplitPaymentComplete}
-                    onCancel={() => setShowSplitPayment(false)}
-                  />
-                ) : showHirePurchase ? (
-                  <HirePurchaseComponent
-                    totalAmount={cartTotal}
-                    customers={customers}
-                    hirePurchases={hirePurchases}
-                    onCreateHirePurchase={handleCreateHirePurchase}
-                    onCancel={() => setShowHirePurchase(false)}
-                  />
-                ) : showHoldTransaction ? (
-                  <HoldTransaction
-                    items={cartItems}
-                    customers={customers}
-                    heldTransactions={heldTransactions}
-                    currentAttendant={currentAttendant.name}
-                    onHoldTransaction={handleHoldTransaction}
-                    onRetrieveTransaction={handleRetrieveTransaction}
-                    onDeleteHeldTransaction={handleDeleteHeldTransaction}
-                    onCancel={() => setShowHoldTransaction(false)}
-                  />
-                ) : showBarcodeScanner ? (
-                  <BarcodeScanner
-                    products={products}
-                    onProductFound={handleBarcodeProductFound}
-                    onClose={() => setShowBarcodeScanner(false)}
-                  />
-                ) : showVoidRefund ? (
-                  <VoidRefundTransaction
-                    transactions={transactions}
-                    onVoidTransaction={handleVoidTransaction}
-                    onRefundTransaction={handleRefundTransaction}
-                    onClose={() => setShowVoidRefund(false)}
-                  />
-                ) : (
-                  <ProductCatalog products={products} onAddToCart={addToCart} />
-                )}
-              </div>
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setShowBarcodeScanner(true)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Scan className="h-4 w-4" />
-                    <span className="hidden sm:inline">Scanner</span>
-                  </Button>
-                  <Button
-                    onClick={() => setShowVoidRefund(true)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Ban className="h-4 w-4" />
-                    <span className="hidden sm:inline">Void/Refund</span>
-                  </Button>
-                </div>
-                <Cart 
-                  items={cartItems}
-                  onUpdateItem={updateCartItem}
-                  onCompleteTransaction={(paymentMethod, mpesaReference) => {
-                    const splits: PaymentSplit[] = [
-                      { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
-                    ];
-                    return completeTransaction(splits);
-                  }}
-                  onSplitPayment={() => setShowSplitPayment(true)}
-                  onHirePurchase={() => setShowHirePurchase(true)}
-                  onHoldTransaction={() => setShowHoldTransaction(true)}
-                />
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
+      
+      <div className="flex-1 flex flex-col">
+        <header className="bg-white shadow-sm border-b">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">MSUPER POS</h1>
+                <p className="text-xs text-gray-600">
+                  Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
+                </p>
               </div>
             </div>
-          </TabsContent>
+          </div>
+        </header>
 
-          <TabsContent value="dashboard">
-            <Dashboard 
-              totalSales={totalSales}
-              todaySales={todaySales}
-              transactionCount={transactions.length}
-              transactions={transactions}
-            />
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <Reports 
-              transactions={transactions}
-              products={products}
-              attendants={attendants}
-            />
-          </TabsContent>
-
-          <TabsContent value="history">
-            <TransactionHistory transactions={transactions} />
-          </TabsContent>
-
-          <TabsContent value="products">
-            <ProductManagement
-              products={products}
-              onAddProduct={addProduct}
-              onUpdateProduct={updateProduct}
-              onDeleteProduct={deleteProduct}
-            />
-          </TabsContent>
-
-          <TabsContent value="customers">
-            <CustomerManagement
-              customers={customers}
-              onAddCustomer={addCustomer}
-              onUpdateCustomer={updateCustomer}
-            />
-          </TabsContent>
-
-          <TabsContent value="hire-purchase">
-            <HirePurchaseComponent
-              totalAmount={0}
-              customers={customers}
-              hirePurchases={hirePurchases}
-              onCreateHirePurchase={handleCreateHirePurchase}
-              onCancel={() => {}}
-            />
-          </TabsContent>
-
-          <TabsContent value="staff">
-            <RoleManagement
-              attendants={attendants}
-              currentAttendant={currentAttendant}
-              onAddAttendant={addAttendant}
-              onUpdateAttendant={updateAttendant}
-            />
-          </TabsContent>
-
-          <TabsContent value="alerts">
-            <LowStockAlerts products={products} />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <Settings onSaveSettings={handleSaveSettings} />
-          </TabsContent>
-        </Tabs>
+        <main className="flex-1 p-4 lg:ml-0">
+          {renderContent()}
+        </main>
       </div>
     </div>
   );
