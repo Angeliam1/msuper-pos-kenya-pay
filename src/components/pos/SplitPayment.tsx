@@ -26,7 +26,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
     { method: 'cash', amount: Math.round(totalAmount / 2) },
     { method: 'mpesa', amount: Math.round(totalAmount / 2) }
   ]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('none');
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
   
@@ -56,7 +56,8 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   const handleConfirm = () => {
     if (Math.abs(remainingAmount) < 0.01) {
-      onConfirmPayment(paymentSplits, selectedCustomerId || undefined);
+      const finalCustomerId = selectedCustomerId === 'none' ? undefined : selectedCustomerId;
+      onConfirmPayment(paymentSplits, finalCustomerId);
     }
   };
 
@@ -83,6 +84,20 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
     }
   };
 
+  // Add error boundary protection
+  if (!totalAmount || totalAmount <= 0) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-red-500">Invalid transaction amount</p>
+            <Button onClick={onCancel} className="w-full mt-4">Go Back</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <Card>
@@ -107,7 +122,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
                 <SelectValue placeholder="Select customer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No customer</SelectItem>
+                <SelectItem value="none">No customer</SelectItem>
                 {customers.map(customer => (
                   <SelectItem key={customer.id} value={customer.id}>
                     {customer.name} - {customer.phone}

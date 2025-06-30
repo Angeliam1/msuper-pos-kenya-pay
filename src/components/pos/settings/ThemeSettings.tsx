@@ -23,6 +23,94 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
     { id: 'purple', name: 'Purple', icon: Monitor, colors: ['#f3e8ff', '#a855f7', '#7c3aed'] },
   ];
 
+  const handleThemeChange = (themeId: string) => {
+    onSettingChange('theme', themeId);
+    applyThemeImmediately(themeId, settings.accentColor, settings.fontSize, settings.compactMode);
+  };
+
+  const handleAccentChange = (color: string) => {
+    onSettingChange('accentColor', color);
+    applyThemeImmediately(settings.theme, color, settings.fontSize, settings.compactMode);
+  };
+
+  const handleFontSizeChange = (size: string) => {
+    onSettingChange('fontSize', size);
+    applyThemeImmediately(settings.theme, settings.accentColor, size, settings.compactMode);
+  };
+
+  const handleCompactModeChange = (mode: string) => {
+    onSettingChange('compactMode', mode);
+    applyThemeImmediately(settings.theme, settings.accentColor, settings.fontSize, mode);
+  };
+
+  const applyThemeImmediately = (theme: string, accentColor: string, fontSize: string, compactMode: string) => {
+    const root = document.documentElement;
+    
+    // Apply theme colors
+    switch (theme) {
+      case 'dark':
+        document.body.className = 'dark';
+        root.style.setProperty('--background', '18 18 23');
+        root.style.setProperty('--foreground', '250 250 250');
+        break;
+      case 'blue':
+        document.body.className = '';
+        root.style.setProperty('--background', '219 234 254');
+        root.style.setProperty('--primary', '59 130 246');
+        break;
+      case 'green':
+        document.body.className = '';
+        root.style.setProperty('--background', '220 252 231');
+        root.style.setProperty('--primary', '34 197 94');
+        break;
+      case 'purple':
+        document.body.className = '';
+        root.style.setProperty('--background', '243 232 255');
+        root.style.setProperty('--primary', '168 85 247');
+        break;
+      default: // light
+        document.body.className = '';
+        root.style.setProperty('--background', '255 255 255');
+        root.style.setProperty('--foreground', '9 9 11');
+        break;
+    }
+
+    // Apply accent color
+    if (accentColor) {
+      const hex = accentColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      root.style.setProperty('--primary', `${r} ${g} ${b}`);
+    }
+
+    // Apply font size
+    switch (fontSize) {
+      case 'small':
+        root.style.fontSize = '14px';
+        break;
+      case 'large':
+        root.style.fontSize = '18px';
+        break;
+      default:
+        root.style.fontSize = '16px';
+        break;
+    }
+
+    // Apply compact mode
+    switch (compactMode) {
+      case 'compact':
+        root.style.setProperty('--spacing', '0.5rem');
+        break;
+      case 'spacious':
+        root.style.setProperty('--spacing', '2rem');
+        break;
+      default:
+        root.style.setProperty('--spacing', '1rem');
+        break;
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <Card>
@@ -42,7 +130,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
                   <Button
                     key={theme.id}
                     variant={settings.theme === theme.id ? 'default' : 'outline'}
-                    onClick={() => onSettingChange('theme', theme.id)}
+                    onClick={() => handleThemeChange(theme.id)}
                     className="h-20 flex-col relative overflow-hidden"
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -71,7 +159,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
                 <Button
                   key={color}
                   variant={settings.accentColor === color ? 'default' : 'outline'}
-                  onClick={() => onSettingChange('accentColor', color)}
+                  onClick={() => handleAccentChange(color)}
                   className="h-12 p-0"
                   style={{ backgroundColor: settings.accentColor === color ? color : undefined }}
                 >
@@ -88,7 +176,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
             <Label htmlFor="fontSize" className="text-sm">Font Size</Label>
             <Select
               value={settings.fontSize || 'medium'}
-              onValueChange={(value) => onSettingChange('fontSize', value)}
+              onValueChange={handleFontSizeChange}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue />
@@ -105,7 +193,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
             <Label htmlFor="compactMode" className="text-sm">Layout Style</Label>
             <Select
               value={settings.compactMode || 'normal'}
-              onValueChange={(value) => onSettingChange('compactMode', value)}
+              onValueChange={handleCompactModeChange}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue />
