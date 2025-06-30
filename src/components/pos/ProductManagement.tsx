@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Product } from '@/types';
 import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -26,21 +27,28 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    price: '',
+    buyingCost: '',
+    wholesalePrice: '',
+    retailPrice: '',
     category: '',
     stock: '',
+    unit: 'pcs',
     barcode: '',
     lowStockThreshold: ''
   });
 
   const categories = ['Beverages', 'Bakery', 'Dairy', 'Groceries', 'Electronics', 'Clothing'];
+  const units = ['pcs', 'kg', 'bundle', 'litre', 'meter', 'box'];
 
   const resetForm = () => {
     setFormData({ 
       name: '', 
-      price: '', 
+      buyingCost: '',
+      wholesalePrice: '',
+      retailPrice: '',
       category: '', 
       stock: '', 
+      unit: 'pcs',
       barcode: '', 
       lowStockThreshold: '' 
     });
@@ -50,11 +58,29 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const buyingCost = parseFloat(formData.buyingCost);
+    const wholesalePrice = parseFloat(formData.wholesalePrice);
+    const retailPrice = parseFloat(formData.retailPrice);
+
+    // Validation: buying cost <= wholesale <= retail
+    if (buyingCost > wholesalePrice) {
+      alert('Wholesale price must be greater than or equal to buying cost');
+      return;
+    }
+    if (wholesalePrice > retailPrice) {
+      alert('Retail price must be greater than or equal to wholesale price');
+      return;
+    }
+
     const productData = {
       name: formData.name,
-      price: parseFloat(formData.price),
+      buyingCost,
+      wholesalePrice,
+      retailPrice,
+      price: retailPrice, // Default selling price is retail
       category: formData.category,
       stock: parseInt(formData.stock),
+      unit: formData.unit as 'pcs' | 'kg' | 'bundle' | 'litre' | 'meter' | 'box',
       barcode: formData.barcode || undefined,
       lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 10
     };
@@ -73,9 +99,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      price: product.price.toString(),
+      buyingCost: product.buyingCost.toString(),
+      wholesalePrice: product.wholesalePrice.toString(),
+      retailPrice: product.retailPrice.toString(),
       category: product.category,
       stock: product.stock.toString(),
+      unit: product.unit,
       barcode: product.barcode || '',
       lowStockThreshold: (product.lowStockThreshold || 10).toString()
     });
@@ -102,7 +131,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -118,18 +147,44 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label htmlFor="price">Price (KES)</Label>
+                  <Label htmlFor="buyingCost">Buying Cost</Label>
                   <Input
-                    id="price"
+                    id="buyingCost"
                     type="number"
                     step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                    value={formData.buyingCost}
+                    onChange={(e) => setFormData(prev => ({ ...prev, buyingCost: e.target.value }))}
                     required
                   />
                 </div>
+                <div>
+                  <Label htmlFor="wholesalePrice">Wholesale</Label>
+                  <Input
+                    id="wholesalePrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.wholesalePrice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, wholesalePrice: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="retailPrice">Retail</Label>
+                  <Input
+                    id="retailPrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.retailPrice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, retailPrice: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label htmlFor="stock">Stock Quantity</Label>
                   <Input
@@ -140,22 +195,35 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                     required
                   />
                 </div>
+                <div>
+                  <Label htmlFor="unit">Unit</Label>
+                  <Select value={formData.unit} onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {units.map(unit => (
+                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
               <div>
                 <Label htmlFor="category">Category</Label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
               <div>
                 <Label htmlFor="barcode">Barcode (Optional)</Label>
                 <Input
@@ -165,6 +233,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                   placeholder="Enter product barcode"
                 />
               </div>
+
               <div>
                 <Label htmlFor="lowStockThreshold">Low Stock Alert (Default: 10)</Label>
                 <Input
@@ -175,6 +244,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                   placeholder="10"
                 />
               </div>
+
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1">
                   {editingProduct ? 'Update' : 'Add'} Product
@@ -206,9 +276,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                       </Badge>
                     </div>
                   </div>
-                  <p className="text-lg font-bold text-green-600">{formatPrice(product.price)}</p>
+                  <div className="space-y-1">
+                    <p className="text-lg font-bold text-green-600">{formatPrice(product.retailPrice)}</p>
+                    <p className="text-sm text-gray-600">Wholesale: {formatPrice(product.wholesalePrice)}</p>
+                    <p className="text-sm text-gray-600">Buying: {formatPrice(product.buyingCost)}</p>
+                  </div>
                   <div className="space-y-1 text-sm text-gray-600">
-                    <p>{product.category}</p>
+                    <p>{product.category} • {product.unit}</p>
                     {product.barcode && (
                       <p className="font-mono text-xs">Barcode: {product.barcode}</p>
                     )}

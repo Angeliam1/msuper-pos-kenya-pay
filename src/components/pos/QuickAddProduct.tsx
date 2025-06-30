@@ -21,27 +21,50 @@ export const QuickAddProduct: React.FC<QuickAddProductProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    price: '',
+    buyingCost: '',
+    wholesalePrice: '',
+    retailPrice: '',
     category: '',
     stock: '',
+    unit: 'pcs',
     barcode: '',
     lowStockThreshold: ''
   });
 
+  const units = ['pcs', 'kg', 'bundle', 'litre', 'meter', 'box'];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.price || !formData.category || !formData.stock) {
+    if (!formData.name || !formData.retailPrice || !formData.category || !formData.stock) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    const buyingCost = parseFloat(formData.buyingCost) || 0;
+    const wholesalePrice = parseFloat(formData.wholesalePrice) || parseFloat(formData.retailPrice);
+    const retailPrice = parseFloat(formData.retailPrice);
+
+    // Validation: buying cost <= wholesale <= retail
+    if (buyingCost > wholesalePrice) {
+      alert('Wholesale price must be greater than or equal to buying cost');
+      return;
+    }
+    if (wholesalePrice > retailPrice) {
+      alert('Retail price must be greater than or equal to wholesale price');
       return;
     }
 
     const productData: Omit<Product, 'id'> = {
       name: formData.name,
-      price: parseFloat(formData.price),
+      buyingCost,
+      wholesalePrice,
+      retailPrice,
+      price: retailPrice, // Default selling price is retail
       category: formData.category,
       stock: parseInt(formData.stock),
-      barcode: formData.barcode,
+      unit: formData.unit as 'pcs' | 'kg' | 'bundle' | 'litre' | 'meter' | 'box',
+      barcode: formData.barcode || undefined,
       lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 5
     };
 
@@ -81,21 +104,49 @@ export const QuickAddProduct: React.FC<QuickAddProductProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <Label htmlFor="price" className="text-sm">Price (KSh) *</Label>
+                <Label htmlFor="buyingCost" className="text-sm">Buying Cost</Label>
                 <Input
-                  id="price"
+                  id="buyingCost"
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  value={formData.buyingCost}
+                  onChange={(e) => handleInputChange('buyingCost', e.target.value)}
+                  className="text-sm"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="wholesalePrice" className="text-sm">Wholesale</Label>
+                <Input
+                  id="wholesalePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.wholesalePrice}
+                  onChange={(e) => handleInputChange('wholesalePrice', e.target.value)}
+                  className="text-sm"
+                  placeholder="Auto"
+                />
+              </div>
+              <div>
+                <Label htmlFor="retailPrice" className="text-sm">Retail (KSh) *</Label>
+                <Input
+                  id="retailPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.retailPrice}
+                  onChange={(e) => handleInputChange('retailPrice', e.target.value)}
                   className="text-sm"
                   required
                 />
               </div>
-              
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="stock" className="text-sm">Stock *</Label>
                 <Input
@@ -107,6 +158,25 @@ export const QuickAddProduct: React.FC<QuickAddProductProps> = ({
                   className="text-sm"
                   required
                 />
+              </div>
+              
+              <div>
+                <Label htmlFor="unit" className="text-sm">Unit</Label>
+                <Select 
+                  value={formData.unit} 
+                  onValueChange={(value) => handleInputChange('unit', value)}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map(unit => (
+                      <SelectItem key={unit} value={unit} className="text-sm">
+                        {unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
