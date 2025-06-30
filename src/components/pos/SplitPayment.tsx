@@ -26,7 +26,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
     { method: 'cash', amount: Math.round(totalAmount / 2) },
     { method: 'mpesa', amount: Math.round(totalAmount / 2) }
   ]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('none');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('walk-in');
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
   
@@ -56,7 +56,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   const handleConfirm = () => {
     if (Math.abs(remainingAmount) < 0.01) {
-      const finalCustomerId = selectedCustomerId === 'none' ? undefined : selectedCustomerId;
+      const finalCustomerId = selectedCustomerId === 'walk-in' ? undefined : selectedCustomerId;
       onConfirmPayment(paymentSplits, finalCustomerId);
     }
   };
@@ -122,7 +122,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
                 <SelectValue placeholder="Select customer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No customer</SelectItem>
+                <SelectItem value="walk-in">Walk-in Customer</SelectItem>
                 {customers.map(customer => (
                   <SelectItem key={customer.id} value={customer.id}>
                     {customer.name} - {customer.phone}
