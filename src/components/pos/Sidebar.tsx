@@ -21,7 +21,8 @@ import {
   DollarSign,
   ShoppingBag,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  Truck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,6 +39,7 @@ const navigationItems = [
   { id: 'history', label: 'History', icon: History },
   { id: 'products', label: 'Products', icon: Package },
   { id: 'customers', label: 'Customers', icon: Users },
+  { id: 'suppliers', label: 'Suppliers', icon: Truck },
   { id: 'loyalty', label: 'Loyalty Points', icon: Gift },
   { id: 'stores', label: 'Multi Store', icon: Store },
   { id: 'returns', label: 'Returns', icon: Receipt },

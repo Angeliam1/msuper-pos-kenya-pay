@@ -1,9 +1,14 @@
+
 export interface Product {
   id: string;
   name: string;
-  price: number;
+  buyingCost: number;
+  wholesalePrice: number;
+  retailPrice: number;
+  price: number; // This will be the selling price (retail by default)
   category: string;
   stock: number;
+  unit: 'pcs' | 'kg' | 'bundle' | 'litre' | 'meter' | 'box';
   image?: string;
   supplierId?: string;
   barcode?: string;
@@ -34,6 +39,34 @@ export interface Supplier {
   address?: string;
   products: string[];
   createdAt: Date;
+}
+
+export interface Expense {
+  id: string;
+  category: string;
+  amount: number;
+  description: string;
+  date: Date;
+  attendantId: string;
+}
+
+export interface Purchase {
+  id: string;
+  supplierId: string;
+  items: PurchaseItem[];
+  totalCost: number;
+  date: Date;
+  attendantId: string;
+  receiptImage?: string;
+  invoiceNumber?: string;
+}
+
+export interface PurchaseItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
 }
 
 export interface Attendant {
@@ -98,4 +131,23 @@ export interface LowStockAlert {
   currentStock: number;
   threshold: number;
   createdAt: Date;
+}
+
+export interface StoreLocation {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  manager: string;
+  status: 'active' | 'inactive';
+  totalSales: number;
+  isEditable: boolean;
+}
+
+export interface AppTheme {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  text: string;
 }

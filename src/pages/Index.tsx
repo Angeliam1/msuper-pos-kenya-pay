@@ -18,20 +18,67 @@ import { LoyaltyManagement } from '@/components/pos/LoyaltyManagement';
 import { MultiStoreManagement } from '@/components/pos/MultiStoreManagement';
 import { ReturnsManagement } from '@/components/pos/ReturnsManagement';
 import { QuickAddProduct } from '@/components/pos/QuickAddProduct';
+import { SupplierManagement } from '@/components/pos/SupplierManagement';
+import { ExpenseManagement } from '@/components/pos/ExpenseManagement';
+import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, Scan, Ban, Plus } from 'lucide-react';
-import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction } from '@/types';
+import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction, Expense, Purchase } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
-  { id: '1', name: 'Coca Cola 500ml', price: 80, category: 'Beverages', stock: 50, barcode: '1234567890123', lowStockThreshold: 20 },
-  { id: '2', name: 'White Bread', price: 60, category: 'Bakery', stock: 30, barcode: '2345678901234', lowStockThreshold: 10 },
-  { id: '3', name: 'Milk 1L', price: 120, category: 'Dairy', stock: 25, barcode: '3456789012345', lowStockThreshold: 15 },
-  { id: '4', name: 'Rice 2kg', price: 350, category: 'Groceries', stock: 20, barcode: '4567890123456', lowStockThreshold: 5 },
-  { id: '5', name: 'Cooking Oil 1L', price: 280, category: 'Groceries', stock: 15, barcode: '5678901234567', lowStockThreshold: 8 },
-  { id: '6', name: 'Sugar 2kg', price: 240, category: 'Groceries', stock: 40, barcode: '6789012345678', lowStockThreshold: 12 },
-  { id: '7', name: 'Tea Leaves 250g', price: 150, category: 'Beverages', stock: 35, barcode: '7890123456789', lowStockThreshold: 15 },
-  { id: '8', name: 'Eggs (12 pcs)', price: 380, category: 'Dairy', stock: 18, barcode: '8901234567890', lowStockThreshold: 6 },
+  { 
+    id: '1', 
+    name: 'Coca Cola 500ml', 
+    buyingCost: 60,
+    wholesalePrice: 70,
+    retailPrice: 80,
+    price: 80, 
+    category: 'Beverages', 
+    stock: 50, 
+    unit: 'pcs',
+    barcode: '1234567890123', 
+    lowStockThreshold: 20 
+  },
+  { 
+    id: '2', 
+    name: 'White Bread', 
+    buyingCost: 45,
+    wholesalePrice: 55,
+    retailPrice: 60,
+    price: 60, 
+    category: 'Bakery', 
+    stock: 30, 
+    unit: 'pcs',
+    barcode: '2345678901234', 
+    lowStockThreshold: 10 
+  },
+  { 
+    id: '3', 
+    name: 'Milk 1L', 
+    buyingCost: 100,
+    wholesalePrice: 110,
+    retailPrice: 120,
+    price: 120, 
+    category: 'Dairy', 
+    stock: 25, 
+    unit: 'litre',
+    barcode: '3456789012345', 
+    lowStockThreshold: 15 
+  },
+  { 
+    id: '4', 
+    name: 'Rice 2kg', 
+    buyingCost: 300,
+    wholesalePrice: 330,
+    retailPrice: 350,
+    price: 350, 
+    category: 'Groceries', 
+    stock: 20, 
+    unit: 'kg',
+    barcode: '4567890123456', 
+    lowStockThreshold: 5 
+  },
 ];
 
 const INITIAL_CUSTOMERS: Customer[] = [
@@ -65,6 +112,9 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
   const [attendants, setAttendants] = useState<Attendant[]>(INITIAL_ATTENDANTS);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [hirePurchases, setHirePurchases] = useState<HirePurchase[]>([]);
   const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
   const [currentAttendant] = useState<Attendant>(INITIAL_ATTENDANTS[0]);
@@ -182,6 +232,55 @@ const Index = () => {
     setTransactions(prev => [transaction, ...prev]);
     setCartItems([]);
     return transaction;
+  };
+
+  // New functions for suppliers, expenses, and purchases
+  const addSupplier = (supplierData: Omit<Supplier, 'id' | 'createdAt'>) => {
+    const newSupplier: Supplier = {
+      ...supplierData,
+      id: Date.now().toString(),
+      createdAt: new Date()
+    };
+    setSuppliers(prev => [...prev, newSupplier]);
+  };
+
+  const updateSupplier = (id: string, supplierData: Partial<Supplier>) => {
+    setSuppliers(prev => prev.map(supplier =>
+      supplier.id === id ? { ...supplier, ...supplierData } : supplier
+    ));
+  };
+
+  const deleteSupplier = (id: string) => {
+    setSuppliers(prev => prev.filter(supplier => supplier.id !== id));
+  };
+
+  const addExpense = (expenseData: Omit<Expense, 'id'>) => {
+    const newExpense: Expense = {
+      ...expenseData,
+      id: Date.now().toString()
+    };
+    setExpenses(prev => [...prev, newExpense]);
+  };
+
+  const addPurchase = (purchaseData: Omit<Purchase, 'id'>) => {
+    const newPurchase: Purchase = {
+      ...purchaseData,
+      id: Date.now().toString()
+    };
+    setPurchases(prev => [...prev, newPurchase]);
+  };
+
+  const updateProductStock = (productId: string, additionalStock: number, newBuyingCost: number) => {
+    setProducts(prev => prev.map(product => {
+      if (product.id === productId) {
+        return {
+          ...product,
+          stock: product.stock + additionalStock,
+          buyingCost: newBuyingCost
+        };
+      }
+      return product;
+    }));
   };
 
   // Hold and retrieve transaction functions
@@ -380,12 +479,9 @@ const Index = () => {
   const updateProductPrice = (id: string, newPrice: number) => {
     setProducts(prev => prev.map(product => {
       if (product.id === id) {
-        // Get original price (this should come from a separate originalPrice field in real app)
-        const originalPrice = INITIAL_PRODUCTS.find(p => p.id === id)?.price || product.price;
-        
-        // Prevent price from going below original price
-        if (newPrice < originalPrice) {
-          alert(`Price cannot be lower than the original price of KES ${originalPrice.toLocaleString()}`);
+        // Prevent price from going below wholesale price
+        if (newPrice < (product.wholesalePrice || product.price)) {
+          alert(`Price cannot be lower than the wholesale price of KES ${(product.wholesalePrice || product.price).toLocaleString()}`);
           return product;
         }
         
@@ -523,10 +619,12 @@ const Index = () => {
         return <MultiStoreManagement />;
       case 'returns':
         return <ReturnsManagement transactions={transactions} onRefundTransaction={handleRefundTransaction} />;
+      case 'suppliers':
+        return <SupplierManagement suppliers={suppliers} onAddSupplier={addSupplier} onUpdateSupplier={updateSupplier} onDeleteSupplier={deleteSupplier} />;
       case 'expenses':
-        return <div className="p-8 text-center text-gray-500">Expenses Management - Coming Soon</div>;
+        return <ExpenseManagement expenses={expenses} attendants={attendants} currentAttendant={currentAttendant} onAddExpense={addExpense} />;
       case 'purchases':
-        return <div className="p-8 text-center text-gray-500">Purchase Orders Management - Coming Soon</div>;
+        return <PurchaseManagement purchases={purchases} suppliers={suppliers} products={products} currentAttendantId={currentAttendant.id} onAddPurchase={addPurchase} onUpdateProductStock={updateProductStock} />;
       case 'stock-take':
         return <div className="p-8 text-center text-gray-500">Stock Take Management - Coming Soon</div>;
       case 'sms':

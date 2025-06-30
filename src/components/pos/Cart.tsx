@@ -57,6 +57,8 @@ export const Cart: React.FC<CartProps> = ({
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
+  const [editingQuantity, setEditingQuantity] = useState<string | null>(null);
+  const [tempQuantity, setTempQuantity] = useState<string>('');
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
@@ -73,6 +75,27 @@ export const Cart: React.FC<CartProps> = ({
     onUpdateItem(id, newQuantity);
   };
 
+  const handleDirectQuantityEdit = (item: CartItem) => {
+    setEditingQuantity(item.id);
+    setTempQuantity(item.quantity.toString());
+  };
+
+  const handleQuantityUpdate = (item: CartItem) => {
+    const newQuantity = parseInt(tempQuantity);
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      setEditingQuantity(null);
+      return;
+    }
+    if (newQuantity > item.stock) {
+      alert(`Cannot add more items. Only ${item.stock} in stock.`);
+      setEditingQuantity(null);
+      return;
+    }
+    
+    onUpdateItem(item.id, newQuantity);
+    setEditingQuantity(null);
+  };
+
   const handlePriceEdit = (item: CartItem) => {
     setEditingPrice(item.id);
     setTempPrice(item.price.toString());
@@ -80,10 +103,10 @@ export const Cart: React.FC<CartProps> = ({
 
   const handlePriceUpdate = (item: CartItem) => {
     const newPrice = parseFloat(tempPrice);
-    const originalPrice = item.price; // This should be the original set price from the product
+    const wholesalePrice = item.wholesalePrice || item.price;
     
-    if (isNaN(newPrice) || newPrice < originalPrice) {
-      alert(`Price cannot be lower than the original price of KES ${originalPrice.toLocaleString()}`);
+    if (isNaN(newPrice) || newPrice < wholesalePrice) {
+      alert(`Price cannot be lower than the wholesale price of KES ${wholesalePrice.toLocaleString()}`);
       setEditingPrice(null);
       return;
     }
@@ -191,7 +214,9 @@ export const Cart: React.FC<CartProps> = ({
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500">Stock: {item.stock}</p>
+                        <p className="text-xs text-gray-500">
+                          Stock: {item.stock} | Unit: {item.unit} | Wholesale: {formatPrice(item.wholesalePrice || item.price)}
+                        </p>
                       </div>
                       
                       <Button
@@ -215,7 +240,34 @@ export const Cart: React.FC<CartProps> = ({
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
-                        <span className="w-6 sm:w-8 text-center font-medium text-sm">{item.quantity}</span>
+                        
+                        {editingQuantity === item.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="1"
+                              max={item.stock}
+                              value={tempQuantity}
+                              onChange={(e) => setTempQuantity(e.target.value)}
+                              className="w-16 h-6 text-xs text-center"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleQuantityUpdate(item)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              ✓
+                            </Button>
+                          </div>
+                        ) : (
+                          <span 
+                            className="w-6 sm:w-8 text-center font-medium text-sm cursor-pointer hover:bg-gray-200 rounded px-1"
+                            onClick={() => handleDirectQuantityEdit(item)}
+                          >
+                            {item.quantity}
+                          </span>
+                        )}
+                        
                         <Button
                           size="sm"
                           variant="outline"
