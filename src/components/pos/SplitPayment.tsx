@@ -23,7 +23,8 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   onCancel
 }) => {
   const [paymentSplits, setPaymentSplits] = useState<PaymentSplit[]>([
-    { method: 'cash', amount: totalAmount }
+    { method: 'cash', amount: Math.round(totalAmount / 2) },
+    { method: 'mpesa', amount: Math.round(totalAmount / 2) }
   ]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
@@ -33,13 +34,14 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   const remainingAmount = totalAmount - totalSplits;
 
   const addSplit = () => {
-    setPaymentSplits([...paymentSplits, { method: 'cash', amount: 0 }]);
+    setPaymentSplits([...paymentSplits, { method: 'cash', amount: Math.max(0, remainingAmount) }]);
   };
 
   const updateSplit = (index: number, field: keyof PaymentSplit, value: any) => {
     const newSplits = [...paymentSplits];
     if (field === 'amount') {
-      newSplits[index] = { ...newSplits[index], [field]: Number(value) || 0 };
+      const numValue = Number(value) || 0;
+      newSplits[index] = { ...newSplits[index], [field]: Math.max(0, numValue) };
     } else {
       newSplits[index] = { ...newSplits[index], [field]: value };
     }
@@ -66,9 +68,8 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
     }
   };
 
-  // Auto-balance the last split when others change
-  useEffect(() => {
-    if (paymentSplits.length > 1) {
+  const balanceLastSplit = () => {
+    if (paymentSplits.length > 0) {
       const lastIndex = paymentSplits.length - 1;
       const otherSplitsTotal = paymentSplits
         .slice(0, lastIndex)
@@ -76,143 +77,160 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
       
       const remainingForLast = Math.max(0, totalAmount - otherSplitsTotal);
       
-      if (paymentSplits[lastIndex].amount !== remainingForLast) {
-        const newSplits = [...paymentSplits];
-        newSplits[lastIndex] = { ...newSplits[lastIndex], amount: remainingForLast };
-        setPaymentSplits(newSplits);
-      }
+      const newSplits = [...paymentSplits];
+      newSplits[lastIndex] = { ...newSplits[lastIndex], amount: remainingForLast };
+      setPaymentSplits(newSplits);
     }
-  }, [paymentSplits, totalAmount]);
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <CardTitle>Split Payment</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-center p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-gray-600">Total Amount</p>
-          <p className="text-2xl font-bold text-blue-600">{formatPrice(totalAmount)}</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Customer (Optional)</Label>
-          <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">No customer</SelectItem>
-              {customers.map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.name} - {customer.phone}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <Label>Payment Methods</Label>
-            <Button size="sm" variant="outline" onClick={addSplit}>
-              <Plus className="h-3 w-3 mr-1" />
-              Add Split
+    <div className="max-w-2xl mx-auto">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={onCancel}>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
+            <CardTitle>Split Payment</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-gray-600">Total Amount</p>
+            <p className="text-2xl font-bold text-blue-600">{formatPrice(totalAmount)}</p>
           </div>
 
-          {paymentSplits.map((split, index) => (
-            <div key={index} className="flex gap-2 items-end p-3 border rounded-lg">
-              <div className="flex-1">
-                <Label className="text-xs">Method</Label>
-                <Select
-                  value={split.method}
-                  onValueChange={(value) => updateSplit(index, 'method', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">
-                      <div className="flex items-center gap-2">
-                        <Banknote className="h-4 w-4" />
-                        Cash
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="mpesa">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="h-4 w-4" />
-                        M-Pesa
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="credit">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Credit
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex-1">
-                <Label className="text-xs">Amount</Label>
-                <Input
-                  type="number"
-                  value={split.amount || ''}
-                  onChange={(e) => updateSplit(index, 'amount', e.target.value)}
-                  placeholder="0"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
+          <div className="space-y-2">
+            <Label>Customer (Optional)</Label>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No customer</SelectItem>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name} - {customer.phone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-              {split.method === 'mpesa' && (
-                <div className="flex-1">
-                  <Label className="text-xs">Reference</Label>
-                  <Input
-                    value={split.reference || ''}
-                    onChange={(e) => updateSplit(index, 'reference', e.target.value)}
-                    placeholder="MPE123..."
-                  />
-                </div>
-              )}
-
-              {paymentSplits.length > 1 && (
-                <Button size="sm" variant="outline" onClick={() => removeSplit(index)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              )}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <Label className="text-lg font-medium">Payment Methods</Label>
+              <Button size="sm" variant="outline" onClick={addSplit}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Split
+              </Button>
             </div>
-          ))}
-        </div>
 
-        <div className="border-t pt-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Total Splits:</span>
-            <span>{formatPrice(totalSplits)}</span>
-          </div>
-          <div className="flex justify-between font-medium">
-            <span>Remaining:</span>
-            <Badge variant={Math.abs(remainingAmount) < 0.01 ? 'default' : 'destructive'}>
-              {formatPrice(remainingAmount)}
-            </Badge>
-          </div>
-        </div>
+            {paymentSplits.map((split, index) => (
+              <div key={index} className="p-4 border rounded-lg bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Payment Method</Label>
+                    <Select
+                      value={split.method}
+                      onValueChange={(value) => updateSplit(index, 'method', value)}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="h-4 w-4" />
+                            Cash
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="mpesa">
+                          <div className="flex items-center gap-2">
+                            <Smartphone className="h-4 w-4" />
+                            M-Pesa
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="credit">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            Credit
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Amount (KES)</Label>
+                    <Input
+                      type="number"
+                      value={split.amount || ''}
+                      onChange={(e) => updateSplit(index, 'amount', e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                      className="mt-1"
+                    />
+                  </div>
 
-        <Button
-          onClick={handleConfirm}
-          className="w-full"
-          disabled={Math.abs(remainingAmount) > 0.01}
-        >
-          Confirm Split Payment
-        </Button>
-      </CardContent>
-    </Card>
+                  {split.method === 'mpesa' && (
+                    <div>
+                      <Label className="text-sm font-medium">M-Pesa Reference</Label>
+                      <Input
+                        value={split.reference || ''}
+                        onChange={(e) => updateSplit(index, 'reference', e.target.value)}
+                        placeholder="Enter M-Pesa code"
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center mt-4">
+                  <div className="flex items-center gap-2">
+                    {getPaymentIcon(split.method)}
+                    <span className="font-medium">{formatPrice(split.amount || 0)}</span>
+                  </div>
+                  
+                  {paymentSplits.length > 1 && (
+                    <Button size="sm" variant="destructive" onClick={() => removeSplit(index)}>
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex justify-between text-lg">
+              <span className="font-medium">Total Splits:</span>
+              <span className="font-bold">{formatPrice(totalSplits)}</span>
+            </div>
+            <div className="flex justify-between text-lg">
+              <span className="font-medium">Remaining:</span>
+              <Badge variant={Math.abs(remainingAmount) < 0.01 ? 'default' : 'destructive'} className="text-sm">
+                {formatPrice(remainingAmount)}
+              </Badge>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button onClick={balanceLastSplit} variant="outline" className="flex-1">
+                Auto Balance
+              </Button>
+              <Button
+                onClick={handleConfirm}
+                className="flex-1"
+                disabled={Math.abs(remainingAmount) > 0.01}
+              >
+                Confirm Payment
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

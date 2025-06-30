@@ -77,6 +77,7 @@ export interface Attendant {
   role: 'admin' | 'manager' | 'cashier';
   permissions: string[];
   isActive: boolean;
+  assignedStoreId?: string;
   createdAt: Date;
 }
 

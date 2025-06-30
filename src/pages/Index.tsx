@@ -24,7 +24,7 @@ import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, Scan, Ban, Plus } from 'lucide-react';
-import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction, Expense, Purchase } from '@/types';
+import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction, Expense, Purchase, StoreLocation } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
   { 
@@ -149,6 +149,44 @@ const Index = () => {
     receiptFooter: 'Visit us again soon!',
     showBarcode: true
   });
+
+  // Store management states
+  const [stores, setStores] = useState<StoreLocation[]>([]);
+
+  // New store management functions
+  const addStore = (storeData: Omit<StoreLocation, 'id'>) => {
+    const newStore: StoreLocation = {
+      ...storeData,
+      id: Date.now().toString()
+    };
+    setStores(prev => [...prev, newStore]);
+  };
+
+  const updateStore = (id: string, storeData: Partial<StoreLocation>) => {
+    setStores(prev => prev.map(store =>
+      store.id === id ? { ...store, ...storeData } : store
+    ));
+  };
+
+  const importProducts = (fromStoreId: string, toStoreId: string, productIds: string[]) => {
+    console.log(`Importing products from store ${fromStoreId} to store ${toStoreId}:`, productIds);
+    // In a real app, this would handle the actual import logic
+  };
+
+  const assignStaffToStore = (attendantId: string, storeId: string) => {
+    setAttendants(prev => prev.map(attendant =>
+      attendant.id === attendantId 
+        ? { ...attendant, assignedStoreId: storeId }
+        : attendant
+    ));
+  };
+
+  const handleCompleteTransactionWithCustomer = (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string, customerId?: string): Transaction => {
+    const splits: PaymentSplit[] = [
+      { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
+    ];
+    return completeTransaction(splits, customerId);
+  };
 
   const addToCart = (product: Product) => {
     // Prevent adding out of stock items
@@ -587,17 +625,14 @@ const Index = () => {
               
               <Cart 
                 items={cartItems}
+                customers={customers}
                 onUpdateItem={updateCartItem}
                 onUpdateItemPrice={updateProductPrice}
-                onCompleteTransaction={(paymentMethod, mpesaReference) => {
-                  const splits: PaymentSplit[] = [
-                    { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
-                  ];
-                  return completeTransaction(splits);
-                }}
+                onCompleteTransaction={handleCompleteTransactionWithCustomer}
                 onSplitPayment={() => setShowSplitPayment(true)}
                 onHirePurchase={() => setShowHirePurchase(true)}
                 onHoldTransaction={() => setShowHoldTransaction(true)}
+                onAddCustomer={addCustomer}
                 storeSettings={storeSettings}
               />
             </div>
@@ -616,7 +651,17 @@ const Index = () => {
       case 'loyalty':
         return <LoyaltyManagement customers={customers} onUpdateCustomer={updateCustomer} />;
       case 'stores':
-        return <MultiStoreManagement />;
+        return (
+          <MultiStoreManagement 
+            stores={stores}
+            products={products}
+            attendants={attendants}
+            onAddStore={addStore}
+            onUpdateStore={updateStore}
+            onImportProducts={importProducts}
+            onAssignStaff={assignStaffToStore}
+          />
+        );
       case 'returns':
         return <ReturnsManagement transactions={transactions} onRefundTransaction={handleRefundTransaction} />;
       case 'suppliers':

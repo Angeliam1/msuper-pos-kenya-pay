@@ -1,20 +1,26 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CartItem, Transaction, PaymentSplit } from '@/types';
-import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split, Pause, Edit3 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CartItem, Transaction, PaymentSplit, Customer } from '@/types';
+import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split, Pause, Edit3, UserPlus } from 'lucide-react';
 import { MPesaPayment } from './MPesaPayment';
 import { Receipt } from './Receipt';
 
 interface CartProps {
   items: CartItem[];
+  customers: Customer[];
   onUpdateItem: (id: string, quantity: number) => void;
   onUpdateItemPrice: (id: string, newPrice: number) => void;
-  onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string) => Transaction;
+  onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string, customerId?: string) => Transaction;
   onSplitPayment: () => void;
   onHirePurchase: () => void;
   onHoldTransaction: () => void;
+  onAddCustomer: (customerData: Omit<Customer, 'id' | 'createdAt'>) => void;
   storeSettings: {
     storeName: string;
     storeAddress: string;
@@ -32,36 +38,55 @@ interface CartProps {
     receiptFooter: string;
     showBarcode: boolean;
   };
-  customer?: {
-    name: string;
-    phone: string;
-    address: string;
-  };
-  notes?: string;
 }
 
 export const Cart: React.FC<CartProps> = ({ 
   items, 
+  customers,
   onUpdateItem,
   onUpdateItemPrice,
   onCompleteTransaction,
   onSplitPayment,
   onHirePurchase,
   onHoldTransaction,
-  storeSettings,
-  customer,
-  notes
+  onAddCustomer,
+  storeSettings
 }) => {
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
   const [editingQuantity, setEditingQuantity] = useState<string | null>(null);
   const [tempQuantity, setTempQuantity] = useState<string>('');
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    creditLimit: 0,
+    outstandingBalance: 0
+  });
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+
+  const handleAddCustomer = () => {
+    if (newCustomer.name && newCustomer.phone) {
+      onAddCustomer(newCustomer);
+      setNewCustomer({
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
+        creditLimit: 0,
+        outstandingBalance: 0
+      });
+      setShowAddCustomer(false);
+    }
+  };
 
   const handleQuantityChange = (id: string, newQuantity: number) => {
     if (newQuantity < 0) return;
@@ -116,17 +141,19 @@ export const Cart: React.FC<CartProps> = ({
   };
 
   const handleCashPayment = () => {
-    const transaction = onCompleteTransaction('cash');
+    const transaction = onCompleteTransaction('cash', undefined, selectedCustomerId || undefined);
     setCurrentTransaction(transaction);
     setShowReceipt(true);
   };
 
   const handleMPesaPayment = (reference: string) => {
-    const transaction = onCompleteTransaction('mpesa', reference);
+    const transaction = onCompleteTransaction('mpesa', reference, selectedCustomerId || undefined);
     setCurrentTransaction(transaction);
     setShowMPesaPayment(false);
     setShowReceipt(true);
   };
+
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
   if (showReceipt && currentTransaction) {
     return (
@@ -137,8 +164,11 @@ export const Cart: React.FC<CartProps> = ({
           setCurrentTransaction(null);
         }}
         storeSettings={storeSettings}
-        customer={customer}
-        notes={notes}
+        customer={selectedCustomer ? {
+          name: selectedCustomer.name,
+          phone: selectedCustomer.phone,
+          address: selectedCustomer.address || ''
+        } : undefined}
       />
     );
   }
@@ -161,6 +191,86 @@ export const Cart: React.FC<CartProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4">
+        {/* Customer Selection */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Customer (Optional)</Label>
+          <div className="flex gap-2">
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No customer</SelectItem>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name} - {customer.phone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Customer</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Name *</Label>
+                    <Input
+                      value={newCustomer.name}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Customer name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Phone *</Label>
+                    <Input
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Email address"
+                    />
+                  </div>
+                  <div>
+                    <Label>Address</Label>
+                    <Input
+                      value={newCustomer.address}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Address"
+                    />
+                  </div>
+                  <div>
+                    <Label>Credit Limit</Label>
+                    <Input
+                      type="number"
+                      value={newCustomer.creditLimit}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, creditLimit: Number(e.target.value) || 0 }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={handleAddCustomer} className="flex-1">Add Customer</Button>
+                    <Button variant="outline" onClick={() => setShowAddCustomer(false)} className="flex-1">Cancel</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
         {items.length === 0 ? (
           <p className="text-gray-500 text-center py-6 sm:py-8 text-sm">Cart is empty</p>
         ) : (

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Settings as SettingsIcon, Store, Receipt, Printer, Shield, Smartphone, Palette } from 'lucide-react';
@@ -86,9 +86,112 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const applyTheme = (theme: string, accentColor: string, fontSize: string, compactMode: string) => {
+    const root = document.documentElement;
+    
+    // Apply theme colors
+    switch (theme) {
+      case 'dark':
+        root.style.setProperty('--background', '18 18 23');
+        root.style.setProperty('--foreground', '250 250 250');
+        root.style.setProperty('--card', '24 24 27');
+        root.style.setProperty('--card-foreground', '250 250 250');
+        root.style.setProperty('--popover', '24 24 27');
+        root.style.setProperty('--popover-foreground', '250 250 250');
+        root.style.setProperty('--primary', '142 141 148');
+        root.style.setProperty('--primary-foreground', '9 9 11');
+        root.style.setProperty('--secondary', '39 39 42');
+        root.style.setProperty('--secondary-foreground', '250 250 250');
+        root.style.setProperty('--muted', '39 39 42');
+        root.style.setProperty('--muted-foreground', '161 161 170');
+        root.style.setProperty('--accent', '39 39 42');
+        root.style.setProperty('--accent-foreground', '250 250 250');
+        root.style.setProperty('--destructive', '239 68 68');
+        root.style.setProperty('--destructive-foreground', '250 250 250');
+        root.style.setProperty('--border', '39 39 42');
+        root.style.setProperty('--input', '39 39 42');
+        root.style.setProperty('--ring', '142 141 148');
+        break;
+      case 'blue':
+        root.style.setProperty('--primary', '59 130 246');
+        root.style.setProperty('--primary-foreground', '248 250 252');
+        root.style.setProperty('--background', '219 234 254');
+        break;
+      case 'green':
+        root.style.setProperty('--primary', '34 197 94');
+        root.style.setProperty('--primary-foreground', '220 252 231');
+        root.style.setProperty('--background', '220 252 231');
+        break;
+      case 'purple':
+        root.style.setProperty('--primary', '168 85 247');
+        root.style.setProperty('--primary-foreground', '243 232 255');
+        root.style.setProperty('--background', '243 232 255');
+        break;
+      default: // light
+        root.style.setProperty('--background', '255 255 255');
+        root.style.setProperty('--foreground', '9 9 11');
+        root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '9 9 11');
+        root.style.setProperty('--popover', '255 255 255');
+        root.style.setProperty('--popover-foreground', '9 9 11');
+        root.style.setProperty('--primary', '9 9 11');
+        root.style.setProperty('--primary-foreground', '250 250 250');
+        root.style.setProperty('--secondary', '244 244 245');
+        root.style.setProperty('--secondary-foreground', '9 9 11');
+        root.style.setProperty('--muted', '244 244 245');
+        root.style.setProperty('--muted-foreground', '113 113 122');
+        root.style.setProperty('--accent', '244 244 245');
+        root.style.setProperty('--accent-foreground', '9 9 11');
+        root.style.setProperty('--destructive', '239 68 68');
+        root.style.setProperty('--destructive-foreground', '250 250 250');
+        root.style.setProperty('--border', '229 229 234');
+        root.style.setProperty('--input', '229 229 234');
+        root.style.setProperty('--ring', '9 9 11');
+        break;
+    }
+
+    // Apply accent color
+    const hex = accentColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    root.style.setProperty('--primary', `${r} ${g} ${b}`);
+
+    // Apply font size
+    switch (fontSize) {
+      case 'small':
+        root.style.fontSize = '14px';
+        break;
+      case 'large':
+        root.style.fontSize = '18px';
+        break;
+      default:
+        root.style.fontSize = '16px';
+        break;
+    }
+
+    // Apply compact mode
+    switch (compactMode) {
+      case 'compact':
+        root.style.setProperty('--spacing', '0.5rem');
+        break;
+      case 'spacious':
+        root.style.setProperty('--spacing', '2rem');
+        break;
+      default:
+        root.style.setProperty('--spacing', '1rem');
+        break;
+    }
+  };
+
+  useEffect(() => {
+    applyTheme(settings.theme, settings.accentColor, settings.fontSize, settings.compactMode);
+  }, [settings.theme, settings.accentColor, settings.fontSize, settings.compactMode]);
+
   const handleSave = () => {
     try {
       onSaveSettings(settings);
+      applyTheme(settings.theme, settings.accentColor, settings.fontSize, settings.compactMode);
       toast({
         title: "Settings Saved",
         description: "Your settings have been saved successfully.",
