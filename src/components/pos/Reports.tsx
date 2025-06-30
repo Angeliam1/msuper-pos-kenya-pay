@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +33,80 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
   const totalSales = filteredTransactions.reduce((sum, t) => sum + t.total, 0);
   const totalTransactions = filteredTransactions.length;
   const averageTransaction = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+
+  // Profit calculations
+  const totalProfit = filteredTransactions.reduce((profit, transaction) => {
+    const transactionProfit = transaction.items.reduce((itemProfit, item) => {
+      const product = products.find(p => p.id === item.id);
+      if (product) {
+        const profitPerItem = item.price - (product.buyingCost || 0);
+        return itemProfit + (profitPerItem * item.quantity);
+      }
+      return itemProfit;
+    }, 0);
+    return profit + transactionProfit;
+  }, 0);
+
+  const totalCost = filteredTransactions.reduce((cost, transaction) => {
+    const transactionCost = transaction.items.reduce((itemCost, item) => {
+      const product = products.find(p => p.id === item.id);
+      if (product) {
+        return itemCost + ((product.buyingCost || 0) * item.quantity);
+      }
+      return itemCost;
+    }, 0);
+    return cost + transactionCost;
+  }, 0);
+
+  // Stock reports
+  const generateStockReport = (type: 'all' | 'low' | 'out') => {
+    let stockData: any[] = [];
+    
+    if (type === 'all') {
+      stockData = products.map(product => ({
+        name: product.name,
+        stock: product.stock,
+        buyingCost: product.buyingCost || 0,
+        totalValue: product.stock * (product.buyingCost || 0),
+        retailPrice: product.retailPrice || product.price,
+        retailValue: product.stock * (product.retailPrice || product.price)
+      }));
+    } else if (type === 'low') {
+      stockData = products
+        .filter(product => product.stock <= product.lowStockThreshold)
+        .map(product => ({
+          name: product.name,
+          stock: product.stock,
+          threshold: product.lowStockThreshold,
+          buyingCost: product.buyingCost || 0,
+          totalValue: product.stock * (product.buyingCost || 0)
+        }));
+    } else if (type === 'out') {
+      stockData = products
+        .filter(product => product.stock === 0)
+        .map(product => ({
+          name: product.name,
+          lastBuyingCost: product.buyingCost || 0,
+          retailPrice: product.retailPrice || product.price
+        }));
+    }
+
+    // Generate CSV content
+    const headers = Object.keys(stockData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...stockData.map(row => headers.map(header => row[header]).join(','))
+    ].join('\n');
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}_stock_report_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   // Sales by Payment Type
   const paymentTypeStats = filteredTransactions.reduce((stats, transaction) => {
@@ -121,7 +194,7 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
@@ -129,6 +202,26 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatPrice(totalSales)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">{formatPrice(totalProfit)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">{formatPrice(totalCost)}</div>
           </CardContent>
         </Card>
 
@@ -151,26 +244,17 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
             <div className="text-2xl font-bold">{formatPrice(averageTransaction)}</div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Items</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(itemStats).length}</div>
-          </CardContent>
-        </Card>
       </div>
 
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="profit">Profit/Loss</TabsTrigger>
+          <TabsTrigger value="stock">Stock Reports</TabsTrigger>
           <TabsTrigger value="items">Items</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary" className="space-y-4">
@@ -192,6 +276,68 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
                   <p className="text-sm text-gray-600">Total Transactions</p>
                   <p className="text-2xl font-bold">{totalTransactions}</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="profit" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Profit & Loss Analysis</CardTitle>
+              <Button onClick={() => exportReport('profit')} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Revenue</p>
+                  <p className="text-2xl font-bold text-green-600">{formatPrice(totalSales)}</p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Cost</p>
+                  <p className="text-2xl font-bold text-red-600">{formatPrice(totalCost)}</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Net Profit</p>
+                  <p className="text-2xl font-bold text-blue-600">{formatPrice(totalProfit)}</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Profit Margin</p>
+                <p className="text-xl font-bold">
+                  {totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(2) : 0}%
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="stock" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Stock Reports</CardTitle>
+              <p className="text-sm text-gray-600">Download various stock reports</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button onClick={() => generateStockReport('all')} variant="outline" className="h-20 flex-col">
+                  <Download className="h-6 w-6 mb-2" />
+                  <span>All Stock Report</span>
+                  <span className="text-xs text-gray-500">Current stock & values</span>
+                </Button>
+                <Button onClick={() => generateStockReport('low')} variant="outline" className="h-20 flex-col">
+                  <Download className="h-6 w-6 mb-2" />
+                  <span>Low Stock Report</span>
+                  <span className="text-xs text-gray-500">Below threshold items</span>
+                </Button>
+                <Button onClick={() => generateStockReport('out')} variant="outline" className="h-20 flex-col">
+                  <Download className="h-6 w-6 mb-2" />
+                  <span>Out of Stock</span>
+                  <span className="text-xs text-gray-500">Zero stock items</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -331,58 +477,6 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
                       <TableCell>{formatPrice(stats.amount)}</TableCell>
                     </TableRow>
                   ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="transactions" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Transactions</CardTitle>
-              <Button onClick={() => exportReport('transactions')} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.slice(0, 20).map((transaction) => {
-                    const attendant = attendants.find(a => a.id === transaction.attendantId);
-                    const primaryPayment = transaction.paymentSplits[0]?.method || 'cash';
-                    return (
-                      <TableRow key={transaction.id}>
-                        <TableCell>
-                          {new Date(transaction.timestamp).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>{formatPrice(transaction.total)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {primaryPayment}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{attendant?.name || 'Unknown'}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={transaction.status === 'completed' ? 'default' : 'destructive'}
-                          >
-                            {transaction.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
                 </TableBody>
               </Table>
             </CardContent>

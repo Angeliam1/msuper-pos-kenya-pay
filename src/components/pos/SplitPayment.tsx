@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
   
-  const totalSplits = paymentSplits.reduce((sum, split) => sum + split.amount, 0);
+  const totalSplits = paymentSplits.reduce((sum, split) => sum + (Number(split.amount) || 0), 0);
   const remainingAmount = totalAmount - totalSplits;
 
   const addSplit = () => {
@@ -38,7 +38,11 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   const updateSplit = (index: number, field: keyof PaymentSplit, value: any) => {
     const newSplits = [...paymentSplits];
-    newSplits[index] = { ...newSplits[index], [field]: value };
+    if (field === 'amount') {
+      newSplits[index] = { ...newSplits[index], [field]: Number(value) || 0 };
+    } else {
+      newSplits[index] = { ...newSplits[index], [field]: value };
+    }
     setPaymentSplits(newSplits);
   };
 
@@ -61,6 +65,24 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
       default: return <Banknote className="h-4 w-4" />;
     }
   };
+
+  // Auto-balance the last split when others change
+  useEffect(() => {
+    if (paymentSplits.length > 1) {
+      const lastIndex = paymentSplits.length - 1;
+      const otherSplitsTotal = paymentSplits
+        .slice(0, lastIndex)
+        .reduce((sum, split) => sum + (Number(split.amount) || 0), 0);
+      
+      const remainingForLast = Math.max(0, totalAmount - otherSplitsTotal);
+      
+      if (paymentSplits[lastIndex].amount !== remainingForLast) {
+        const newSplits = [...paymentSplits];
+        newSplits[lastIndex] = { ...newSplits[lastIndex], amount: remainingForLast };
+        setPaymentSplits(newSplits);
+      }
+    }
+  }, [paymentSplits, totalAmount]);
 
   return (
     <Card>
@@ -142,9 +164,11 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
                 <Label className="text-xs">Amount</Label>
                 <Input
                   type="number"
-                  value={split.amount}
-                  onChange={(e) => updateSplit(index, 'amount', Number(e.target.value))}
+                  value={split.amount || ''}
+                  onChange={(e) => updateSplit(index, 'amount', e.target.value)}
                   placeholder="0"
+                  min="0"
+                  step="0.01"
                 />
               </div>
 

@@ -2,16 +2,20 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Settings as SettingsIcon, Store, Receipt, Printer, Shield } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Receipt, Printer, Shield, Smartphone, Palette } from 'lucide-react';
 import { StoreSettings } from './settings/StoreSettings';
 import { PrinterSettings } from './settings/PrinterSettings';
 import { ReceiptSettings } from './settings/ReceiptSettings';
+import { SMSSettings } from './settings/SMSSettings';
+import { ThemeSettings } from './settings/ThemeSettings';
+import { useToast } from '@/hooks/use-toast';
 
 interface SettingsProps {
   onSaveSettings: (settings: any) => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
+  const { toast } = useToast();
   const [settings, setSettings] = useState({
     // Store Settings
     storeName: 'TOPTEN ELECTRONICS LTD',
@@ -34,18 +38,30 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     receiptFooter: 'Visit us again soon!',
     showBarcode: true,
     showLogo: false,
+    customLine1: 'Paybill 247247 Acc 333337',
+    customLine2: 'KRA PIN: P123456789A',
+    additionalNotes: '',
+    
+    // SMS Settings
+    smsEnabled: false,
+    smsProvider: 'phone',
+    businessPhone: '0725333337',
+    businessName: 'TOPTEN ELECTRONICS',
+    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Thank you!',
+    paymentReminderTemplate: 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Click here to view details: {link}',
+    paymentConfirmTemplate: 'Hi {customerName}, you have paid KES {amount}. Your new balance is KES {balance}. Thank you!',
+    
+    // Theme Settings
+    theme: 'light',
+    accentColor: '#3b82f6',
+    fontSize: 'medium',
+    compactMode: 'normal',
     
     // System Settings
     lowStockThreshold: 10,
     autoBackup: true,
     backupFrequency: 'daily',
     sessionTimeout: 30,
-    
-    // Appearance
-    theme: 'light',
-    language: 'en',
-    dateFormat: 'DD/MM/YYYY',
-    timeFormat: '24h',
     
     // Security
     requirePasswordChange: false,
@@ -71,7 +87,19 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   };
 
   const handleSave = () => {
-    onSaveSettings(settings);
+    try {
+      onSaveSettings(settings);
+      toast({
+        title: "Settings Saved",
+        description: "Your settings have been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTestPrint = () => {
@@ -89,27 +117,23 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         name: settings.usbPrinterName
       }
     });
-    alert('Test print sent to printer!');
+    toast({
+      title: "Test Print",
+      description: "Test print sent to printer!",
+    });
   };
 
-  // Export settings for use by other components
-  const getStoreSettings = () => ({
-    storeName: settings.storeName,
-    storeAddress: settings.storeAddress,
-    storePhone: settings.storePhone,
-    storeEmail: settings.storeEmail,
-    paybill: settings.paybill,
-    showStoreName: settings.showStoreName,
-    showStoreAddress: settings.showStoreAddress,
-    showStorePhone: settings.showStorePhone,
-    showCustomerName: settings.showCustomerName,
-    showCustomerPhone: settings.showCustomerPhone,
-    showCustomerAddress: settings.showCustomerAddress,
-    showNotes: settings.showNotes,
-    receiptHeader: settings.receiptHeader,
-    receiptFooter: settings.receiptFooter,
-    showBarcode: settings.showBarcode
-  });
+  const handleTestSMS = () => {
+    console.log('Testing SMS with settings:', {
+      provider: settings.smsProvider,
+      phone: settings.businessPhone,
+      businessName: settings.businessName
+    });
+    toast({
+      title: "SMS Test",
+      description: "Test SMS configuration completed!",
+    });
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -122,26 +146,30 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
       </div>
 
       <Tabs defaultValue="store" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
           <TabsTrigger value="store" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
             <Store className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Store</span>
-            <span className="sm:hidden">Store</span>
+            <span>Store</span>
           </TabsTrigger>
           <TabsTrigger value="receipt" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
             <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Receipt</span>
-            <span className="sm:hidden">Receipt</span>
+            <span>Receipt</span>
           </TabsTrigger>
           <TabsTrigger value="printer" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
             <Printer className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Printer</span>
-            <span className="sm:hidden">Printer</span>
+            <span>Printer</span>
+          </TabsTrigger>
+          <TabsTrigger value="sms" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span>SMS</span>
+          </TabsTrigger>
+          <TabsTrigger value="theme" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span>Theme</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
             <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Security</span>
-            <span className="sm:hidden">Security</span>
+            <span>Security</span>
           </TabsTrigger>
         </TabsList>
 
@@ -164,6 +192,21 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
             settings={settings} 
             onSettingChange={handleSettingChange}
             onTestPrint={handleTestPrint}
+          />
+        </TabsContent>
+
+        <TabsContent value="sms" className="space-y-4 sm:space-y-6">
+          <SMSSettings 
+            settings={settings} 
+            onSettingChange={handleSettingChange}
+            onTestSMS={handleTestSMS}
+          />
+        </TabsContent>
+
+        <TabsContent value="theme" className="space-y-4 sm:space-y-6">
+          <ThemeSettings 
+            settings={settings} 
+            onSettingChange={handleSettingChange}
           />
         </TabsContent>
 
