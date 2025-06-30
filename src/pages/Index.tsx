@@ -604,7 +604,7 @@ const Index = () => {
           </div>
         );
       case 'dashboard':
-        return <Dashboard totalSales={totalSales} todaySales={todaySales} transactionCount={transactions.length} transactions={transactions} />;
+        return <Dashboard totalSales={totalSales} todaySales={todaySales} transactionCount={transactions.length} transactions={transactions} products={products} />;
       case 'reports':
         return <Reports transactions={transactions} products={products} attendants={attendants} />;
       case 'history':
