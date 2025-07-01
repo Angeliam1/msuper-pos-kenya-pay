@@ -55,7 +55,7 @@ export const Cart: React.FC<CartProps> = ({
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('no-customer');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
   const [editingQuantity, setEditingQuantity] = useState<string | null>(null);
@@ -141,13 +141,15 @@ export const Cart: React.FC<CartProps> = ({
   };
 
   const handleCashPayment = () => {
-    const transaction = onCompleteTransaction('cash', undefined, selectedCustomerId || undefined);
+    const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
+    const transaction = onCompleteTransaction('cash', undefined, finalCustomerId);
     setCurrentTransaction(transaction);
     setShowReceipt(true);
   };
 
   const handleMPesaPayment = (reference: string) => {
-    const transaction = onCompleteTransaction('mpesa', reference, selectedCustomerId || undefined);
+    const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
+    const transaction = onCompleteTransaction('mpesa', reference, finalCustomerId);
     setCurrentTransaction(transaction);
     setShowMPesaPayment(false);
     setShowReceipt(true);
@@ -200,7 +202,7 @@ export const Cart: React.FC<CartProps> = ({
                 <SelectValue placeholder="Select customer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No customer</SelectItem>
+                <SelectItem value="no-customer">No customer</SelectItem>
                 {customers.map(customer => (
                   <SelectItem key={customer.id} value={customer.id}>
                     {customer.name} - {customer.phone}
