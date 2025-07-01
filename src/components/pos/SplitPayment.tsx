@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,16 +22,14 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   onConfirmPayment,
   onCancel
 }) => {
-  console.log('SplitPayment rendering - totalAmount:', totalAmount, 'customers:', customers?.length);
+  console.log('SplitPayment component mounted');
+  console.log('Props:', { totalAmount, customersCount: customers?.length });
 
   // Initialize with safe defaults
-  const [paymentSplits, setPaymentSplits] = useState<PaymentSplit[]>(() => {
-    const safeTotal = totalAmount || 0;
-    return [
-      { method: 'cash', amount: Math.round(safeTotal / 2) },
-      { method: 'mpesa', amount: Math.round(safeTotal / 2) }
-    ];
-  });
+  const [paymentSplits, setPaymentSplits] = useState<PaymentSplit[]>([
+    { method: 'cash', amount: Math.round((totalAmount || 0) / 2) },
+    { method: 'mpesa', amount: Math.round((totalAmount || 0) / 2) }
+  ]);
   
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('walk-in');
 
@@ -40,14 +38,13 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   const totalSplits = paymentSplits.reduce((sum, split) => sum + (Number(split.amount) || 0), 0);
   const remainingAmount = (totalAmount || 0) - totalSplits;
 
-  // Safety check for invalid props
+  // Safety checks
   if (!totalAmount || totalAmount <= 0) {
-    console.error('SplitPayment: Invalid totalAmount:', totalAmount);
     return (
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardContent className="p-6">
-            <p className="text-center text-red-500">Invalid transaction amount: {totalAmount}</p>
+            <p className="text-center text-red-500">Invalid transaction amount</p>
             <Button onClick={onCancel} className="w-full mt-4">Go Back</Button>
           </CardContent>
         </Card>
@@ -56,7 +53,6 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   }
 
   if (!customers || !Array.isArray(customers)) {
-    console.error('SplitPayment: Invalid customers data:', customers);
     return (
       <div className="max-w-2xl mx-auto">
         <Card>
@@ -70,7 +66,6 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   }
 
   const addSplit = () => {
-    console.log('Adding new split');
     const newSplit: PaymentSplit = { 
       method: 'cash', 
       amount: Math.max(0, remainingAmount) 
@@ -79,7 +74,6 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   };
 
   const updateSplit = (index: number, field: keyof PaymentSplit, value: any) => {
-    console.log('Updating split:', index, field, value);
     setPaymentSplits(prev => {
       const newSplits = [...prev];
       if (field === 'amount') {
@@ -94,13 +88,11 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   const removeSplit = (index: number) => {
     if (paymentSplits.length > 1) {
-      console.log('Removing split at index:', index);
       setPaymentSplits(prev => prev.filter((_, i) => i !== index));
     }
   };
 
   const handleConfirm = () => {
-    console.log('Confirming payment with splits:', paymentSplits);
     if (Math.abs(remainingAmount) < 0.01) {
       const finalCustomerId = selectedCustomerId === 'walk-in' ? undefined : selectedCustomerId;
       onConfirmPayment(paymentSplits, finalCustomerId);
@@ -181,7 +173,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
                   <div>
                     <Label className="text-sm font-medium">Payment Method</Label>
                     <Select
-                      value={split.method}
+                      value={split.method || 'cash'}
                       onValueChange={(value) => updateSplit(index, 'method', value)}
                     >
                       <SelectTrigger className="mt-1">
@@ -214,7 +206,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
                     <Label className="text-sm font-medium">Amount (KES)</Label>
                     <Input
                       type="number"
-                      value={split.amount || ''}
+                      value={split.amount || 0}
                       onChange={(e) => updateSplit(index, 'amount', e.target.value)}
                       placeholder="0"
                       min="0"
@@ -238,7 +230,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
                 <div className="flex justify-between items-center mt-4">
                   <div className="flex items-center gap-2">
-                    {getPaymentIcon(split.method)}
+                    {getPaymentIcon(split.method || 'cash')}
                     <span className="font-medium">{formatPrice(split.amount || 0)}</span>
                   </div>
                   
