@@ -22,6 +22,8 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   onConfirmPayment,
   onCancel
 }) => {
+  console.log('SplitPayment component rendering with totalAmount:', totalAmount);
+
   const [paymentSplits, setPaymentSplits] = useState<PaymentSplit[]>([
     { method: 'cash', amount: Math.round(totalAmount / 2) },
     { method: 'mpesa', amount: Math.round(totalAmount / 2) }
@@ -33,11 +35,21 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
   const totalSplits = paymentSplits.reduce((sum, split) => sum + (Number(split.amount) || 0), 0);
   const remainingAmount = totalAmount - totalSplits;
 
+  // Add error boundary protection at component level
+  useEffect(() => {
+    console.log('SplitPayment useEffect - totalAmount:', totalAmount, 'customers:', customers?.length);
+    if (!totalAmount || totalAmount <= 0) {
+      console.error('Invalid totalAmount:', totalAmount);
+    }
+  }, [totalAmount, customers]);
+
   const addSplit = () => {
+    console.log('Adding new split');
     setPaymentSplits([...paymentSplits, { method: 'cash', amount: Math.max(0, remainingAmount) }]);
   };
 
   const updateSplit = (index: number, field: keyof PaymentSplit, value: any) => {
+    console.log('Updating split:', index, field, value);
     const newSplits = [...paymentSplits];
     if (field === 'amount') {
       const numValue = Number(value) || 0;
@@ -50,11 +62,13 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   const removeSplit = (index: number) => {
     if (paymentSplits.length > 1) {
+      console.log('Removing split at index:', index);
       setPaymentSplits(paymentSplits.filter((_, i) => i !== index));
     }
   };
 
   const handleConfirm = () => {
+    console.log('Confirming payment with splits:', paymentSplits);
     if (Math.abs(remainingAmount) < 0.01) {
       const finalCustomerId = selectedCustomerId === 'walk-in' ? undefined : selectedCustomerId;
       onConfirmPayment(paymentSplits, finalCustomerId);
@@ -86,11 +100,26 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
   // Add error boundary protection
   if (!totalAmount || totalAmount <= 0) {
+    console.error('SplitPayment: Invalid transaction amount');
     return (
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardContent className="p-6">
-            <p className="text-center text-red-500">Invalid transaction amount</p>
+            <p className="text-center text-red-500">Invalid transaction amount: {totalAmount}</p>
+            <Button onClick={onCancel} className="w-full mt-4">Go Back</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!customers) {
+    console.error('SplitPayment: No customers provided');
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-red-500">Error loading customer data</p>
             <Button onClick={onCancel} className="w-full mt-4">Go Back</Button>
           </CardContent>
         </Card>
@@ -147,7 +176,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
                   <div>
                     <Label className="text-sm font-medium">Payment Method</Label>
                     <Select
-                      value={split.method}
+                      value={split.method || 'cash'}
                       onValueChange={(value) => updateSplit(index, 'method', value)}
                     >
                       <SelectTrigger className="mt-1">
@@ -204,7 +233,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
 
                 <div className="flex justify-between items-center mt-4">
                   <div className="flex items-center gap-2">
-                    {getPaymentIcon(split.method)}
+                    {getPaymentIcon(split.method || 'cash')}
                     <span className="font-medium">{formatPrice(split.amount || 0)}</span>
                   </div>
                   
