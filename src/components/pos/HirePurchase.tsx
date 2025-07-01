@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,12 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { HirePurchase, Customer } from '@/types';
-import { Calendar, CreditCard, ArrowLeft } from 'lucide-react';
+import { Calendar, CreditCard, ArrowLeft, MessageSquare, CheckCircle } from 'lucide-react';
+import { sendHirePurchaseSMS } from '@/utils/smsService';
+import { useToast } from '@/hooks/use-toast';
 
 interface HirePurchaseProps {
   totalAmount: number;
   customers: Customer[];
   hirePurchases: HirePurchase[];
+  cartItems: any[];
+  storeSettings: any;
   onCreateHirePurchase: (hirePurchase: Omit<HirePurchase, 'id'>) => string;
   onCancel: () => void;
 }
@@ -22,13 +25,17 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
   totalAmount,
   customers,
   hirePurchases,
+  cartItems = [],
+  storeSettings = {},
   onCreateHirePurchase,
   onCancel
 }) => {
+  const { toast } = useToast();
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [downPayment, setDownPayment] = useState(0);
   const [installmentPeriod, setInstallmentPeriod] = useState<'weekly' | 'monthly'>('monthly');
   const [numberOfInstallments, setNumberOfInstallments] = useState(12);
+  const [isCreating, setIsCreating] = useState(false);
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
   
@@ -42,21 +49,79 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
     nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
   }
 
-  const handleCreateHirePurchase = () => {
+  const handleCreateHirePurchase = async () => {
     if (!selectedCustomerId || downPayment < 0 || numberOfInstallments < 1) return;
 
-    const hirePurchaseId = onCreateHirePurchase({
-      customerId: selectedCustomerId,
-      totalAmount,
-      downPayment,
-      remainingAmount,
-      installmentAmount,
-      installmentPeriod,
-      nextPaymentDate,
-      status: 'active'
-    });
+    setIsCreating(true);
+    
+    try {
+      const hirePurchaseId = onCreateHirePurchase({
+        customerId: selectedCustomerId,
+        totalAmount,
+        downPayment,
+        remainingAmount,
+        installmentAmount,
+        installmentPeriod,
+        nextPaymentDate,
+        status: 'active'
+      });
 
-    console.log('Hire purchase created:', hirePurchaseId);
+      console.log('Hire purchase created:', hirePurchaseId);
+
+      // Send SMS automatically if SMS is enabled
+      const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+      if (selectedCustomer && storeSettings.smsEnabled) {
+        const itemsText = cartItems.map(item => `${item.name} x${item.quantity}`).join(', ');
+        
+        const smsSuccess = await sendHirePurchaseSMS(
+          {
+            customerName: selectedCustomer.name,
+            customerPhone: selectedCustomer.phone,
+            businessName: storeSettings.businessName || 'TOPTEN ELECTRONICS',
+            businessPhone: storeSettings.businessPhone || '0725333337',
+            items: itemsText,
+            total: totalAmount,
+            paid: downPayment,
+            balance: remainingAmount
+          },
+          storeSettings.hirePurchaseTemplate || 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Thank you!',
+          storeSettings.smsProvider || 'phone'
+        );
+
+        if (smsSuccess) {
+          toast({
+            title: "Hire Purchase Created",
+            description: "SMS sent to customer successfully!",
+          });
+        } else {
+          toast({
+            title: "Hire Purchase Created",
+            description: "Created successfully, but failed to send SMS.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Hire Purchase Created",
+          description: "Agreement created successfully!",
+        });
+      }
+
+      // Reset form
+      setSelectedCustomerId('');
+      setDownPayment(0);
+      setNumberOfInstallments(12);
+      
+    } catch (error) {
+      console.error('Error creating hire purchase:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create hire purchase agreement.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
@@ -161,12 +226,22 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
             </div>
           </div>
 
+          {storeSettings.smsEnabled && selectedCustomer && (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+              <MessageSquare className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-blue-700">
+                SMS will be sent automatically to {selectedCustomer.phone}
+              </span>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </div>
+          )}
+
           <Button
             onClick={handleCreateHirePurchase}
             className="w-full"
-            disabled={!selectedCustomerId || remainingAmount <= 0}
+            disabled={!selectedCustomerId || remainingAmount <= 0 || isCreating}
           >
-            Create Hire Purchase Agreement
+            {isCreating ? 'Creating...' : 'Create Hire Purchase Agreement'}
           </Button>
         </CardContent>
       </Card>

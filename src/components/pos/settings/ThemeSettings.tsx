@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -37,38 +36,39 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
         root.style.setProperty('--foreground', '250 250 250');
         root.style.setProperty('--card', '24 24 27');
         root.style.setProperty('--card-foreground', '250 250 250');
+        root.style.setProperty('--primary', '142 141 148');
         break;
       case 'blue':
         document.body.classList.add('theme-blue');
         root.style.setProperty('--background', '219 234 254');
         root.style.setProperty('--foreground', '30 58 138');
-        root.style.setProperty('--primary', '59 130 246');
         root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '30 58 138');
         break;
       case 'green':
         document.body.classList.add('theme-green');
         root.style.setProperty('--background', '220 252 231');
         root.style.setProperty('--foreground', '22 101 52');
-        root.style.setProperty('--primary', '34 197 94');
         root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '22 101 52');
         break;
       case 'purple':
         document.body.classList.add('theme-purple');
         root.style.setProperty('--background', '243 232 255');
         root.style.setProperty('--foreground', '88 28 135');
-        root.style.setProperty('--primary', '168 85 247');
         root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '88 28 135');
         break;
       default: // light
         root.style.setProperty('--background', '255 255 255');
         root.style.setProperty('--foreground', '9 9 11');
-        root.style.setProperty('--primary', '59 130 246');
         root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '9 9 11');
         break;
     }
 
-    // Apply accent color
-    if (accentColor && accentColor !== '') {
+    // Apply accent color override
+    if (accentColor && accentColor !== '#3b82f6') {
       try {
         const hex = accentColor.replace('#', '');
         if (hex.length === 6) {

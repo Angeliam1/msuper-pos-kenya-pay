@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,6 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
-    // Store Settings
     storeName: 'TOPTEN ELECTRONICS LTD',
     storeAddress: 'Githunguri Town Next To Main Market',
     storePhone: '0725333337',
@@ -43,8 +41,8 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     additionalNotes: '',
     
     // SMS Settings
-    smsEnabled: false,
-    smsProvider: 'phone',
+    smsEnabled: true,
+    smsProvider: 'whatsapp',
     businessPhone: '0725333337',
     businessName: 'TOPTEN ELECTRONICS',
     hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Thank you!',
@@ -89,9 +87,13 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const applyTheme = (theme: string, accentColor: string, fontSize: string, compactMode: string) => {
     const root = document.documentElement;
     
+    // Remove existing theme classes
+    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple');
+    
     // Apply theme colors
     switch (theme) {
       case 'dark':
+        document.body.classList.add('dark');
         root.style.setProperty('--background', '18 18 23');
         root.style.setProperty('--foreground', '250 250 250');
         root.style.setProperty('--card', '24 24 27');
@@ -113,19 +115,31 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         root.style.setProperty('--ring', '142 141 148');
         break;
       case 'blue':
+        document.body.classList.add('theme-blue');
+        root.style.setProperty('--background', '219 234 254');
+        root.style.setProperty('--foreground', '30 58 138');
+        root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '30 58 138');
         root.style.setProperty('--primary', '59 130 246');
         root.style.setProperty('--primary-foreground', '248 250 252');
-        root.style.setProperty('--background', '219 234 254');
         break;
       case 'green':
+        document.body.classList.add('theme-green');
+        root.style.setProperty('--background', '220 252 231');
+        root.style.setProperty('--foreground', '22 101 52');
+        root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '22 101 52');
         root.style.setProperty('--primary', '34 197 94');
         root.style.setProperty('--primary-foreground', '220 252 231');
-        root.style.setProperty('--background', '220 252 231');
         break;
       case 'purple':
+        document.body.classList.add('theme-purple');
+        root.style.setProperty('--background', '243 232 255');
+        root.style.setProperty('--foreground', '88 28 135');
+        root.style.setProperty('--card', '255 255 255');
+        root.style.setProperty('--card-foreground', '88 28 135');
         root.style.setProperty('--primary', '168 85 247');
         root.style.setProperty('--primary-foreground', '243 232 255');
-        root.style.setProperty('--background', '243 232 255');
         break;
       default: // light
         root.style.setProperty('--background', '255 255 255');
@@ -150,12 +164,21 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         break;
     }
 
-    // Apply accent color
-    const hex = accentColor.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    root.style.setProperty('--primary', `${r} ${g} ${b}`);
+    // Apply accent color override if different from theme default
+    if (accentColor && accentColor !== '#3b82f6') {
+      try {
+        const hex = accentColor.replace('#', '');
+        if (hex.length === 6) {
+          const r = parseInt(hex.substr(0, 2), 16);
+          const g = parseInt(hex.substr(2, 2), 16);
+          const b = parseInt(hex.substr(4, 2), 16);
+          root.style.setProperty('--primary', `${r} ${g} ${b}`);
+          root.style.setProperty('--primary-foreground', '255 255 255');
+        }
+      } catch (error) {
+        console.warn('Invalid accent color:', accentColor);
+      }
+    }
 
     // Apply font size
     switch (fontSize) {
