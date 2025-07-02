@@ -71,14 +71,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen
         isOpen ? "translate-x-0" : "-translate-x-full",
         "lg:relative lg:translate-x-0"
       )}>
-        <div className="p-4 border-b">
+        <div className="p-4 border-b bg-primary">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">MSUPER POS</h2>
+            <h2 className="text-lg font-semibold text-primary-foreground">MSUPER POS</h2>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={onToggle}
-              className="lg:hidden"
+              className="lg:hidden text-primary-foreground hover:bg-primary/80"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -86,14 +86,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen
         </div>
         
         <nav className="p-4 overflow-y-auto max-h-[calc(100vh-80px)]">
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
+              const isActive = activeTab === item.id;
               return (
                 <li key={item.id}>
                   <Button
-                    variant={activeTab === item.id ? "default" : "ghost"}
-                    className="w-full justify-start text-sm"
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start text-sm h-11 rounded-lg",
+                      isActive 
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                        : "text-gray-700 hover:bg-gray-100"
+                    )}
                     onClick={() => {
                       onTabChange(item.id);
                       // Close sidebar on mobile after selection

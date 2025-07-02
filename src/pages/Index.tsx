@@ -545,103 +545,100 @@ const Index = () => {
     switch (activeTab) {
       case 'pos':
         return (
-          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3 sm:gap-4">
-            <div className="lg:col-span-2 order-2 lg:order-1">
-              {showSplitPayment ? (
-                <SplitPayment
-                  totalAmount={cartTotal}
-                  customers={customers}
-                  onConfirmPayment={handleSplitPaymentComplete}
-                  onCancel={() => setShowSplitPayment(false)}
-                />
-              ) : showHirePurchase ? (
-                <HirePurchaseComponent
-                  totalAmount={cartTotal}
-                  customers={customers}
-                  hirePurchases={hirePurchases}
-                  cartItems={cartItems}
-                  storeSettings={storeSettings}
-                  onCreateHirePurchase={handleCreateHirePurchase}
-                  onCancel={() => setShowHirePurchase(false)}
-                />
-              ) : showHoldTransaction ? (
-                <HoldTransaction
-                  items={cartItems}
-                  customers={customers}
-                  heldTransactions={heldTransactions}
-                  currentAttendant={currentAttendant.name}
-                  onHoldTransaction={handleHoldTransaction}
-                  onRetrieveTransaction={handleRetrieveTransaction}
-                  onDeleteHeldTransaction={handleDeleteHeldTransaction}
-                  onCancel={() => setShowHoldTransaction(false)}
-                />
-              ) : showBarcodeScanner ? (
-                <BarcodeScanner
-                  products={products}
-                  onProductFound={handleBarcodeProductFound}
-                  onClose={() => setShowBarcodeScanner(false)}
-                />
-              ) : showVoidRefund ? (
-                <VoidRefundTransaction
-                  transactions={transactions}
-                  onVoidTransaction={handleVoidTransaction}
-                  onRefundTransaction={handleRefundTransaction}
-                  onClose={() => setShowVoidRefund(false)}
-                />
-              ) : (
-                <>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Products</h3>
-                    <Button
-                      onClick={() => setShowQuickAdd(true)}
-                      size="sm"
-                      className="text-xs sm:text-sm"
-                    >
-                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      Quick Add
-                    </Button>
-                  </div>
-                  <ProductList products={products} onAddToCart={addToCart} />
-                </>
-              )}
+          <div className="space-y-4">
+            {/* Action Buttons Row */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Button
+                onClick={() => setShowBarcodeScanner(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Scan className="h-4 w-4" />
+                Scanner
+              </Button>
+              <Button
+                onClick={() => setShowVoidRefund(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Ban className="h-4 w-4" />
+                Void/Refund
+              </Button>
+              <Button
+                onClick={() => setShowQuickAdd(true)}
+                size="sm"
+                className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" />
+                Quick Add
+              </Button>
             </div>
-            
-            <div className="order-1 lg:order-2 space-y-3 sm:space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => setShowBarcodeScanner(true)}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                >
-                  <Scan className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Scanner</span>
-                  <span className="sm:hidden">Scan</span>
-                </Button>
-                <Button
-                  onClick={() => setShowVoidRefund(true)}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                >
-                  <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Void/Refund</span>
-                  <span className="sm:hidden">Void</span>
-                </Button>
+
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 order-2 lg:order-1">
+                {showSplitPayment ? (
+                  <SplitPayment
+                    totalAmount={cartTotal}
+                    customers={customers}
+                    onConfirmPayment={handleSplitPaymentComplete}
+                    onCancel={() => setShowSplitPayment(false)}
+                  />
+                ) : showHirePurchase ? (
+                  <HirePurchaseComponent
+                    totalAmount={cartTotal}
+                    customers={customers}
+                    hirePurchases={hirePurchases}
+                    cartItems={cartItems}
+                    storeSettings={storeSettings}
+                    onCreateHirePurchase={handleCreateHirePurchase}
+                    onCancel={() => setShowHirePurchase(false)}
+                  />
+                ) : showHoldTransaction ? (
+                  <HoldTransaction
+                    items={cartItems}
+                    customers={customers}
+                    heldTransactions={heldTransactions}
+                    currentAttendant={currentAttendant.name}
+                    onHoldTransaction={handleHoldTransaction}
+                    onRetrieveTransaction={handleRetrieveTransaction}
+                    onDeleteHeldTransaction={handleDeleteHeldTransaction}
+                    onCancel={() => setShowHoldTransaction(false)}
+                  />
+                ) : showBarcodeScanner ? (
+                  <BarcodeScanner
+                    products={products}
+                    onProductFound={handleBarcodeProductFound}
+                    onClose={() => setShowBarcodeScanner(false)}
+                  />
+                ) : showVoidRefund ? (
+                  <VoidRefundTransaction
+                    transactions={transactions}
+                    onVoidTransaction={handleVoidTransaction}
+                    onRefundTransaction={handleRefundTransaction}
+                    onClose={() => setShowVoidRefund(false)}
+                  />
+                ) : (
+                  <ProductList products={products} onAddToCart={addToCart} />
+                )}
               </div>
               
-              <Cart 
-                items={cartItems}
-                customers={customers}
-                onUpdateItem={updateCartItem}
-                onUpdateItemPrice={updateProductPrice}
-                onCompleteTransaction={handleCompleteTransactionWithCustomer}
-                onSplitPayment={() => setShowSplitPayment(true)}
-                onHirePurchase={() => setShowHirePurchase(true)}
-                onHoldTransaction={() => setShowHoldTransaction(true)}
-                onAddCustomer={addCustomer}
-                storeSettings={storeSettings}
-              />
+              {/* Cart Sidebar */}
+              <div className="order-1 lg:order-2">
+                <Cart 
+                  items={cartItems}
+                  customers={customers}
+                  onUpdateItem={updateCartItem}
+                  onUpdateItemPrice={updateProductPrice}
+                  onCompleteTransaction={handleCompleteTransactionWithCustomer}
+                  onSplitPayment={() => setShowSplitPayment(true)}
+                  onHirePurchase={() => setShowHirePurchase(true)}
+                  onHoldTransaction={() => setShowHoldTransaction(true)}
+                  onAddCustomer={addCustomer}
+                  storeSettings={storeSettings}
+                />
+              </div>
             </div>
           </div>
         );
@@ -712,20 +709,20 @@ const Index = () => {
       />
       
       <div className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm border-b">
-          <div className="px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
+        <header className="bg-primary shadow-sm border-b">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden h-8 w-8 p-0"
+                className="lg:hidden h-8 w-8 p-0 text-primary-foreground hover:bg-primary/80"
               >
-                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Menu className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">MSUPER POS</h1>
-                <p className="text-xs text-gray-600">
+                <h1 className="text-xl font-bold text-primary-foreground">MSUPER POS</h1>
+                <p className="text-xs text-primary-foreground/80">
                   Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
                 </p>
               </div>
@@ -733,7 +730,7 @@ const Index = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-3 sm:p-4 lg:ml-0">
+        <main className="flex-1 p-4 lg:ml-0 bg-gray-50">
           {renderContent()}
         </main>
       </div>
