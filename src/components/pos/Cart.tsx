@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CartItem, Transaction, PaymentSplit, Customer } from '@/types';
-import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split, Pause, Edit3, UserPlus } from 'lucide-react';
+import { Minus, Plus, Trash2, Smartphone, Banknote, CreditCard, Split, Pause, Edit3, UserPlus, Gift, Percent } from 'lucide-react';
 import { MPesaPayment } from './MPesaPayment';
 import { Receipt } from './Receipt';
 
@@ -16,11 +15,12 @@ interface CartProps {
   customers: Customer[];
   onUpdateItem: (id: string, quantity: number) => void;
   onUpdateItemPrice: (id: string, newPrice: number) => void;
-  onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string, customerId?: string) => Transaction;
+  onCompleteTransaction: (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string, customerId?: string, discount?: number, loyaltyPointsUsed?: number) => Transaction;
   onSplitPayment: () => void;
   onHirePurchase: () => void;
   onHoldTransaction: () => void;
   onAddCustomer: (customerData: Omit<Customer, 'id' | 'createdAt'>) => void;
+  onUpdateCustomerLoyaltyPoints: (customerId: string, pointsUsed: number) => void;
   storeSettings: {
     storeName: string;
     storeAddress: string;
@@ -50,6 +50,7 @@ export const Cart: React.FC<CartProps> = ({
   onHirePurchase,
   onHoldTransaction,
   onAddCustomer,
+  onUpdateCustomerLoyaltyPoints,
   storeSettings
 }) => {
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
@@ -70,8 +71,28 @@ export const Cart: React.FC<CartProps> = ({
     outstandingBalance: 0
   });
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Discount and loyalty points state
+  const [discount, setDiscount] = useState({ type: 'none' as 'none' | 'percentage' | 'amount', value: 0 });
+  const [loyaltyPointsUsed, setLoyaltyPointsUsed] = useState(0);
+
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Calculate discount amount
+  let discountAmount = 0;
+  if (discount.type === 'percentage') {
+    discountAmount = (subtotal * discount.value) / 100;
+  } else if (discount.type === 'amount') {
+    discountAmount = discount.value;
+  }
+
+  // Calculate loyalty points discount (10 points = 1 KES)
+  const loyaltyDiscount = loyaltyPointsUsed / 10;
+  
+  const total = Math.max(0, subtotal - discountAmount - loyaltyDiscount);
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+  const availableLoyaltyPoints = selectedCustomer ? ((selectedCustomer as any).loyaltyPoints || 0) : 0;
 
   const handleAddCustomer = () => {
     if (newCustomer.name && newCustomer.phone) {
@@ -142,20 +163,37 @@ export const Cart: React.FC<CartProps> = ({
 
   const handleCashPayment = () => {
     const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
-    const transaction = onCompleteTransaction('cash', undefined, finalCustomerId);
+    
+    // Update customer loyalty points if used
+    if (finalCustomerId && loyaltyPointsUsed > 0) {
+      onUpdateCustomerLoyaltyPoints(finalCustomerId, loyaltyPointsUsed);
+    }
+    
+    const transaction = onCompleteTransaction('cash', undefined, finalCustomerId, discountAmount, loyaltyPointsUsed);
     setCurrentTransaction(transaction);
     setShowReceipt(true);
+    resetDiscountAndLoyalty();
   };
 
   const handleMPesaPayment = (reference: string) => {
     const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
-    const transaction = onCompleteTransaction('mpesa', reference, finalCustomerId);
+    
+    // Update customer loyalty points if used
+    if (finalCustomerId && loyaltyPointsUsed > 0) {
+      onUpdateCustomerLoyaltyPoints(finalCustomerId, loyaltyPointsUsed);
+    }
+    
+    const transaction = onCompleteTransaction('mpesa', reference, finalCustomerId, discountAmount, loyaltyPointsUsed);
     setCurrentTransaction(transaction);
     setShowMPesaPayment(false);
     setShowReceipt(true);
+    resetDiscountAndLoyalty();
   };
 
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+  const resetDiscountAndLoyalty = () => {
+    setDiscount({ type: 'none', value: 0 });
+    setLoyaltyPointsUsed(0);
+  };
 
   if (showReceipt && currentTransaction) {
     return (
@@ -400,8 +438,77 @@ export const Cart: React.FC<CartProps> = ({
               ))}
             </div>
 
-            <div className="border-t pt-3 sm:pt-4 space-y-3 sm:space-y-4">
-              <div className="flex justify-between items-center text-base sm:text-lg font-bold">
+            {/* Discount Section */}
+            <div className="space-y-2 border-t pt-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Discount
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Select value={discount.type} onValueChange={(value: 'none' | 'percentage' | 'amount') => setDiscount({ type: value, value: 0 })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Discount</SelectItem>
+                    <SelectItem value="percentage">Percentage</SelectItem>
+                    <SelectItem value="amount">Amount</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  value={discount.value}
+                  onChange={(e) => setDiscount(prev => ({ ...prev, value: Number(e.target.value) || 0 }))}
+                  placeholder="0"
+                  disabled={discount.type === 'none'}
+                />
+                <div className="text-sm text-green-600 font-semibold flex items-center">
+                  -{formatPrice(discountAmount)}
+                </div>
+              </div>
+            </div>
+
+            {/* Loyalty Points Section */}
+            {selectedCustomer && availableLoyaltyPoints > 0 && (
+              <div className="space-y-2 border-t pt-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Gift className="h-4 w-4" />
+                  Loyalty Points ({availableLoyaltyPoints} available)
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="number"
+                    value={loyaltyPointsUsed}
+                    onChange={(e) => setLoyaltyPointsUsed(Math.min(Number(e.target.value) || 0, availableLoyaltyPoints, subtotal * 10))}
+                    placeholder="Points to use"
+                    max={Math.min(availableLoyaltyPoints, subtotal * 10)}
+                  />
+                  <div className="text-sm text-blue-600 font-semibold flex items-center">
+                    -{formatPrice(loyaltyDiscount)}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">10 points = KES 1</p>
+              </div>
+            )}
+
+            <div className="border-t pt-3 sm:pt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span>{formatPrice(subtotal)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount:</span>
+                  <span>-{formatPrice(discountAmount)}</span>
+                </div>
+              )}
+              {loyaltyDiscount > 0 && (
+                <div className="flex justify-between text-sm text-blue-600">
+                  <span>Loyalty Points:</span>
+                  <span>-{formatPrice(loyaltyDiscount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-base sm:text-lg font-bold border-t pt-2">
                 <span>Total:</span>
                 <span className="text-green-600">{formatPrice(total)}</span>
               </div>

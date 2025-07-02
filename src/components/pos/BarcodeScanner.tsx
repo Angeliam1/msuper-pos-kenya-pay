@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/types';
-import { Scan, Search, Package } from 'lucide-react';
+import { Scan, Search, Package, Camera } from 'lucide-react';
+import { CameraScanner } from './CameraScanner';
 
 interface BarcodeScannerProps {
   products: Product[];
@@ -21,6 +22,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [barcode, setBarcode] = useState('');
   const [searchResult, setSearchResult] = useState<Product | null>(null);
   const [error, setError] = useState('');
+  const [showCamera, setShowCamera] = useState(false);
 
   const handleSearch = () => {
     if (!barcode.trim()) {
@@ -56,6 +58,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
+  if (showCamera) {
+    return (
+      <CameraScanner
+        products={products}
+        onProductFound={onProductFound}
+        onClose={() => setShowCamera(false)}
+      />
+    );
+  }
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -79,6 +91,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               <Search className="h-4 w-4" />
             </Button>
           </div>
+          
+          <Button 
+            onClick={() => setShowCamera(true)} 
+            variant="outline" 
+            className="w-full"
+          >
+            <Camera className="h-4 w-4 mr-2" />
+            Use Camera
+          </Button>
           
           {error && (
             <p className="text-sm text-red-600">{error}</p>
