@@ -26,6 +26,7 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
     const transactionDate = new Date(transaction.timestamp);
     const fromDate = new Date(dateRange.from);
     const toDate = new Date(dateRange.to);
+    toDate.setHours(23, 59, 59, 999); // Include the entire end date
     return transactionDate >= fromDate && transactionDate <= toDate;
   });
 
@@ -64,48 +65,135 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
     
     if (type === 'all') {
       stockData = products.map(product => ({
-        name: product.name,
-        stock: product.stock,
-        buyingCost: product.buyingCost || 0,
-        totalValue: product.stock * (product.buyingCost || 0),
-        retailPrice: product.retailPrice || product.price,
-        retailValue: product.stock * (product.retailPrice || product.price)
+        'Product Name': product.name,
+        'Category': product.category,
+        'Stock Quantity': product.stock,
+        'Unit': product.unit,
+        'Buying Cost': product.buyingCost || 0,
+        'Retail Price': product.retailPrice || product.price,
+        'Total Buying Value': product.stock * (product.buyingCost || 0),
+        'Total Retail Value': product.stock * (product.retailPrice || product.price),
+        'Potential Profit': product.stock * ((product.retailPrice || product.price) - (product.buyingCost || 0))
       }));
     } else if (type === 'low') {
       stockData = products
-        .filter(product => product.stock <= product.lowStockThreshold)
+        .filter(product => product.stock <= (product.lowStockThreshold || 5))
         .map(product => ({
-          name: product.name,
-          stock: product.stock,
-          threshold: product.lowStockThreshold,
-          buyingCost: product.buyingCost || 0,
-          totalValue: product.stock * (product.buyingCost || 0)
+          'Product Name': product.name,
+          'Current Stock': product.stock,
+          'Low Stock Threshold': product.lowStockThreshold || 5,
+          'Buying Cost': product.buyingCost || 0,
+          'Total Value': product.stock * (product.buyingCost || 0)
         }));
     } else if (type === 'out') {
       stockData = products
         .filter(product => product.stock === 0)
         .map(product => ({
-          name: product.name,
-          lastBuyingCost: product.buyingCost || 0,
-          retailPrice: product.retailPrice || product.price
+          'Product Name': product.name,
+          'Category': product.category,
+          'Last Buying Cost': product.buyingCost || 0,
+          'Retail Price': product.retailPrice || product.price,
+          'Supplier ID': product.supplierId || 'N/A'
         }));
     }
 
+    if (stockData.length === 0) {
+      alert(`No ${type} stock data found`);
+      return;
+    }
+
     // Generate CSV content
-    const headers = Object.keys(stockData[0] || {});
+    const headers = Object.keys(stockData[0]);
     const csvContent = [
       headers.join(','),
-      ...stockData.map(row => headers.map(header => row[header]).join(','))
+      ...stockData.map(row => headers.map(header => `"${row[header]}"`).join(','))
     ].join('\n');
 
     // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${type}_stock_report_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+  };
+
+  // Generate inventory PDF (simplified - would need a PDF library for full implementation)
+  const generateInventoryPDF = () => {
+    const inventoryData = products.map(product => ({
+      name: product.name,
+      category: product.category,
+      stock: product.stock,
+      buyingCost: product.buyingCost || 0,
+      retailPrice: product.retailPrice || product.price,
+      totalValue: product.stock * (product.buyingCost || 0)
+    }));
+
+    const totalInventoryValue = inventoryData.reduce((sum, item) => sum + item.totalValue, 0);
+    const totalRetailValue = inventoryData.reduce((sum, item) => sum + (item.stock * item.retailPrice), 0);
+
+    // Create a simple HTML report that can be printed as PDF
+    const reportHTML = `
+      <html>
+        <head>
+          <title>Inventory Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .summary { background-color: #f9f9f9; padding: 15px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>Inventory Report</h1>
+          <p>Generated on: ${new Date().toLocaleDateString()}</p>
+          
+          <div class="summary">
+            <h3>Summary</h3>
+            <p>Total Products: ${products.length}</p>
+            <p>Total Inventory Value (Buying Price): KES ${totalInventoryValue.toLocaleString()}</p>
+            <p>Total Retail Value: KES ${totalRetailValue.toLocaleString()}</p>
+            <p>Potential Profit: KES ${(totalRetailValue - totalInventoryValue).toLocaleString()}</p>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Unit</th>
+                <th>Buying Cost</th>
+                <th>Retail Price</th>
+                <th>Total Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${inventoryData.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.category}</td>
+                  <td>${item.stock}</td>
+                  <td>${products.find(p => p.name === item.name)?.unit || 'pcs'}</td>
+                  <td>KES ${item.buyingCost.toLocaleString()}</td>
+                  <td>KES ${item.retailPrice.toLocaleString()}</td>
+                  <td>KES ${item.totalValue.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const newWindow = window.open('', '_blank');
+    newWindow?.document.write(reportHTML);
+    newWindow?.document.close();
+    newWindow?.print();
   };
 
   // Sales by Payment Type
@@ -159,8 +247,71 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
   const exportReport = (reportType: string) => {
-    // This would typically generate and download a CSV/PDF report
-    console.log(`Exporting ${reportType} report`);
+    let data: any[] = [];
+    let filename = `${reportType}_report_${new Date().toISOString().split('T')[0]}.csv`;
+
+    switch (reportType) {
+      case 'summary':
+        data = [{
+          'Report Type': 'Sales Summary',
+          'Date Range': `${dateRange.from} to ${dateRange.to}`,
+          'Total Sales': totalSales,
+          'Total Transactions': totalTransactions,
+          'Average Transaction': averageTransaction,
+          'Total Profit': totalProfit,
+          'Total Cost': totalCost
+        }];
+        break;
+      case 'items':
+        data = Object.entries(itemStats).map(([item, stats]) => ({
+          'Item Name': item,
+          'Quantity Sold': stats.quantity,
+          'Total Revenue': stats.amount
+        }));
+        break;
+      case 'categories':
+        data = Object.entries(categoryStats).map(([category, stats]) => ({
+          'Category': category,
+          'Items Sold': stats.quantity,
+          'Total Revenue': stats.amount
+        }));
+        break;
+      case 'employees':
+        data = Object.entries(employeeStats).map(([employee, stats]) => ({
+          'Employee': employee,
+          'Transactions': stats.count,
+          'Total Sales': stats.amount
+        }));
+        break;
+      case 'payments':
+        data = Object.entries(paymentTypeStats).map(([method, stats]) => ({
+          'Payment Method': method,
+          'Transactions': stats.count,
+          'Total Amount': stats.amount
+        }));
+        break;
+    }
+
+    if (data.length === 0) {
+      alert('No data available for export');
+      return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => `"${row[header]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -319,10 +470,10 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
           <Card>
             <CardHeader>
               <CardTitle>Stock Reports</CardTitle>
-              <p className="text-sm text-gray-600">Download various stock reports</p>
+              <p className="text-sm text-gray-600">Download various stock reports and inventory data</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Button onClick={() => generateStockReport('all')} variant="outline" className="h-20 flex-col">
                   <Download className="h-6 w-6 mb-2" />
                   <span>All Stock Report</span>
@@ -338,6 +489,39 @@ export const Reports: React.FC<ReportsProps> = ({ transactions, products, attend
                   <span>Out of Stock</span>
                   <span className="text-xs text-gray-500">Zero stock items</span>
                 </Button>
+                <Button onClick={generateInventoryPDF} variant="outline" className="h-20 flex-col">
+                  <FileText className="h-6 w-6 mb-2" />
+                  <span>Inventory PDF</span>
+                  <span className="text-xs text-gray-500">Complete inventory report</span>
+                </Button>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Stock Summary</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div className="font-semibold">Total Products</div>
+                    <div>{products.length}</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold">Low Stock Items</div>
+                    <div className="text-orange-600">
+                      {products.filter(p => p.stock <= (p.lowStockThreshold || 5)).length}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-semibold">Out of Stock</div>
+                    <div className="text-red-600">
+                      {products.filter(p => p.stock === 0).length}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-semibold">Total Inventory Value</div>
+                    <div className="text-green-600">
+                      {formatPrice(products.reduce((sum, p) => sum + (p.stock * (p.buyingCost || 0)), 0))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,4 +1,3 @@
-
 export interface Product {
   id: string;
   name: string;
@@ -27,7 +26,7 @@ export interface Customer {
   address?: string;
   creditLimit: number;
   outstandingBalance: number;
-  loyaltyPoints?: number;
+  loyaltyPoints: number;
   createdAt: Date;
 }
 
@@ -38,6 +37,15 @@ export interface Supplier {
   email?: string;
   address?: string;
   products: string[];
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  };
+  mpesaDetails?: {
+    phoneNumber: string;
+    businessNumber?: string;
+  };
   createdAt: Date;
 }
 

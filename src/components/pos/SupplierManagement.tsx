@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Truck, Plus, Edit, Trash2, Phone, Mail } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Truck, Plus, Edit, Trash2, Phone, Mail, Building, CreditCard } from 'lucide-react';
 import { Supplier } from '@/types';
 
 interface SupplierManagementProps {
@@ -27,19 +28,56 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
     name: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
+    bankName: '',
+    accountNumber: '',
+    accountName: '',
+    mpesaPhone: '',
+    mpesaBusiness: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const supplierData = {
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      products: editingSupplier?.products || [],
+      bankDetails: formData.bankName || formData.accountNumber || formData.accountName ? {
+        bankName: formData.bankName,
+        accountNumber: formData.accountNumber,
+        accountName: formData.accountName
+      } : undefined,
+      mpesaDetails: formData.mpesaPhone ? {
+        phoneNumber: formData.mpesaPhone,
+        businessNumber: formData.mpesaBusiness || undefined
+      } : undefined
+    };
+
     if (editingSupplier) {
-      onUpdateSupplier(editingSupplier.id, formData);
+      onUpdateSupplier(editingSupplier.id, supplierData);
       setEditingSupplier(null);
     } else {
-      onAddSupplier({ ...formData, products: [] });
+      onAddSupplier(supplierData);
       setShowAddForm(false);
     }
-    setFormData({ name: '', phone: '', email: '', address: '' });
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      phone: '',
+      email: '',
+      address: '',
+      bankName: '',
+      accountNumber: '',
+      accountName: '',
+      mpesaPhone: '',
+      mpesaBusiness: ''
+    });
   };
 
   const handleEdit = (supplier: Supplier) => {
@@ -48,7 +86,12 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
       name: supplier.name,
       phone: supplier.phone,
       email: supplier.email || '',
-      address: supplier.address || ''
+      address: supplier.address || '',
+      bankName: supplier.bankDetails?.bankName || '',
+      accountNumber: supplier.bankDetails?.accountNumber || '',
+      accountName: supplier.bankDetails?.accountName || '',
+      mpesaPhone: supplier.mpesaDetails?.phoneNumber || '',
+      mpesaBusiness: supplier.mpesaDetails?.businessNumber || ''
     });
     setShowAddForm(true);
   };
@@ -91,6 +134,37 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
                       )}
                       {supplier.address && (
                         <p>{supplier.address}</p>
+                      )}
+                      
+                      {/* Bank Details */}
+                      {supplier.bankDetails && (
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Building className="h-4 w-4" />
+                            <span className="font-medium">Bank Details</span>
+                          </div>
+                          <div className="text-xs space-y-1 ml-6">
+                            <p>{supplier.bankDetails.bankName}</p>
+                            <p>{supplier.bankDetails.accountNumber}</p>
+                            <p>{supplier.bankDetails.accountName}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* M-Pesa Details */}
+                      {supplier.mpesaDetails && (
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CreditCard className="h-4 w-4" />
+                            <span className="font-medium">M-Pesa</span>
+                          </div>
+                          <div className="text-xs space-y-1 ml-6">
+                            <p>{supplier.mpesaDetails.phoneNumber}</p>
+                            {supplier.mpesaDetails.businessNumber && (
+                              <p>Till: {supplier.mpesaDetails.businessNumber}</p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -154,6 +228,57 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
                   placeholder="Supplier address"
                 />
               </div>
+
+              <Separator />
+              <h4 className="font-medium">Bank Details (Optional)</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input
+                    value={formData.bankName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bankName: e.target.value }))}
+                    placeholder="Bank name"
+                  />
+                </div>
+                <div>
+                  <Label>Account Number</Label>
+                  <Input
+                    value={formData.accountNumber}
+                    onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    placeholder="Account number"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Account Name</Label>
+                <Input
+                  value={formData.accountName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+                  placeholder="Account holder name"
+                />
+              </div>
+
+              <Separator />
+              <h4 className="font-medium">M-Pesa Details (Optional)</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>M-Pesa Phone</Label>
+                  <Input
+                    value={formData.mpesaPhone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mpesaPhone: e.target.value }))}
+                    placeholder="M-Pesa phone number"
+                  />
+                </div>
+                <div>
+                  <Label>Till/Business Number</Label>
+                  <Input
+                    value={formData.mpesaBusiness}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mpesaBusiness: e.target.value }))}
+                    placeholder="Till or business number"
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-2">
                 <Button type="submit">
                   {editingSupplier ? 'Update Supplier' : 'Add Supplier'}
@@ -161,7 +286,7 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
                 <Button type="button" variant="outline" onClick={() => {
                   setShowAddForm(false);
                   setEditingSupplier(null);
-                  setFormData({ name: '', phone: '', email: '', address: '' });
+                  resetForm();
                 }}>
                   Cancel
                 </Button>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Transaction } from '@/types';
-import { Printer, Download, QrCode } from 'lucide-react';
+import { Printer, Download, QrCode, Gift } from 'lucide-react';
 
 interface ReceiptProps {
   transaction: Transaction;
@@ -30,8 +30,10 @@ interface ReceiptProps {
     name: string;
     phone: string;
     address: string;
+    loyaltyPoints?: number;
   };
   notes?: string;
+  loyaltyPointsEarned?: number;
 }
 
 export const Receipt: React.FC<ReceiptProps> = ({ 
@@ -39,7 +41,8 @@ export const Receipt: React.FC<ReceiptProps> = ({
   onClose, 
   storeSettings,
   customer,
-  notes
+  notes,
+  loyaltyPointsEarned = 0
 }) => {
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
@@ -139,9 +142,15 @@ export const Receipt: React.FC<ReceiptProps> = ({
             <span>{formatPrice(transaction.total)}</span>
           </div>
           
-          <div className="flex justify-between">
-            <span>Payment</span>
-            <span className="font-medium">{formatPrice(transaction.total)}</span>
+          {/* Payment Methods */}
+          <div className="space-y-1">
+            <div className="font-medium">Payment Method(s):</div>
+            {transaction.paymentSplits.map((split, index) => (
+              <div key={index} className="flex justify-between">
+                <span className="capitalize">{split.method === 'mpesa' ? 'M-Pesa' : split.method}</span>
+                <span className="font-medium">{formatPrice(split.amount)}</span>
+              </div>
+            ))}
           </div>
           
           <div className="flex justify-between">
@@ -155,6 +164,28 @@ export const Receipt: React.FC<ReceiptProps> = ({
             </Badge>
           </div>
         </div>
+
+        {/* Loyalty Points Section */}
+        {customer && (loyaltyPointsEarned > 0 || (customer.loyaltyPoints && customer.loyaltyPoints > 0)) && (
+          <div className="border-t border-dashed border-gray-400 pt-3">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <Gift className="h-4 w-4 text-blue-600" />
+                <div className="text-sm font-medium text-blue-600">Loyalty Points</div>
+              </div>
+              {loyaltyPointsEarned > 0 && (
+                <div className="text-xs text-gray-800">
+                  Points Earned: <span className="font-medium text-green-600">+{loyaltyPointsEarned}</span>
+                </div>
+              )}
+              {customer.loyaltyPoints && customer.loyaltyPoints > 0 && (
+                <div className="text-xs text-gray-800">
+                  Total Points: <span className="font-medium text-blue-600">{customer.loyaltyPoints}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {storeSettings.showBarcode && (
           <div className="flex justify-center py-3 sm:py-4">
