@@ -88,9 +88,27 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     const root = document.documentElement;
     
     // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple', 'theme-yellow');
+    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple');
     
-    // Apply theme colors with high contrast
+    // Set base colors - always use white background with black text for readability
+    root.style.setProperty('--background', '255 255 255'); // Pure white
+    root.style.setProperty('--foreground', '0 0 0'); // Pure black
+    root.style.setProperty('--card', '255 255 255'); // White cards
+    root.style.setProperty('--card-foreground', '0 0 0'); // Black text
+    root.style.setProperty('--popover', '255 255 255'); // White popover
+    root.style.setProperty('--popover-foreground', '0 0 0'); // Black text
+    root.style.setProperty('--secondary', '249 250 251'); // Very light gray
+    root.style.setProperty('--secondary-foreground', '0 0 0'); // Black text
+    root.style.setProperty('--muted', '249 250 251'); // Very light gray
+    root.style.setProperty('--muted-foreground', '107 114 128'); // Gray text
+    root.style.setProperty('--accent', '249 250 251'); // Light gray accent
+    root.style.setProperty('--accent-foreground', '0 0 0'); // Black text
+    root.style.setProperty('--destructive', '239 68 68'); // Red for destructive
+    root.style.setProperty('--destructive-foreground', '255 255 255'); // White text on red
+    root.style.setProperty('--border', '229 231 235'); // Light gray border
+    root.style.setProperty('--input', '255 255 255'); // White input
+
+    // Apply theme-specific adjustments
     switch (theme) {
       case 'dark':
         document.body.classList.add('dark');
@@ -100,93 +118,27 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         root.style.setProperty('--card-foreground', '255 255 255'); // White text
         root.style.setProperty('--popover', '24 24 27');
         root.style.setProperty('--popover-foreground', '255 255 255');
-        root.style.setProperty('--primary', '255 255 255'); // White primary
-        root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on primary
         root.style.setProperty('--secondary', '39 39 42');
         root.style.setProperty('--secondary-foreground', '255 255 255');
         root.style.setProperty('--muted', '39 39 42');
-        root.style.setProperty('--muted-foreground', '255 255 255');
+        root.style.setProperty('--muted-foreground', '161 161 170');
         root.style.setProperty('--accent', '39 39 42');
         root.style.setProperty('--accent-foreground', '255 255 255');
-        root.style.setProperty('--destructive', '239 68 68');
-        root.style.setProperty('--destructive-foreground', '255 255 255');
         root.style.setProperty('--border', '39 39 42');
         root.style.setProperty('--input', '39 39 42');
+        root.style.setProperty('--primary', '255 255 255'); // White primary in dark mode
+        root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on white
         root.style.setProperty('--ring', '255 255 255');
         break;
-      case 'blue':
-        document.body.classList.add('theme-blue');
-        root.style.setProperty('--background', '255 255 255'); // Pure white
-        root.style.setProperty('--foreground', '0 0 0'); // Pure black
-        root.style.setProperty('--card', '255 255 255'); // White cards
-        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--primary', '59 130 246'); // Blue accent
-        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on blue
-        break;
-      case 'green':
-        document.body.classList.add('theme-green');
-        root.style.setProperty('--background', '255 255 255'); // Pure white
-        root.style.setProperty('--foreground', '0 0 0'); // Pure black
-        root.style.setProperty('--card', '255 255 255'); // White cards
-        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--primary', '34 197 94'); // Green accent
-        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on green
-        break;
-      case 'purple':
-        document.body.classList.add('theme-purple');
-        root.style.setProperty('--background', '255 255 255'); // Pure white
-        root.style.setProperty('--foreground', '0 0 0'); // Pure black
-        root.style.setProperty('--card', '255 255 255'); // White cards
-        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--primary', '168 85 247'); // Purple accent
-        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on purple
-        break;
-      case 'yellow':
-        document.body.classList.add('theme-yellow');
-        root.style.setProperty('--background', '255 255 255'); // Pure white background
-        root.style.setProperty('--foreground', '0 0 0'); // Pure black text
-        root.style.setProperty('--card', '255 255 255'); // Pure white cards
-        root.style.setProperty('--card-foreground', '0 0 0'); // Pure black text on cards
-        root.style.setProperty('--popover', '255 255 255'); // White popover
-        root.style.setProperty('--popover-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--primary', '245 158 11'); // Yellow/orange accent
-        root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on yellow
-        root.style.setProperty('--secondary', '255 255 255'); // White secondary
-        root.style.setProperty('--secondary-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--muted', '249 250 251'); // Very light gray
-        root.style.setProperty('--muted-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--accent', '255 255 255'); // White accent
-        root.style.setProperty('--accent-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--destructive', '239 68 68'); // Red for destructive
-        root.style.setProperty('--destructive-foreground', '255 255 255'); // White text on red
-        root.style.setProperty('--border', '229 231 235'); // Light gray border
-        root.style.setProperty('--input', '255 255 255'); // White input
-        root.style.setProperty('--ring', '245 158 11'); // Yellow ring
-        break;
-      default: // light
-        root.style.setProperty('--background', '255 255 255'); // Pure white
-        root.style.setProperty('--foreground', '0 0 0'); // Pure black
-        root.style.setProperty('--card', '255 255 255'); // White cards
-        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
-        root.style.setProperty('--popover', '255 255 255');
-        root.style.setProperty('--popover-foreground', '0 0 0');
+      default:
+        // Light theme or colored themes use black primary by default
         root.style.setProperty('--primary', '0 0 0'); // Black primary
         root.style.setProperty('--primary-foreground', '255 255 255'); // White text on black
-        root.style.setProperty('--secondary', '244 244 245');
-        root.style.setProperty('--secondary-foreground', '0 0 0');
-        root.style.setProperty('--muted', '244 244 245');
-        root.style.setProperty('--muted-foreground', '0 0 0');
-        root.style.setProperty('--accent', '244 244 245');
-        root.style.setProperty('--accent-foreground', '0 0 0');
-        root.style.setProperty('--destructive', '239 68 68');
-        root.style.setProperty('--destructive-foreground', '255 255 255');
-        root.style.setProperty('--border', '229 229 234');
-        root.style.setProperty('--input', '255 255 255');
         root.style.setProperty('--ring', '0 0 0');
         break;
     }
 
-    // Apply accent color override if different from theme default
+    // Apply accent color override - this is the key customization
     if (accentColor && accentColor !== '#3b82f6') {
       try {
         const hex = accentColor.replace('#', '');
@@ -194,8 +146,12 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
           const r = parseInt(hex.substr(0, 2), 16);
           const g = parseInt(hex.substr(2, 2), 16);
           const b = parseInt(hex.substr(4, 2), 16);
+          
+          // Set the accent color as the primary color
           root.style.setProperty('--primary', `${r} ${g} ${b}`);
-          // Use white text on dark colors, black on light colors
+          root.style.setProperty('--ring', `${r} ${g} ${b}`);
+          
+          // Determine text color based on brightness
           const brightness = (r * 299 + g * 587 + b * 114) / 1000;
           root.style.setProperty('--primary-foreground', brightness > 128 ? '0 0 0' : '255 255 255');
         }
