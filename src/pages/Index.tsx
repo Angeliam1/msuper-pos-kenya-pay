@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthManager } from '@/components/auth/AuthManager';
 import { ProductList } from '@/components/pos/ProductList';
 import { Cart } from '@/components/pos/Cart';
 import { Dashboard } from '@/components/pos/Dashboard';
@@ -23,7 +24,7 @@ import { ExpenseManagement } from '@/components/pos/ExpenseManagement';
 import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Button } from '@/components/ui/button';
-import { Menu, Scan, Ban, Plus } from 'lucide-react';
+import { Menu, Scan, Ban, Plus, LogOut } from 'lucide-react';
 import { Product, CartItem, Transaction, Customer, Supplier, Attendant, PaymentSplit, HirePurchase, HeldTransaction, Expense, Purchase, StoreLocation } from '@/types';
 
 const INITIAL_PRODUCTS: Product[] = [
@@ -106,7 +107,22 @@ const INITIAL_ATTENDANTS: Attendant[] = [
   }
 ];
 
+interface User {
+  id: string;
+  storeName: string;
+  adminEmail: string;
+  password: string;
+  pin: string;
+  phone: string;
+  currency: string;
+  theme: string;
+  createdAt: Date;
+}
+
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -157,6 +173,23 @@ const Index = () => {
 
   // Store management states
   const [stores, setStores] = useState<StoreLocation[]>([]);
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    // Update store settings with user data
+    setStoreSettings(prev => ({
+      ...prev,
+      storeName: user.storeName,
+      currency: user.currency
+    }));
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setActiveTab('pos');
+  };
 
   // New store management functions
   const addStore = (storeData: Omit<StoreLocation, 'id'>) => {
@@ -553,6 +586,11 @@ const Index = () => {
   };
 
   const categories = Array.from(new Set(products.map(p => p.category)));
+
+  // Show authentication screen if not logged in
+  if (!isAuthenticated) {
+    return <AuthManager onLogin={handleLogin} />;
+  }
   
   const renderContent = () => {
     switch (activeTab) {
@@ -742,10 +780,19 @@ const Index = () => {
               <div>
                 <h1 className="text-xl font-bold text-primary-foreground">MSUPER POS</h1>
                 <p className="text-xs text-primary-foreground/80">
-                  Point of Sale System - Kenya | {currentAttendant.name} ({currentAttendant.role})
+                  Point of Sale System - Kenya | {currentUser?.storeName} ({currentUser?.adminEmail})
                 </p>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-primary-foreground hover:bg-primary/80"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </header>
 

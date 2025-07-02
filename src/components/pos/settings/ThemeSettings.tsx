@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -20,6 +19,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
     { id: 'dark', name: 'Dark', icon: Moon, colors: ['#000000', '#1f2937', '#ffffff'] },
     { id: 'blue', name: 'Blue', icon: Monitor, colors: ['#ffffff', '#3b82f6', '#000000'] },
     { id: 'green', name: 'Green', icon: Monitor, colors: ['#ffffff', '#22c55e', '#000000'] },
+    { id: 'orange', name: 'Orange', icon: Monitor, colors: ['#ffffff', '#f97316', '#000000'] },
     { id: 'purple', name: 'Purple', icon: Monitor, colors: ['#ffffff', '#a855f7', '#000000'] },
   ];
 
@@ -27,7 +27,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
     const root = document.documentElement;
     
     // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple');
+    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-orange', 'theme-purple');
     
     // Set base colors - always use white background with black text for readability
     root.style.setProperty('--background', '255 255 255'); // Pure white
@@ -69,8 +69,13 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
         root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on white
         root.style.setProperty('--ring', '255 255 255');
         break;
+      case 'orange':
+        root.style.setProperty('--primary', '249 115 22'); // Orange primary
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on orange
+        root.style.setProperty('--ring', '249 115 22');
+        break;
       default:
-        // Light theme or colored themes use black primary by default
+        // Light theme or other colored themes use black primary by default
         root.style.setProperty('--primary', '0 0 0'); // Black primary
         root.style.setProperty('--primary-foreground', '255 255 255'); // White text on black
         root.style.setProperty('--ring', '0 0 0');
@@ -190,7 +195,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
           <div>
             <Label htmlFor="accentColor" className="text-sm">Accent Color (Overrides theme colors)</Label>
             <div className="grid grid-cols-6 gap-2 mt-2">
-              {['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899'].map((color) => (
+              {['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#f97316', '#8b5cf6', '#ec4899'].map((color) => (
                 <Button
                   key={color}
                   variant={settings.accentColor === color ? 'default' : 'outline'}

@@ -88,7 +88,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     const root = document.documentElement;
     
     // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple');
+    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-orange', 'theme-purple');
     
     // Set base colors - always use white background with black text for readability
     root.style.setProperty('--background', '255 255 255'); // Pure white
@@ -130,8 +130,13 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on white
         root.style.setProperty('--ring', '255 255 255');
         break;
+      case 'orange':
+        root.style.setProperty('--primary', '249 115 22'); // Orange primary
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on orange
+        root.style.setProperty('--ring', '249 115 22');
+        break;
       default:
-        // Light theme or colored themes use black primary by default
+        // Light theme or other colored themes use black primary by default
         root.style.setProperty('--primary', '0 0 0'); // Black primary
         root.style.setProperty('--primary-foreground', '255 255 255'); // White text on black
         root.style.setProperty('--ring', '0 0 0');
