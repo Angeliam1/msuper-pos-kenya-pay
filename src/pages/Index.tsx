@@ -186,9 +186,9 @@ const Index = () => {
     ));
   };
 
-  const handleCompleteTransactionWithCustomer = (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string, customerId?: string): Transaction => {
+  const handleCompleteTransactionWithCustomer = (paymentMethod: 'mpesa' | 'cash', mpesaReference?: string, customerId?: string, discount?: number, loyaltyPointsUsed?: number): Transaction => {
     const splits: PaymentSplit[] = [
-      { method: paymentMethod, amount: cartTotal, reference: mpesaReference }
+      { method: paymentMethod, amount: cartTotal - (discount || 0) - (loyaltyPointsUsed ? loyaltyPointsUsed / 10 : 0), reference: mpesaReference }
     ];
     return completeTransaction(splits, customerId);
   };
@@ -514,6 +514,19 @@ const Index = () => {
 
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  const updateCustomerLoyaltyPoints = (customerId: string, pointsUsed: number) => {
+    setCustomers(prev => prev.map(customer => {
+      if (customer.id === customerId) {
+        const currentPoints = (customer as any).loyaltyPoints || 0;
+        return { 
+          ...customer, 
+          loyaltyPoints: Math.max(0, currentPoints - pointsUsed)
+        } as Customer;
+      }
+      return customer;
+    }));
+  };
+
   const handleSaveSettings = (newSettings: any) => {
     setStoreSettings(newSettings);
     console.log('Settings saved:', newSettings);
@@ -636,6 +649,7 @@ const Index = () => {
                   onHirePurchase={() => setShowHirePurchase(true)}
                   onHoldTransaction={() => setShowHoldTransaction(true)}
                   onAddCustomer={addCustomer}
+                  onUpdateCustomerLoyaltyPoints={updateCustomerLoyaltyPoints}
                   storeSettings={storeSettings}
                 />
               </div>
@@ -651,7 +665,12 @@ const Index = () => {
       case 'products':
         return <ProductManagement products={products} onAddProduct={addProduct} onUpdateProduct={updateProduct} onDeleteProduct={deleteProduct} />;
       case 'customers':
-        return <CustomerManagement customers={customers} onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} />;
+        return <CustomerManagement 
+          customers={customers} 
+          transactions={transactions}
+          onAddCustomer={addCustomer} 
+          onUpdateCustomer={updateCustomer} 
+        />;
       case 'loyalty':
         return <LoyaltyManagement customers={customers} onUpdateCustomer={updateCustomer} />;
       case 'stores':
