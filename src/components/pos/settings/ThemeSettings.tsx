@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -20,13 +21,14 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
     { id: 'blue', name: 'Blue', icon: Monitor, colors: ['#dbeafe', '#3b82f6', '#1e40af'] },
     { id: 'green', name: 'Green', icon: Monitor, colors: ['#dcfce7', '#22c55e', '#15803d'] },
     { id: 'purple', name: 'Purple', icon: Monitor, colors: ['#f3e8ff', '#a855f7', '#7c3aed'] },
+    { id: 'yellow', name: 'Yellow', icon: Monitor, colors: ['#fef3c7', '#f59e0b', '#d97706'] },
   ];
 
   const applyThemeImmediately = (theme: string, accentColor: string, fontSize: string, compactMode: string) => {
     const root = document.documentElement;
     
     // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple');
+    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple', 'theme-yellow');
     
     // Apply theme colors
     switch (theme) {
@@ -58,6 +60,28 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
         root.style.setProperty('--foreground', '88 28 135');
         root.style.setProperty('--card', '255 255 255');
         root.style.setProperty('--card-foreground', '88 28 135');
+        break;
+      case 'yellow':
+        document.body.classList.add('theme-yellow');
+        root.style.setProperty('--background', '254 249 195'); // Light yellow background
+        root.style.setProperty('--foreground', '120 53 15'); // Dark brown text for contrast
+        root.style.setProperty('--card', '255 255 255'); // White cards
+        root.style.setProperty('--card-foreground', '120 53 15'); // Dark brown text on cards
+        root.style.setProperty('--popover', '255 255 255');
+        root.style.setProperty('--popover-foreground', '120 53 15');
+        root.style.setProperty('--primary', '217 119 6'); // Orange-yellow primary
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on primary
+        root.style.setProperty('--secondary', '254 243 199'); // Light yellow secondary
+        root.style.setProperty('--secondary-foreground', '120 53 15'); // Dark text on secondary
+        root.style.setProperty('--muted', '254 243 199');
+        root.style.setProperty('--muted-foreground', '161 98 7');
+        root.style.setProperty('--accent', '254 243 199');
+        root.style.setProperty('--accent-foreground', '120 53 15');
+        root.style.setProperty('--destructive', '239 68 68');
+        root.style.setProperty('--destructive-foreground', '255 255 255');
+        root.style.setProperty('--border', '251 191 36');
+        root.style.setProperty('--input', '254 243 199');
+        root.style.setProperty('--ring', '217 119 6');
         break;
       default: // light
         root.style.setProperty('--background', '255 255 255');

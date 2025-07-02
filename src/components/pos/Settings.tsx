@@ -88,7 +88,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     const root = document.documentElement;
     
     // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple');
+    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple', 'theme-yellow');
     
     // Apply theme colors
     switch (theme) {
@@ -140,6 +140,28 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         root.style.setProperty('--card-foreground', '88 28 135');
         root.style.setProperty('--primary', '168 85 247');
         root.style.setProperty('--primary-foreground', '243 232 255');
+        break;
+      case 'yellow':
+        document.body.classList.add('theme-yellow');
+        root.style.setProperty('--background', '254 249 195'); // Light yellow background
+        root.style.setProperty('--foreground', '120 53 15'); // Dark brown text for contrast
+        root.style.setProperty('--card', '255 255 255'); // White cards
+        root.style.setProperty('--card-foreground', '120 53 15'); // Dark brown text on cards
+        root.style.setProperty('--popover', '255 255 255');
+        root.style.setProperty('--popover-foreground', '120 53 15');
+        root.style.setProperty('--primary', '217 119 6'); // Orange-yellow primary
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on primary
+        root.style.setProperty('--secondary', '254 243 199'); // Light yellow secondary
+        root.style.setProperty('--secondary-foreground', '120 53 15'); // Dark text on secondary
+        root.style.setProperty('--muted', '254 243 199');
+        root.style.setProperty('--muted-foreground', '161 98 7');
+        root.style.setProperty('--accent', '254 243 199');
+        root.style.setProperty('--accent-foreground', '120 53 15');
+        root.style.setProperty('--destructive', '239 68 68');
+        root.style.setProperty('--destructive-foreground', '255 255 255');
+        root.style.setProperty('--border', '251 191 36');
+        root.style.setProperty('--input', '254 243 199');
+        root.style.setProperty('--ring', '217 119 6');
         break;
       default: // light
         root.style.setProperty('--background', '255 255 255');
