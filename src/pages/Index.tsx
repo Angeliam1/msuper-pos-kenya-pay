@@ -147,7 +147,12 @@ const Index = () => {
     showNotes: true,
     receiptHeader: 'Thank you for shopping with us!',
     receiptFooter: 'Visit us again soon!',
-    showBarcode: true
+    showBarcode: true,
+    smsEnabled: true,
+    smsProvider: 'phone' as 'phone' | 'whatsapp' | 'api',
+    businessName: 'TOPTEN ELECTRONICS',
+    businessPhone: '0725333337',
+    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Thank you!'
   });
 
   // Store management states
@@ -554,6 +559,8 @@ const Index = () => {
                   totalAmount={cartTotal}
                   customers={customers}
                   hirePurchases={hirePurchases}
+                  cartItems={cartItems}
+                  storeSettings={storeSettings}
                   onCreateHirePurchase={handleCreateHirePurchase}
                   onCancel={() => setShowHirePurchase(false)}
                 />
@@ -675,7 +682,15 @@ const Index = () => {
       case 'sms':
         return <div className="p-8 text-center text-gray-500">SMS Center - Coming Soon</div>;
       case 'hire-purchase':
-        return <HirePurchaseComponent totalAmount={0} customers={customers} hirePurchases={hirePurchases} onCreateHirePurchase={handleCreateHirePurchase} onCancel={() => {}} />;
+        return <HirePurchaseComponent 
+          totalAmount={0} 
+          customers={customers} 
+          hirePurchases={hirePurchases} 
+          cartItems={[]}
+          storeSettings={storeSettings}
+          onCreateHirePurchase={handleCreateHirePurchase} 
+          onCancel={() => {}} 
+        />;
       case 'staff':
         return <RoleManagement attendants={attendants} currentAttendant={currentAttendant} onAddAttendant={addAttendant} onUpdateAttendant={updateAttendant} />;
       case 'alerts':
