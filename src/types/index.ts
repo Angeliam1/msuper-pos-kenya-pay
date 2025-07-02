@@ -78,6 +78,7 @@ export interface Attendant {
   permissions: string[];
   isActive: boolean;
   assignedStoreId?: string;
+  pin?: string;
   createdAt: Date;
 }
 
