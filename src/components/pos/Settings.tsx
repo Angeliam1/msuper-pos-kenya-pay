@@ -90,99 +90,99 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     // Remove existing theme classes
     document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-purple', 'theme-yellow');
     
-    // Apply theme colors
+    // Apply theme colors with high contrast
     switch (theme) {
       case 'dark':
         document.body.classList.add('dark');
-        root.style.setProperty('--background', '18 18 23');
-        root.style.setProperty('--foreground', '250 250 250');
-        root.style.setProperty('--card', '24 24 27');
-        root.style.setProperty('--card-foreground', '250 250 250');
+        root.style.setProperty('--background', '0 0 0'); // Pure black
+        root.style.setProperty('--foreground', '255 255 255'); // Pure white
+        root.style.setProperty('--card', '24 24 27'); // Dark gray
+        root.style.setProperty('--card-foreground', '255 255 255'); // White text
         root.style.setProperty('--popover', '24 24 27');
-        root.style.setProperty('--popover-foreground', '250 250 250');
-        root.style.setProperty('--primary', '142 141 148');
-        root.style.setProperty('--primary-foreground', '9 9 11');
+        root.style.setProperty('--popover-foreground', '255 255 255');
+        root.style.setProperty('--primary', '255 255 255'); // White primary
+        root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on primary
         root.style.setProperty('--secondary', '39 39 42');
-        root.style.setProperty('--secondary-foreground', '250 250 250');
+        root.style.setProperty('--secondary-foreground', '255 255 255');
         root.style.setProperty('--muted', '39 39 42');
-        root.style.setProperty('--muted-foreground', '161 161 170');
+        root.style.setProperty('--muted-foreground', '255 255 255');
         root.style.setProperty('--accent', '39 39 42');
-        root.style.setProperty('--accent-foreground', '250 250 250');
+        root.style.setProperty('--accent-foreground', '255 255 255');
         root.style.setProperty('--destructive', '239 68 68');
-        root.style.setProperty('--destructive-foreground', '250 250 250');
+        root.style.setProperty('--destructive-foreground', '255 255 255');
         root.style.setProperty('--border', '39 39 42');
         root.style.setProperty('--input', '39 39 42');
-        root.style.setProperty('--ring', '142 141 148');
+        root.style.setProperty('--ring', '255 255 255');
         break;
       case 'blue':
         document.body.classList.add('theme-blue');
-        root.style.setProperty('--background', '219 234 254');
-        root.style.setProperty('--foreground', '30 58 138');
-        root.style.setProperty('--card', '255 255 255');
-        root.style.setProperty('--card-foreground', '30 58 138');
-        root.style.setProperty('--primary', '59 130 246');
-        root.style.setProperty('--primary-foreground', '248 250 252');
+        root.style.setProperty('--background', '255 255 255'); // Pure white
+        root.style.setProperty('--foreground', '0 0 0'); // Pure black
+        root.style.setProperty('--card', '255 255 255'); // White cards
+        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--primary', '59 130 246'); // Blue accent
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on blue
         break;
       case 'green':
         document.body.classList.add('theme-green');
-        root.style.setProperty('--background', '220 252 231');
-        root.style.setProperty('--foreground', '22 101 52');
-        root.style.setProperty('--card', '255 255 255');
-        root.style.setProperty('--card-foreground', '22 101 52');
-        root.style.setProperty('--primary', '34 197 94');
-        root.style.setProperty('--primary-foreground', '220 252 231');
+        root.style.setProperty('--background', '255 255 255'); // Pure white
+        root.style.setProperty('--foreground', '0 0 0'); // Pure black
+        root.style.setProperty('--card', '255 255 255'); // White cards
+        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--primary', '34 197 94'); // Green accent
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on green
         break;
       case 'purple':
         document.body.classList.add('theme-purple');
-        root.style.setProperty('--background', '243 232 255');
-        root.style.setProperty('--foreground', '88 28 135');
-        root.style.setProperty('--card', '255 255 255');
-        root.style.setProperty('--card-foreground', '88 28 135');
-        root.style.setProperty('--primary', '168 85 247');
-        root.style.setProperty('--primary-foreground', '243 232 255');
+        root.style.setProperty('--background', '255 255 255'); // Pure white
+        root.style.setProperty('--foreground', '0 0 0'); // Pure black
+        root.style.setProperty('--card', '255 255 255'); // White cards
+        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--primary', '168 85 247'); // Purple accent
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on purple
         break;
       case 'yellow':
         document.body.classList.add('theme-yellow');
-        root.style.setProperty('--background', '254 249 195'); // Light yellow background
-        root.style.setProperty('--foreground', '120 53 15'); // Dark brown text for contrast
-        root.style.setProperty('--card', '255 255 255'); // White cards
-        root.style.setProperty('--card-foreground', '120 53 15'); // Dark brown text on cards
-        root.style.setProperty('--popover', '255 255 255');
-        root.style.setProperty('--popover-foreground', '120 53 15');
-        root.style.setProperty('--primary', '217 119 6'); // Orange-yellow primary
-        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on primary
-        root.style.setProperty('--secondary', '254 243 199'); // Light yellow secondary
-        root.style.setProperty('--secondary-foreground', '120 53 15'); // Dark text on secondary
-        root.style.setProperty('--muted', '254 243 199');
-        root.style.setProperty('--muted-foreground', '161 98 7');
-        root.style.setProperty('--accent', '254 243 199');
-        root.style.setProperty('--accent-foreground', '120 53 15');
-        root.style.setProperty('--destructive', '239 68 68');
-        root.style.setProperty('--destructive-foreground', '255 255 255');
-        root.style.setProperty('--border', '251 191 36');
-        root.style.setProperty('--input', '254 243 199');
-        root.style.setProperty('--ring', '217 119 6');
+        root.style.setProperty('--background', '255 255 255'); // Pure white background
+        root.style.setProperty('--foreground', '0 0 0'); // Pure black text
+        root.style.setProperty('--card', '255 255 255'); // Pure white cards
+        root.style.setProperty('--card-foreground', '0 0 0'); // Pure black text on cards
+        root.style.setProperty('--popover', '255 255 255'); // White popover
+        root.style.setProperty('--popover-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--primary', '245 158 11'); // Yellow/orange accent
+        root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on yellow
+        root.style.setProperty('--secondary', '255 255 255'); // White secondary
+        root.style.setProperty('--secondary-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--muted', '249 250 251'); // Very light gray
+        root.style.setProperty('--muted-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--accent', '255 255 255'); // White accent
+        root.style.setProperty('--accent-foreground', '0 0 0'); // Black text
+        root.style.setProperty('--destructive', '239 68 68'); // Red for destructive
+        root.style.setProperty('--destructive-foreground', '255 255 255'); // White text on red
+        root.style.setProperty('--border', '229 231 235'); // Light gray border
+        root.style.setProperty('--input', '255 255 255'); // White input
+        root.style.setProperty('--ring', '245 158 11'); // Yellow ring
         break;
       default: // light
-        root.style.setProperty('--background', '255 255 255');
-        root.style.setProperty('--foreground', '9 9 11');
-        root.style.setProperty('--card', '255 255 255');
-        root.style.setProperty('--card-foreground', '9 9 11');
+        root.style.setProperty('--background', '255 255 255'); // Pure white
+        root.style.setProperty('--foreground', '0 0 0'); // Pure black
+        root.style.setProperty('--card', '255 255 255'); // White cards
+        root.style.setProperty('--card-foreground', '0 0 0'); // Black text
         root.style.setProperty('--popover', '255 255 255');
-        root.style.setProperty('--popover-foreground', '9 9 11');
-        root.style.setProperty('--primary', '9 9 11');
-        root.style.setProperty('--primary-foreground', '250 250 250');
+        root.style.setProperty('--popover-foreground', '0 0 0');
+        root.style.setProperty('--primary', '0 0 0'); // Black primary
+        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on black
         root.style.setProperty('--secondary', '244 244 245');
-        root.style.setProperty('--secondary-foreground', '9 9 11');
+        root.style.setProperty('--secondary-foreground', '0 0 0');
         root.style.setProperty('--muted', '244 244 245');
-        root.style.setProperty('--muted-foreground', '113 113 122');
+        root.style.setProperty('--muted-foreground', '0 0 0');
         root.style.setProperty('--accent', '244 244 245');
-        root.style.setProperty('--accent-foreground', '9 9 11');
+        root.style.setProperty('--accent-foreground', '0 0 0');
         root.style.setProperty('--destructive', '239 68 68');
-        root.style.setProperty('--destructive-foreground', '250 250 250');
+        root.style.setProperty('--destructive-foreground', '255 255 255');
         root.style.setProperty('--border', '229 229 234');
-        root.style.setProperty('--input', '229 229 234');
-        root.style.setProperty('--ring', '9 9 11');
+        root.style.setProperty('--input', '255 255 255');
+        root.style.setProperty('--ring', '0 0 0');
         break;
     }
 
@@ -195,7 +195,9 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
           const g = parseInt(hex.substr(2, 2), 16);
           const b = parseInt(hex.substr(4, 2), 16);
           root.style.setProperty('--primary', `${r} ${g} ${b}`);
-          root.style.setProperty('--primary-foreground', '255 255 255');
+          // Use white text on dark colors, black on light colors
+          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+          root.style.setProperty('--primary-foreground', brightness > 128 ? '0 0 0' : '255 255 255');
         }
       } catch (error) {
         console.warn('Invalid accent color:', accentColor);
