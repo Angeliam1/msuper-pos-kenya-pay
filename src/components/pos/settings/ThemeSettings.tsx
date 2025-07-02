@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Palette, Monitor, Sun, Moon } from 'lucide-react';
+import { Palette, Sun, Moon } from 'lucide-react';
 
 interface ThemeSettingsProps {
   settings: any;
@@ -16,31 +16,21 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
   onSettingChange
 }) => {
   const themes = [
-    { id: 'light', name: 'Light', icon: Sun, description: 'Clean white theme' },
-    { id: 'dark', name: 'Dark', icon: Moon, description: 'Dark theme for low light' },
-    { id: 'orange', name: 'Orange', icon: Monitor, description: 'Orange accent theme' },
+    { id: 'light', name: 'Light', icon: Sun, description: 'Light theme with blue accents' },
+    { id: 'dark', name: 'Dark', icon: Moon, description: 'Dark theme with blue accents' },
   ];
 
   const applyTheme = (themeId: string) => {
-    const root = document.documentElement;
-    
     // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-orange');
+    document.body.classList.remove('dark');
     
     // Apply new theme
-    switch (themeId) {
-      case 'dark':
-        document.body.classList.add('dark');
-        break;
-      case 'orange':
-        document.body.classList.add('theme-orange');
-        break;
-      default:
-        // Light theme is default, no class needed
-        break;
+    if (themeId === 'dark') {
+      document.body.classList.add('dark');
     }
 
     // Apply font size
+    const root = document.documentElement;
     switch (settings.fontSize || 'medium') {
       case 'small':
         root.style.fontSize = '14px';
@@ -76,7 +66,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="theme" className="text-sm">Select Theme</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               {themes.map((theme) => {
                 const Icon = theme.icon;
                 return (

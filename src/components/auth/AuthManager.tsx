@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Registration } from './Registration';
 import { PinLogin } from './PinLogin';
+import { StaffLogin } from './StaffLogin';
+import { Attendant } from '@/types';
 
 interface User {
   id: string;
@@ -16,11 +18,12 @@ interface User {
 }
 
 interface AuthManagerProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User, attendant?: Attendant) => void;
+  attendants?: Attendant[];
 }
 
-export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin }) => {
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login'>('welcome');
+export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
+  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loginError, setLoginError] = useState<string>('');
@@ -68,6 +71,13 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin }) => {
     }
   };
 
+  const handleStaffLogin = (attendant: Attendant) => {
+    if (selectedUser) {
+      setLoginError('');
+      onLogin(selectedUser, attendant);
+    }
+  };
+
   if (currentScreen === 'welcome') {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center p-4">
@@ -82,15 +92,26 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin }) => {
               Register New Store
             </button>
             {users.length > 0 && (
-              <button
-                onClick={() => {
-                  setSelectedUser(users[0]);
-                  setCurrentScreen('login');
-                }}
-                className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
-              >
-                Login to Existing Store
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setSelectedUser(users[0]);
+                    setCurrentScreen('login');
+                  }}
+                  className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+                >
+                  Owner Login
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedUser(users[0]);
+                    setCurrentScreen('staff-login');
+                  }}
+                  className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+                >
+                  Staff Login
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -113,6 +134,17 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin }) => {
         onLogin={handlePinLogin}
         onBack={() => setCurrentScreen('welcome')}
         storeName={selectedUser.storeName}
+        error={loginError}
+      />
+    );
+  }
+
+  if (currentScreen === 'staff-login' && selectedUser) {
+    return (
+      <StaffLogin
+        onLogin={handleStaffLogin}
+        onBack={() => setCurrentScreen('welcome')}
+        attendants={attendants}
         error={loginError}
       />
     );

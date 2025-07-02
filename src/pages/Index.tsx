@@ -103,6 +103,7 @@ const INITIAL_ATTENDANTS: Attendant[] = [
     role: 'admin',
     permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings', 'hirePurchase', 'splitPayment'],
     isActive: true,
+    pin: '1234',
     createdAt: new Date()
   }
 ];
@@ -122,6 +123,7 @@ interface User {
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentAttendant, setCurrentAttendant] = useState<Attendant | null>(null);
   
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -133,7 +135,6 @@ const Index = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [hirePurchases, setHirePurchases] = useState<HirePurchase[]>([]);
   const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
-  const [currentAttendant] = useState<Attendant>(INITIAL_ATTENDANTS[0]);
   
   // UI State
   const [activeTab, setActiveTab] = useState('pos');
@@ -174,8 +175,9 @@ const Index = () => {
   // Store management states
   const [stores, setStores] = useState<StoreLocation[]>([]);
 
-  const handleLogin = (user: User) => {
+  const handleLogin = (user: User, attendant?: Attendant) => {
     setCurrentUser(user);
+    setCurrentAttendant(attendant || INITIAL_ATTENDANTS[0]);
     setIsAuthenticated(true);
     // Update store settings with user data
     setStoreSettings(prev => ({
@@ -188,7 +190,14 @@ const Index = () => {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setCurrentAttendant(null);
     setActiveTab('pos');
+  };
+
+  // Helper function to check if current attendant has permission
+  const hasPermission = (permission: string): boolean => {
+    if (!currentAttendant) return false;
+    return currentAttendant.permissions.includes(permission) || currentAttendant.role === 'admin';
   };
 
   // New store management functions
@@ -227,7 +236,6 @@ const Index = () => {
   };
 
   const addToCart = (product: Product) => {
-    // Prevent adding out of stock items
     if (product.stock <= 0) {
       alert(`${product.name} is out of stock!`);
       return;
@@ -236,7 +244,6 @@ const Index = () => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       if (existingItem) {
-        // Check if we can add more
         if (existingItem.quantity >= product.stock) {
           alert(`Cannot add more ${product.name}. Only ${product.stock} in stock.`);
           return prev;
@@ -275,13 +282,12 @@ const Index = () => {
       total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
       paymentSplits,
       customerId,
-      attendantId: currentAttendant.id,
+      attendantId: currentAttendant?.id || '1',
       timestamp: new Date(),
       hirePurchaseId,
       status: 'completed'
     };
     
-    // Update product stock
     setProducts(prev => prev.map(product => {
       const cartItem = cartItems.find(item => item.id === product.id);
       if (cartItem) {
@@ -290,7 +296,6 @@ const Index = () => {
       return product;
     }));
 
-    // Update customer outstanding balance if credit payment
     if (customerId) {
       const creditAmount = paymentSplits
         .filter(split => split.method === 'credit')
@@ -369,7 +374,7 @@ const Index = () => {
       customerId,
       customerName,
       heldAt: new Date(),
-      heldBy: currentAttendant.name,
+      heldBy: currentAttendant?.name || 'Unknown',
       note
     };
     
@@ -403,7 +408,6 @@ const Index = () => {
     
     setHirePurchases(prev => [...prev, hirePurchase]);
 
-    // Create transaction with down payment
     const splits: PaymentSplit[] = [
       { method: 'cash', amount: hirePurchaseData.downPayment }
     ];
@@ -484,7 +488,6 @@ const Index = () => {
     const transaction = transactions.find(t => t.id === transactionId);
     if (transaction) {
       if (returnedItems && returnedItems.length > 0) {
-        // Partial return - restore stock for returned items only
         setProducts(prev => prev.map(product => {
           const returnedItem = returnedItems.find(item => item.id === product.id);
           if (returnedItem) {
@@ -493,7 +496,6 @@ const Index = () => {
           return product;
         }));
 
-        // Create a new transaction for the partial refund
         const partialRefundTransaction: Transaction = {
           ...transaction,
           id: `${transactionId}-partial-${Date.now()}`,
@@ -507,7 +509,6 @@ const Index = () => {
 
         setTransactions(prev => [partialRefundTransaction, ...prev]);
       } else {
-        // Full return - restore stock for all items
         setProducts(prev => prev.map(product => {
           const refundedItem = transaction.items.find(item => item.id === product.id);
           if (refundedItem) {
@@ -516,7 +517,6 @@ const Index = () => {
           return product;
         }));
 
-        // Update original transaction status
         setTransactions(prev => prev.map(t =>
           t.id === transactionId
             ? {
@@ -568,7 +568,6 @@ const Index = () => {
   const updateProductPrice = (id: string, newPrice: number) => {
     setProducts(prev => prev.map(product => {
       if (product.id === id) {
-        // Prevent price from going below wholesale price
         if (newPrice < (product.wholesalePrice || product.price)) {
           alert(`Price cannot be lower than the wholesale price of KES ${(product.wholesalePrice || product.price).toLocaleString()}`);
           return product;
@@ -579,7 +578,6 @@ const Index = () => {
       return product;
     }));
 
-    // Update cart items with new price
     setCartItems(prev => prev.map(item => 
       item.id === id ? { ...item, price: newPrice } : item
     ));
@@ -589,15 +587,17 @@ const Index = () => {
 
   // Show authentication screen if not logged in
   if (!isAuthenticated) {
-    return <AuthManager onLogin={handleLogin} />;
+    return <AuthManager onLogin={handleLogin} attendants={attendants} />;
   }
   
   const renderContent = () => {
     switch (activeTab) {
       case 'pos':
+        if (!hasPermission('pos')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return (
           <div className="space-y-4">
-            {/* Action Buttons Row */}
             <div className="flex flex-wrap gap-2 mb-4">
               <Button
                 onClick={() => setShowBarcodeScanner(true)}
@@ -651,7 +651,7 @@ const Index = () => {
                     items={cartItems}
                     customers={customers}
                     heldTransactions={heldTransactions}
-                    currentAttendant={currentAttendant.name}
+                    currentAttendant={currentAttendant?.name || 'Unknown'}
                     onHoldTransaction={handleHoldTransaction}
                     onRetrieveTransaction={handleRetrieveTransaction}
                     onDeleteHeldTransaction={handleDeleteHeldTransaction}
@@ -675,7 +675,6 @@ const Index = () => {
                 )}
               </div>
               
-              {/* Cart Sidebar */}
               <div className="order-1 lg:order-2">
                 <Cart 
                   items={cartItems}
@@ -695,14 +694,26 @@ const Index = () => {
           </div>
         );
       case 'dashboard':
+        if (!hasPermission('reports')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <Dashboard totalSales={totalSales} todaySales={todaySales} transactionCount={transactions.length} transactions={transactions} products={products} />;
       case 'reports':
+        if (!hasPermission('reports')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <Reports transactions={transactions} products={products} attendants={attendants} />;
       case 'history':
         return <TransactionHistory transactions={transactions} />;
       case 'products':
+        if (!hasPermission('products')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <ProductManagement products={products} onAddProduct={addProduct} onUpdateProduct={updateProduct} onDeleteProduct={deleteProduct} />;
       case 'customers':
+        if (!hasPermission('customers')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <CustomerManagement 
           customers={customers} 
           transactions={transactions}
@@ -712,6 +723,9 @@ const Index = () => {
       case 'loyalty':
         return <LoyaltyManagement customers={customers} onUpdateCustomer={updateCustomer} />;
       case 'stores':
+        if (!hasPermission('staff')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return (
           <MultiStoreManagement 
             stores={stores}
@@ -726,16 +740,28 @@ const Index = () => {
       case 'returns':
         return <ReturnsManagement transactions={transactions} onRefundTransaction={handleRefundTransaction} />;
       case 'suppliers':
+        if (!hasPermission('suppliers')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <SupplierManagement suppliers={suppliers} onAddSupplier={addSupplier} onUpdateSupplier={updateSupplier} onDeleteSupplier={deleteSupplier} />;
       case 'expenses':
-        return <ExpenseManagement expenses={expenses} attendants={attendants} currentAttendant={currentAttendant} onAddExpense={addExpense} />;
+        if (!hasPermission('staff')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
+        return <ExpenseManagement expenses={expenses} attendants={attendants} currentAttendant={currentAttendant!} onAddExpense={addExpense} />;
       case 'purchases':
-        return <PurchaseManagement purchases={purchases} suppliers={suppliers} products={products} currentAttendantId={currentAttendant.id} onAddPurchase={addPurchase} onUpdateProductStock={updateProductStock} />;
+        if (!hasPermission('suppliers')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
+        return <PurchaseManagement purchases={purchases} suppliers={suppliers} products={products} currentAttendantId={currentAttendant?.id || '1'} onAddPurchase={addPurchase} onUpdateProductStock={updateProductStock} />;
       case 'stock-take':
         return <div className="p-8 text-center text-gray-500">Stock Take Management - Coming Soon</div>;
       case 'sms':
         return <div className="p-8 text-center text-gray-500">SMS Center - Coming Soon</div>;
       case 'hire-purchase':
+        if (!hasPermission('hirePurchase')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <HirePurchaseComponent 
           totalAmount={0} 
           customers={customers} 
@@ -746,10 +772,16 @@ const Index = () => {
           onCancel={() => {}} 
         />;
       case 'staff':
-        return <RoleManagement attendants={attendants} currentAttendant={currentAttendant} onAddAttendant={addAttendant} onUpdateAttendant={updateAttendant} />;
+        if (!hasPermission('staff')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
+        return <RoleManagement attendants={attendants} currentAttendant={currentAttendant!} onAddAttendant={addAttendant} onUpdateAttendant={updateAttendant} />;
       case 'alerts':
         return <LowStockAlerts products={products} />;
       case 'settings':
+        if (!hasPermission('settings')) {
+          return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
+        }
         return <Settings onSaveSettings={handleSaveSettings} />;
       default:
         return <div>Page not found</div>;
@@ -780,7 +812,7 @@ const Index = () => {
               <div>
                 <h1 className="text-xl font-bold text-primary-foreground">MSUPER POS</h1>
                 <p className="text-xs text-primary-foreground/80">
-                  Point of Sale System - Kenya | {currentUser?.storeName} ({currentUser?.adminEmail})
+                  Point of Sale System - Kenya | {currentUser?.storeName} | {currentAttendant?.name} ({currentAttendant?.role})
                 </p>
               </div>
             </div>

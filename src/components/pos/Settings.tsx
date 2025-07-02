@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     paymentReminderTemplate: 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Click here to view details: {link}',
     paymentConfirmTemplate: 'Hi {customerName}, you have paid KES {amount}. Your new balance is KES {balance}. Thank you!',
     
-    // Theme Settings
+    // Theme Settings - only light and dark
     theme: 'light',
     fontSize: 'medium',
     
