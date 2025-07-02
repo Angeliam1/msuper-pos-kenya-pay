@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -51,9 +52,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     
     // Theme Settings
     theme: 'light',
-    accentColor: '#3b82f6',
     fontSize: 'medium',
-    compactMode: 'normal',
     
     // System Settings
     lowStockThreshold: 10,
@@ -84,122 +83,9 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const applyTheme = (theme: string, accentColor: string, fontSize: string, compactMode: string) => {
-    const root = document.documentElement;
-    
-    // Remove existing theme classes
-    document.body.classList.remove('dark', 'theme-blue', 'theme-green', 'theme-orange', 'theme-purple');
-    
-    // Set base colors - always use white background with black text for readability
-    root.style.setProperty('--background', '255 255 255'); // Pure white
-    root.style.setProperty('--foreground', '0 0 0'); // Pure black
-    root.style.setProperty('--card', '255 255 255'); // White cards
-    root.style.setProperty('--card-foreground', '0 0 0'); // Black text
-    root.style.setProperty('--popover', '255 255 255'); // White popover
-    root.style.setProperty('--popover-foreground', '0 0 0'); // Black text
-    root.style.setProperty('--secondary', '249 250 251'); // Very light gray
-    root.style.setProperty('--secondary-foreground', '0 0 0'); // Black text
-    root.style.setProperty('--muted', '249 250 251'); // Very light gray
-    root.style.setProperty('--muted-foreground', '107 114 128'); // Gray text
-    root.style.setProperty('--accent', '249 250 251'); // Light gray accent
-    root.style.setProperty('--accent-foreground', '0 0 0'); // Black text
-    root.style.setProperty('--destructive', '239 68 68'); // Red for destructive
-    root.style.setProperty('--destructive-foreground', '255 255 255'); // White text on red
-    root.style.setProperty('--border', '229 231 235'); // Light gray border
-    root.style.setProperty('--input', '255 255 255'); // White input
-
-    // Apply theme-specific adjustments
-    switch (theme) {
-      case 'dark':
-        document.body.classList.add('dark');
-        root.style.setProperty('--background', '0 0 0'); // Pure black
-        root.style.setProperty('--foreground', '255 255 255'); // Pure white
-        root.style.setProperty('--card', '24 24 27'); // Dark gray
-        root.style.setProperty('--card-foreground', '255 255 255'); // White text
-        root.style.setProperty('--popover', '24 24 27');
-        root.style.setProperty('--popover-foreground', '255 255 255');
-        root.style.setProperty('--secondary', '39 39 42');
-        root.style.setProperty('--secondary-foreground', '255 255 255');
-        root.style.setProperty('--muted', '39 39 42');
-        root.style.setProperty('--muted-foreground', '161 161 170');
-        root.style.setProperty('--accent', '39 39 42');
-        root.style.setProperty('--accent-foreground', '255 255 255');
-        root.style.setProperty('--border', '39 39 42');
-        root.style.setProperty('--input', '39 39 42');
-        root.style.setProperty('--primary', '255 255 255'); // White primary in dark mode
-        root.style.setProperty('--primary-foreground', '0 0 0'); // Black text on white
-        root.style.setProperty('--ring', '255 255 255');
-        break;
-      case 'orange':
-        root.style.setProperty('--primary', '249 115 22'); // Orange primary
-        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on orange
-        root.style.setProperty('--ring', '249 115 22');
-        break;
-      default:
-        // Light theme or other colored themes use black primary by default
-        root.style.setProperty('--primary', '0 0 0'); // Black primary
-        root.style.setProperty('--primary-foreground', '255 255 255'); // White text on black
-        root.style.setProperty('--ring', '0 0 0');
-        break;
-    }
-
-    // Apply accent color override - this is the key customization
-    if (accentColor && accentColor !== '#3b82f6') {
-      try {
-        const hex = accentColor.replace('#', '');
-        if (hex.length === 6) {
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-          
-          // Set the accent color as the primary color
-          root.style.setProperty('--primary', `${r} ${g} ${b}`);
-          root.style.setProperty('--ring', `${r} ${g} ${b}`);
-          
-          // Determine text color based on brightness
-          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-          root.style.setProperty('--primary-foreground', brightness > 128 ? '0 0 0' : '255 255 255');
-        }
-      } catch (error) {
-        console.warn('Invalid accent color:', accentColor);
-      }
-    }
-
-    // Apply font size
-    switch (fontSize) {
-      case 'small':
-        root.style.fontSize = '14px';
-        break;
-      case 'large':
-        root.style.fontSize = '18px';
-        break;
-      default:
-        root.style.fontSize = '16px';
-        break;
-    }
-
-    // Apply compact mode
-    switch (compactMode) {
-      case 'compact':
-        root.style.setProperty('--spacing', '0.5rem');
-        break;
-      case 'spacious':
-        root.style.setProperty('--spacing', '2rem');
-        break;
-      default:
-        root.style.setProperty('--spacing', '1rem');
-        break;
-    }
-  };
-
-  useEffect(() => {
-    applyTheme(settings.theme, settings.accentColor, settings.fontSize, settings.compactMode);
-  }, [settings.theme, settings.accentColor, settings.fontSize, settings.compactMode]);
-
   const handleSave = () => {
     try {
       onSaveSettings(settings);
-      applyTheme(settings.theme, settings.accentColor, settings.fontSize, settings.compactMode);
       toast({
         title: "Settings Saved",
         description: "Your settings have been saved successfully.",
