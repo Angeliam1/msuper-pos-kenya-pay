@@ -90,6 +90,7 @@ const INITIAL_CUSTOMERS: Customer[] = [
     email: 'john@email.com',
     creditLimit: 50000,
     outstandingBalance: 0,
+    loyaltyPoints: 0,
     createdAt: new Date()
   }
 ];

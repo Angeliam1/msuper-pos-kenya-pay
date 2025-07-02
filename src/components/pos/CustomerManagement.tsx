@@ -32,7 +32,8 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
     phone: '',
     email: '',
     address: '',
-    creditLimit: 0
+    creditLimit: 0,
+    loyaltyPoints: 0
   });
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
@@ -49,7 +50,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
       });
     }
     
-    setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0 });
+    setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0, loyaltyPoints: 0 });
     setEditingCustomer(null);
     setIsDialogOpen(false);
   };
@@ -61,7 +62,8 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
       phone: customer.phone,
       email: customer.email || '',
       address: customer.address || '',
-      creditLimit: customer.creditLimit
+      creditLimit: customer.creditLimit,
+      loyaltyPoints: customer.loyaltyPoints
     });
     setIsDialogOpen(true);
   };
@@ -138,6 +140,15 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
                       type="number"
                       value={formData.creditLimit}
                       onChange={(e) => setFormData({ ...formData, creditLimit: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="loyaltyPoints">Loyalty Points</Label>
+                    <Input
+                      id="loyaltyPoints"
+                      type="number"
+                      value={formData.loyaltyPoints}
+                      onChange={(e) => setFormData({ ...formData, loyaltyPoints: Number(e.target.value) })}
                     />
                   </div>
                   <Button type="submit" className="w-full">
@@ -231,6 +242,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
         <CustomerStatement
           customer={selectedCustomer}
           transactions={transactions}
+          products={[]}
           onClose={() => setSelectedCustomer(null)}
         />
       )}

@@ -68,7 +68,8 @@ export const Cart: React.FC<CartProps> = ({
     email: '',
     address: '',
     creditLimit: 0,
-    outstandingBalance: 0
+    outstandingBalance: 0,
+    loyaltyPoints: 0
   });
 
   // Discount and loyalty points state
@@ -103,7 +104,8 @@ export const Cart: React.FC<CartProps> = ({
         email: '',
         address: '',
         creditLimit: 0,
-        outstandingBalance: 0
+        outstandingBalance: 0,
+        loyaltyPoints: 0
       });
       setShowAddCustomer(false);
     }
