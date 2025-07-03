@@ -42,7 +42,7 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
     name: '',
     email: '',
     phone: '',
-    role: 'cashier' as 'admin' | 'manager' | 'cashier',
+    role: 'cashier' as 'admin' | 'manager' | 'staff' | 'cashier',
     permissions: [] as string[],
     isActive: true,
     pin: '',

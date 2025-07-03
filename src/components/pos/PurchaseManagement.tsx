@@ -115,7 +115,8 @@ export const PurchaseManagement: React.FC = () => {
       purchaseDate: new Date(),
       status: 'pending',
       invoiceNumber,
-      notes
+      notes,
+      createdAt: new Date()
     };
 
     addPurchaseMutation.mutate(purchaseData);
