@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -257,7 +256,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       timestamp: new Date(),
       customerId: selectedCustomer.id,
       attendantId: currentUser?.id || 'unknown',
-      paymentMethod: 'cash',
       paymentSplits: [{ method: 'cash', amount: calculateTotal() }],
       status: 'completed'
     };
