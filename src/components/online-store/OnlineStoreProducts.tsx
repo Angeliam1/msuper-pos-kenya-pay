@@ -21,6 +21,7 @@ import {
   Star
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ProductImageManager } from './ProductImageManager';
 
 interface OnlineProduct {
   id: string;
@@ -55,6 +56,7 @@ export const OnlineStoreProducts: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<OnlineProduct | null>(null);
+  const [isImageManagerOpen, setIsImageManagerOpen] = useState(false);
 
   // Mock online store products - separate from POS inventory
   const [products, setProducts] = useState<OnlineProduct[]>([
@@ -156,6 +158,81 @@ export const OnlineStoreProducts: React.FC = () => {
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+
+  const handleAddImage = (productId: string, image: Omit<ProductImage, 'id'>) => {
+    setProducts(prev => 
+      prev.map(product => 
+        product.id === productId 
+          ? { 
+              ...product, 
+              images: [...product.images, { ...image, id: `img-${Date.now()}` }] 
+            }
+          : product
+      )
+    );
+    toast({
+      title: "Image Added",
+      description: "Product image has been added successfully",
+    });
+  };
+
+  const handleRemoveImage = (productId: string, imageId: string) => {
+    setProducts(prev => 
+      prev.map(product => 
+        product.id === productId 
+          ? { 
+              ...product, 
+              images: product.images.filter(img => img.id !== imageId) 
+            }
+          : product
+      )
+    );
+    toast({
+      title: "Image Removed",
+      description: "Product image has been removed",
+    });
+  };
+
+  const handleSetPrimaryImage = (productId: string, imageId: string) => {
+    setProducts(prev => 
+      prev.map(product => 
+        product.id === productId 
+          ? { 
+              ...product, 
+              images: product.images.map(img => ({
+                ...img,
+                isPrimary: img.id === imageId
+              }))
+            }
+          : product
+      )
+    );
+    toast({
+      title: "Primary Image Set",
+      description: "Primary image has been updated",
+    });
+  };
+
+  const handleToggleWatermark = (productId: string, imageId: string) => {
+    setProducts(prev => 
+      prev.map(product => 
+        product.id === productId 
+          ? { 
+              ...product, 
+              images: product.images.map(img => 
+                img.id === imageId 
+                  ? { ...img, hasWatermark: !img.hasWatermark }
+                  : img
+              )
+            }
+          : product
+      )
+    );
+    toast({
+      title: "Watermark Updated",
+      description: "Image watermark has been updated",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -411,9 +488,13 @@ export const OnlineStoreProducts: React.FC = () => {
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => setSelectedProduct(product)}
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setIsImageManagerOpen(true);
+                        }}
+                        title="Manage Images"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Package className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" className="text-red-600">
                         <Trash2 className="h-4 w-4" />
@@ -440,6 +521,26 @@ export const OnlineStoreProducts: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Image Manager Dialog */}
+      <Dialog open={isImageManagerOpen} onOpenChange={setIsImageManagerOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Images - {selectedProduct?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <ProductImageManager
+              images={selectedProduct.images}
+              onAddImage={(image) => handleAddImage(selectedProduct.id, image)}
+              onRemoveImage={(imageId) => handleRemoveImage(selectedProduct.id, imageId)}
+              onSetPrimary={(imageId) => handleSetPrimaryImage(selectedProduct.id, imageId)}
+              onToggleWatermark={(imageId) => handleToggleWatermark(selectedProduct.id, imageId)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

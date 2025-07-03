@@ -1,369 +1,448 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Product } from '@/types';
-import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, addProduct, updateProduct, deleteProduct } from '@/lib/database';
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  ShoppingCart, 
+  DollarSign, 
+  Percent,
+  PackageCheck,
+  User,
+  XCircle,
+  Receipt,
+  Printer
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Product, Customer, Transaction, PaymentSplit } from '@/types';
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { addTransaction, updateCustomer } from '@/lib/database';
+import { useQuery } from '@tanstack/react-query';
+import { getProducts, getCustomers } from '@/lib/database';
+import { PaymentMethods } from './PaymentMethods';
+import { useReactToPrint } from 'react-to-print';
+import { useRef } from 'react';
 
 export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    buyingCost: '',
-    wholesalePrice: '',
-    retailPrice: '',
-    category: '',
-    stock: '',
-    unit: 'pcs',
-    barcode: '',
-    lowStockThreshold: ''
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [cart, setCart] = useState<Product[]>([]);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
-  const categories = ['Beverages', 'Bakery', 'Dairy', 'Groceries', 'Electronics', 'Clothing'];
-  const units = ['pcs', 'kg', 'bundle', 'litre', 'meter', 'box'];
-
-  // Queries
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: getProducts,
   });
 
-  // Mutations
-  const addProductMutation = useMutation({
-    mutationFn: addProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({ title: "Success", description: "Product added successfully" });
-      resetForm();
-      setIsOpen(false);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: getCustomers,
   });
 
-  const updateProductMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) => 
-      updateProduct(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({ title: "Success", description: "Product updated successfully" });
-      resetForm();
-      setIsOpen(false);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
+  // Mock current attendant
+  const currentAttendant = {
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@store.com',
+    phone: '0712345678',
+    role: 'admin' as const,
+    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
+    isActive: true,
+    pin: '1234',
+    createdAt: new Date()
+  };
+
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
 
-  const deleteProductMutation = useMutation({
-    mutationFn: deleteProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({ title: "Success", description: "Product deleted successfully" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const resetForm = () => {
-    setFormData({ 
-      name: '', 
-      buyingCost: '',
-      wholesalePrice: '',
-      retailPrice: '',
-      category: '', 
-      stock: '', 
-      unit: 'pcs',
-      barcode: '', 
-      lowStockThreshold: '' 
-    });
-    setEditingProduct(null);
+  const addToCart = (product: Product) => {
+    setCart(prev => [...prev, product]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const buyingCost = parseFloat(formData.buyingCost);
-    const wholesalePrice = parseFloat(formData.wholesalePrice);
-    const retailPrice = parseFloat(formData.retailPrice);
-
-    // Validation: buying cost <= wholesale <= retail
-    if (buyingCost > wholesalePrice) {
-      toast({ title: "Validation Error", description: "Wholesale price must be greater than or equal to buying cost", variant: "destructive" });
-      return;
-    }
-    if (wholesalePrice > retailPrice) {
-      toast({ title: "Validation Error", description: "Retail price must be greater than or equal to wholesale price", variant: "destructive" });
-      return;
-    }
-
-    const productData = {
-      name: formData.name,
-      buyingCost,
-      wholesalePrice,
-      retailPrice,
-      price: retailPrice, // Default selling price is retail
-      category: formData.category,
-      stock: parseInt(formData.stock),
-      unit: formData.unit as 'pcs' | 'kg' | 'bundle' | 'litre' | 'meter' | 'box',
-      barcode: formData.barcode || undefined,
-      lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 10
-    };
-
-    if (editingProduct) {
-      updateProductMutation.mutate({ id: editingProduct.id, updates: productData });
-    } else {
-      addProductMutation.mutate(productData);
-    }
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.id !== productId));
   };
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      buyingCost: product.buyingCost.toString(),
-      wholesalePrice: product.wholesalePrice.toString(),
-      retailPrice: product.retailPrice.toString(),
-      category: product.category,
-      stock: product.stock.toString(),
-      unit: product.unit,
-      barcode: product.barcode || '',
-      lowStockThreshold: (product.lowStockThreshold || 10).toString()
-    });
-    setIsOpen(true);
+  const adjustQuantity = (productId: string, quantity: number) => {
+    setCart(prev =>
+      prev.map(item =>
+        item.id === productId ? { ...item, quantity: quantity > 0 ? quantity : 1 } : item
+      )
+    );
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      deleteProductMutation.mutate(id);
-    }
+  const calculateTotal = () => {
+    return cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
-  const getStockStatus = (product: Product) => {
-    const threshold = product.lowStockThreshold || 10;
-    if (product.stock === 0) return { variant: 'destructive' as const, text: 'Out of stock' };
-    if (product.stock <= threshold) return { variant: 'secondary' as const, text: `Low stock (${product.stock})` };
-    return { variant: 'default' as const, text: `${product.stock} in stock` };
+  const handleSelectCustomer = (customer: Customer) => {
+    setCustomer(customer);
+    toast({
+      title: "Customer Selected",
+      description: `${customer.name} has been selected`,
+    });
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center p-8">Loading products...</div>;
-  }
+  const handleClearCustomer = () => {
+    setCustomer(null);
+    toast({
+      title: "Customer Cleared",
+      description: "Customer has been cleared",
+    });
+  };
+
+  const handleCompleteSale = async (paymentSplits: PaymentSplit[], customerId?: string) => {
+    try {
+      const transaction: Transaction = {
+        id: `txn-${Date.now()}`,
+        items: cart,
+        total: calculateTotal(),
+        paymentSplits,
+        timestamp: new Date(),
+        attendant: currentAttendant?.name || 'System',
+        customerId
+      };
+
+      await addTransaction(transaction);
+      
+      // Add loyalty points automatically if customer is selected
+      if (customerId) {
+        const pointsEarned = Math.floor(calculateTotal() / 100); // 1 point per 100 KES
+        const customer = customers.find(c => c.id === customerId);
+        if (customer) {
+          const currentPoints = (customer as any).loyaltyPoints || 0;
+          await updateCustomer(customerId, {
+            ...customer,
+            loyaltyPoints: currentPoints + pointsEarned
+          });
+          
+          toast({
+            title: "Sale Completed",
+            description: `Customer earned ${pointsEarned} loyalty points!`,
+          });
+        }
+      }
+
+      setCart([]);
+      setCustomer(null);
+      setShowPayment(false);
+      setShowReceipt(true);
+      setLastTransaction(transaction);
+      
+      if (!customerId) {
+        toast({
+          title: "Sale Completed",
+          description: "Transaction completed successfully",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to complete sale",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    content: () => receiptRef.current!,
+  });
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Product Management</h2>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="bg-green-600 hover:bg-green-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Product Name</Label>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Product List */}
+      <div className="lg:col-span-3 space-y-4">
+        {/* Header and Filters */}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Products for Sale</CardTitle>
+            <div className="flex items-center space-x-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  required
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
               </div>
-              
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label htmlFor="buyingCost">Buying Cost</Label>
-                  <Input
-                    id="buyingCost"
-                    type="number"
-                    step="0.01"
-                    value={formData.buyingCost}
-                    onChange={(e) => setFormData(prev => ({ ...prev, buyingCost: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="wholesalePrice">Wholesale</Label>
-                  <Input
-                    id="wholesalePrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.wholesalePrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, wholesalePrice: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="retailPrice">Retail</Label>
-                  <Input
-                    id="retailPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.retailPrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, retailPrice: e.target.value }))}
-                    required
-                  />
-                </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="p-2">
+            <ScrollArea className="h-[400px] w-full rounded-md p-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredProducts.map(product => (
+                  <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 flex flex-col items-center justify-center" onClick={() => addToCart(product)}>
+                      <div className="relative aspect-square w-full h-24 rounded-md overflow-hidden mb-2">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-sm font-medium text-center">{product.name}</div>
+                      <div className="text-xs text-gray-500 text-center">{formatPrice(product.price)}</div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="stock">Stock Quantity</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData(prev => ({ ...prev, stock: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="unit">Unit</Label>
-                  <Select value={formData.unit} onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units.map(unit => (
-                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="barcode">Barcode (Optional)</Label>
-                <Input
-                  id="barcode"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, barcode: e.target.value }))}
-                  placeholder="Enter product barcode"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="lowStockThreshold">Low Stock Alert (Default: 10)</Label>
-                <Input
-                  id="lowStockThreshold"
-                  type="number"
-                  value={formData.lowStockThreshold}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lowStockThreshold: e.target.value }))}
-                  placeholder="10"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  type="submit" 
-                  className="flex-1" 
-                  disabled={addProductMutation.isPending || updateProductMutation.isPending}
-                >
-                  {editingProduct ? 'Update' : 'Add'} Product
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map(product => {
-          const stockStatus = getStockStatus(product);
-          return (
-            <Card key={product.id}>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <div className="flex items-center gap-1">
-                      {stockStatus.variant !== 'default' && (
-                        <AlertTriangle className="h-3 w-3 text-orange-500" />
-                      )}
-                      <Badge variant={stockStatus.variant}>
-                        {stockStatus.text}
-                      </Badge>
+      {/* Cart and Checkout */}
+      <div className="lg:col-span-1 space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Shopping Cart
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2">
+            <ScrollArea className="h-[320px] w-full rounded-md p-2">
+              <div className="space-y-2">
+                {cart.map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-2 border rounded-md">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative aspect-square w-10 h-10 rounded-md overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{item.name}</p>
+                        <p className="text-xs text-gray-500">{formatPrice(item.price)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        defaultValue={1}
+                        className="w-16 text-center text-sm"
+                        onChange={(e) => adjustQuantity(item.id, parseInt(e.target.value))}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-red-600 hover:bg-red-100"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-lg font-bold text-green-600">{formatPrice(product.retailPrice)}</p>
-                    <p className="text-sm text-gray-600">Wholesale: {formatPrice(product.wholesalePrice)}</p>
-                    <p className="text-sm text-gray-600">Buying: {formatPrice(product.buyingCost)}</p>
+                ))}
+                {cart.length === 0 && (
+                  <div className="text-center text-gray-500">
+                    Your cart is empty
                   </div>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p>{product.category} • {product.unit}</p>
-                    {product.barcode && (
-                      <p className="font-mono text-xs">Barcode: {product.barcode}</p>
-                    )}
-                    <p>Alert threshold: {product.lowStockThreshold || 10}</p>
+                )}
+              </div>
+            </ScrollArea>
+            <Separator className="my-4" />
+            <div className="flex items-center justify-between">
+              <div className="text-lg font-semibold">Total:</div>
+              <div className="text-lg font-bold">{formatPrice(calculateTotal())}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="customer">Customer</Label>
+              {customer ? (
+                <Button variant="ghost" size="sm" onClick={handleClearCustomer}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+            {customer ? (
+              <div className="p-3 border rounded-md">
+                <p className="font-medium">{customer.name}</p>
+                <p className="text-sm text-gray-500">{customer.phone}</p>
+              </div>
+            ) : (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <User className="mr-2 h-4 w-4" />
+                    Select Customer
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Select Customer</DialogTitle>
+                    <DialogDescription>
+                      Choose a customer to associate with this sale.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    {customers.map(customer => (
+                      <Button
+                        key={customer.id}
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => handleSelectCustomer(customer)}
+                      >
+                        {customer.name} - {customer.phone}
+                      </Button>
+                    ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(product)}
-                      className="flex-1"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(product.id)}
-                      className="flex-1"
-                      disabled={deleteProductMutation.isPending}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </DialogContent>
+              </Dialog>
+            )}
+
+            <Button
+              className="w-full"
+              disabled={cart.length === 0}
+              onClick={() => setShowPayment(true)}
+            >
+              <PackageCheck className="mr-2 h-4 w-4" />
+              Complete Sale
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPayment} onOpenChange={setShowPayment}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Complete Sale</DialogTitle>
+            <DialogDescription>
+              Choose a payment method to complete the sale.
+            </DialogDescription>
+          </DialogHeader>
+          <PaymentMethods
+            total={calculateTotal()}
+            onComplete={handleCompleteSale}
+            customerId={customer?.id}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Dialog */}
+      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Sale Receipt</DialogTitle>
+          </DialogHeader>
+          <div ref={receiptRef} className="p-4">
+            <h3 className="text-lg font-semibold text-center">TOPTEN ELECTRONICS</h3>
+            <p className="text-sm text-gray-500 text-center">
+              Nairobi, Kenya
+            </p>
+            <Separator className="my-2" />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm">Transaction ID:</p>
+                <p className="text-xs text-gray-500">{lastTransaction?.id}</p>
+              </div>
+              <div>
+                <p className="text-sm">Date:</p>
+                <p className="text-xs text-gray-500">
+                  {new Date().toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+            <Separator className="my-2" />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Qty</TableHead>
+                  <TableHead>Price</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lastTransaction?.items.map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>{formatPrice(item.price * (item.quantity || 1))}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <Separator className="my-2" />
+            <div className="flex items-center justify-between">
+              <div className="text-lg font-semibold">Total:</div>
+              <div className="text-lg font-bold">{formatPrice(lastTransaction?.total || 0)}</div>
+            </div>
+            <Separator className="my-2" />
+            <p className="text-xs text-gray-500 text-center">
+              Thank you for your purchase!
+            </p>
+          </div>
+          <Button className="w-full" onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Receipt
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

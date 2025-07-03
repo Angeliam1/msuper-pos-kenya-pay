@@ -22,7 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getProducts, getCustomers, getTransactions, getAttendants, getSuppliers, getExpenses } from '@/lib/database';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('pos');
+  const [activeTab, setActiveTab] = useState('pos'); // Changed from 'dashboard' to 'pos'
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Fetch data for components
@@ -136,6 +136,8 @@ const Index = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'pos':
+        return <ProductManagement />; // This shows the POS with products for sale
       case 'dashboard':
         return (
           <Dashboard
@@ -224,15 +226,7 @@ const Index = () => {
       case 'online-store':
         return <OnlineStoreManager />;
       default:
-        return (
-          <Dashboard
-            totalSales={totalSales}
-            todaySales={todaySales}
-            transactionCount={transactionCount}
-            transactions={transactions}
-            products={products}
-          />
-        );
+        return <ProductManagement />; // Changed default to show POS instead of dashboard
     }
   };
 
