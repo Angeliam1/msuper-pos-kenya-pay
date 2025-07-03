@@ -5,39 +5,66 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { ShoppingBag, Plus, Camera, Upload } from 'lucide-react';
+import { ShoppingBag, Plus } from 'lucide-react';
 import { Purchase, PurchaseItem, Supplier, Product } from '@/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getPurchases, addPurchase, getSuppliers, getProducts, updateProduct } from '@/lib/database';
+import { useToast } from '@/hooks/use-toast';
 
-interface PurchaseManagementProps {
-  purchases: Purchase[];
-  suppliers: Supplier[];
-  products: Product[];
-  currentAttendantId: string;
-  onAddPurchase: (purchase: Omit<Purchase, 'id'>) => void;
-  onUpdateProductStock: (productId: string, additionalStock: number, newBuyingCost: number) => void;
-}
-
-export const PurchaseManagement: React.FC<PurchaseManagementProps> = ({
-  purchases,
-  suppliers,
-  products,
-  currentAttendantId,
-  onAddPurchase,
-  onUpdateProductStock
-}) => {
+export const PurchaseManagement: React.FC = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
   const [formData, setFormData] = useState({
     supplierId: '',
-    invoiceNumber: '',
-    receiptImage: null as File | null
+    invoiceNumber: ''
   });
 
   const [newItem, setNewItem] = useState({
     productId: '',
     quantity: '',
     unitCost: ''
+  });
+
+  // Queries
+  const { data: purchases = [], isLoading: purchasesLoading } = useQuery({
+    queryKey: ['purchases'],
+    queryFn: getPurchases,
+  });
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: getSuppliers,
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: getProducts,
+  });
+
+  // Mutations
+  const addPurchaseMutation = useMutation({
+    mutationFn: addPurchase,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: "Success", description: "Purchase recorded successfully" });
+      setPurchaseItems([]);
+      setFormData({ supplierId: '', invoiceNumber: '' });
+      setShowAddForm(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) => 
+      updateProduct(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
   });
 
   const handleAddItem = () => {
@@ -62,7 +89,7 @@ export const PurchaseManagement: React.FC<PurchaseManagementProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (purchaseItems.length > 0 && formData.supplierId) {
       const totalCost = purchaseItems.reduce((sum, item) => sum + item.totalCost, 0);
@@ -72,21 +99,29 @@ export const PurchaseManagement: React.FC<PurchaseManagementProps> = ({
         items: purchaseItems,
         totalCost,
         date: new Date(),
-        attendantId: currentAttendantId,
+        attendantId: 'current-user', // This would come from auth context
         invoiceNumber: formData.invoiceNumber
       };
 
-      onAddPurchase(purchase);
+      try {
+        await addPurchaseMutation.mutateAsync(purchase);
 
-      // Update product stock and buying costs
-      purchaseItems.forEach(item => {
-        onUpdateProductStock(item.productId, item.quantity, item.unitCost);
-      });
-
-      // Reset form
-      setPurchaseItems([]);
-      setFormData({ supplierId: '', invoiceNumber: '', receiptImage: null });
-      setShowAddForm(false);
+        // Update product stock and buying costs
+        for (const item of purchaseItems) {
+          const product = products.find(p => p.id === item.productId);
+          if (product) {
+            await updateProductMutation.mutateAsync({
+              id: item.productId,
+              updates: {
+                stock: product.stock + item.quantity,
+                buyingCost: item.unitCost
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing purchase:', error);
+      }
     }
   };
 
@@ -98,6 +133,10 @@ export const PurchaseManagement: React.FC<PurchaseManagementProps> = ({
   };
 
   const totalPurchaseCost = purchaseItems.reduce((sum, item) => sum + item.totalCost, 0);
+
+  if (purchasesLoading) {
+    return <div className="flex justify-center p-8">Loading purchases...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -120,7 +159,7 @@ export const PurchaseManagement: React.FC<PurchaseManagementProps> = ({
               <div key={purchase.id} className="p-4 border rounded-lg">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="font-medium">Purchase #{purchase.id}</h4>
+                    <h4 className="font-medium">Purchase #{purchase.id.slice(-8)}</h4>
                     <p className="text-sm text-gray-600">
                       {getSupplierName(purchase.supplierId)}
                     </p>
@@ -244,7 +283,10 @@ export const PurchaseManagement: React.FC<PurchaseManagementProps> = ({
               )}
 
               <div className="flex gap-2">
-                <Button type="submit" disabled={purchaseItems.length === 0}>
+                <Button 
+                  type="submit" 
+                  disabled={purchaseItems.length === 0 || addPurchaseMutation.isPending}
+                >
                   Complete Purchase
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>

@@ -8,22 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Customer, Transaction } from '@/types';
-import { Plus, Edit, Phone, Mail, FileText, Eye } from 'lucide-react';
+import { Plus, Edit, Phone, Mail, FileText } from 'lucide-react';
 import { CustomerStatement } from './CustomerStatement';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getCustomers, addCustomer, updateCustomer, getTransactions } from '@/lib/database';
+import { useToast } from '@/hooks/use-toast';
 
-interface CustomerManagementProps {
-  customers: Customer[];
-  transactions: Transaction[];
-  onAddCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => void;
-  onUpdateCustomer: (id: string, customer: Partial<Customer>) => void;
-}
-
-export const CustomerManagement: React.FC<CustomerManagementProps> = ({
-  customers,
-  transactions,
-  onAddCustomer,
-  onUpdateCustomer
-}) => {
+export const CustomerManagement: React.FC = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -36,23 +29,62 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
     loyaltyPoints: 0
   });
 
+  // Queries
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ['customers'],
+    queryFn: getCustomers,
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: getTransactions,
+  });
+
+  // Mutations
+  const addCustomerMutation = useMutation({
+    mutationFn: addCustomer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({ title: "Success", description: "Customer added successfully" });
+      setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0, loyaltyPoints: 0 });
+      setIsDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateCustomerMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Customer> }) => 
+      updateCustomer(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({ title: "Success", description: "Customer updated successfully" });
+      setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0, loyaltyPoints: 0 });
+      setEditingCustomer(null);
+      setIsDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingCustomer) {
-      onUpdateCustomer(editingCustomer.id, formData);
+      updateCustomerMutation.mutate({
+        id: editingCustomer.id,
+        updates: formData
+      });
     } else {
-      onAddCustomer({
+      addCustomerMutation.mutate({
         ...formData,
         outstandingBalance: 0
       });
     }
-    
-    setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0, loyaltyPoints: 0 });
-    setEditingCustomer(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -77,6 +109,10 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
       .filter(t => t.customerId === customerId)
       .reduce((sum, t) => sum + t.total, 0);
   };
+
+  if (customersLoading) {
+    return <div className="flex justify-center p-8">Loading customers...</div>;
+  }
 
   return (
     <>
@@ -151,7 +187,11 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({
                       onChange={(e) => setFormData({ ...formData, loyaltyPoints: Number(e.target.value) })}
                     />
                   </div>
-                  <Button type="submit" className="w-full">
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={addCustomerMutation.isPending || updateCustomerMutation.isPending}
+                  >
                     {editingCustomer ? 'Update Customer' : 'Add Customer'}
                   </Button>
                 </form>

@@ -9,20 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Product } from '@/types';
 import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getProducts, addProduct, updateProduct, deleteProduct } from '@/lib/database';
+import { useToast } from '@/hooks/use-toast';
 
-interface ProductManagementProps {
-  products: Product[];
-  onAddProduct: (product: Omit<Product, 'id'>) => void;
-  onUpdateProduct: (id: string, product: Partial<Product>) => void;
-  onDeleteProduct: (id: string) => void;
-}
-
-export const ProductManagement: React.FC<ProductManagementProps> = ({
-  products,
-  onAddProduct,
-  onUpdateProduct,
-  onDeleteProduct
-}) => {
+export const ProductManagement: React.FC = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
@@ -39,6 +32,51 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 
   const categories = ['Beverages', 'Bakery', 'Dairy', 'Groceries', 'Electronics', 'Clothing'];
   const units = ['pcs', 'kg', 'bundle', 'litre', 'meter', 'box'];
+
+  // Queries
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: getProducts,
+  });
+
+  // Mutations
+  const addProductMutation = useMutation({
+    mutationFn: addProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: "Success", description: "Product added successfully" });
+      resetForm();
+      setIsOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) => 
+      updateProduct(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: "Success", description: "Product updated successfully" });
+      resetForm();
+      setIsOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: "Success", description: "Product deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
 
   const resetForm = () => {
     setFormData({ 
@@ -64,11 +102,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 
     // Validation: buying cost <= wholesale <= retail
     if (buyingCost > wholesalePrice) {
-      alert('Wholesale price must be greater than or equal to buying cost');
+      toast({ title: "Validation Error", description: "Wholesale price must be greater than or equal to buying cost", variant: "destructive" });
       return;
     }
     if (wholesalePrice > retailPrice) {
-      alert('Retail price must be greater than or equal to wholesale price');
+      toast({ title: "Validation Error", description: "Retail price must be greater than or equal to wholesale price", variant: "destructive" });
       return;
     }
 
@@ -86,13 +124,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     };
 
     if (editingProduct) {
-      onUpdateProduct(editingProduct.id, productData);
+      updateProductMutation.mutate({ id: editingProduct.id, updates: productData });
     } else {
-      onAddProduct(productData);
+      addProductMutation.mutate(productData);
     }
-
-    resetForm();
-    setIsOpen(false);
   };
 
   const handleEdit = (product: Product) => {
@@ -111,6 +146,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     setIsOpen(true);
   };
 
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      deleteProductMutation.mutate(id);
+    }
+  };
+
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
   const getStockStatus = (product: Product) => {
@@ -119,6 +160,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     if (product.stock <= threshold) return { variant: 'secondary' as const, text: `Low stock (${product.stock})` };
     return { variant: 'default' as const, text: `${product.stock} in stock` };
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">Loading products...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -246,7 +291,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1">
+                <Button 
+                  type="submit" 
+                  className="flex-1" 
+                  disabled={addProductMutation.isPending || updateProductMutation.isPending}
+                >
                   {editingProduct ? 'Update' : 'Add'} Product
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
@@ -301,8 +350,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => onDeleteProduct(product.id)}
+                      onClick={() => handleDelete(product.id)}
                       className="flex-1"
+                      disabled={deleteProductMutation.isPending}
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
