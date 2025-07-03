@@ -203,7 +203,14 @@ export const getCustomers = async (): Promise<Customer[]> => {
 export const addCustomer = async (customer: Omit<Customer, 'id' | 'createdAt'>): Promise<Customer | null> => {
   if (!isSupabaseConfigured()) {
     console.warn('Supabase not configured - using mock data');
-    return null;
+    // Create a mock customer with ID and createdAt
+    const mockCustomer: Customer = {
+      id: `mock-${Date.now()}`,
+      ...customer,
+      createdAt: new Date()
+    };
+    mockCustomers.push(mockCustomer);
+    return mockCustomer;
   }
 
   try {
@@ -234,6 +241,12 @@ export const addCustomer = async (customer: Omit<Customer, 'id' | 'createdAt'>):
 export const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<Customer | null> => {
   if (!isSupabaseConfigured()) {
     console.warn('Supabase not configured - using mock data');
+    // Find and update the mock customer
+    const customerIndex = mockCustomers.findIndex(c => c.id === id);
+    if (customerIndex !== -1) {
+      mockCustomers[customerIndex] = { ...mockCustomers[customerIndex], ...updates };
+      return mockCustomers[customerIndex];
+    }
     return null;
   }
 
