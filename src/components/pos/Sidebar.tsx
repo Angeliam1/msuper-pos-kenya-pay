@@ -22,7 +22,8 @@ import {
   ShoppingBag,
   TrendingUp,
   MessageSquare,
-  Truck
+  Truck,
+  Globe
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,6 +35,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { id: 'pos', label: 'POS', icon: ShoppingCart },
+  { id: 'online-store', label: 'Online Store', icon: Globe },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'reports', label: 'Reports', icon: FileText },
   { id: 'history', label: 'History', icon: History },
