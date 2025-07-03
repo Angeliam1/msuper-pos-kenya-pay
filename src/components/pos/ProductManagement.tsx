@@ -32,7 +32,7 @@ import { useStore } from '@/contexts/StoreContext';
 
 export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
-  const { currentStore } = useStore();
+  const { currentStore, getStoreProducts, updateStoreProduct, addProductToStore } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -60,10 +60,8 @@ export const ProductManagement: React.FC = () => {
     email: ''
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['products'],
-    queryFn: getProducts,
-  });
+  // Get store-specific products
+  const products = currentStore ? getStoreProducts(currentStore.id) : [];
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -109,7 +107,12 @@ export const ProductManagement: React.FC = () => {
         )
       );
     } else {
-      const cartItem: CartItem = { ...product, quantity: 1 };
+      // Use retail price as default display price
+      const cartItem: CartItem = { 
+        ...product, 
+        quantity: 1,
+        price: product.retailPrice // Always start with retail price
+      };
       setCart(prev => [...prev, cartItem]);
     }
   };
@@ -143,11 +146,12 @@ export const ProductManagement: React.FC = () => {
 
   const updateCartItemPrice = (productId: string, newPrice: number) => {
     const product = products.find(p => p.id === productId);
+    const allowPriceBelowWholesale = currentStore?.pricingSettings?.allowPriceBelowWholesale || false;
     
-    if (!storeSettings.allowPriceBelowWholesale && product && newPrice < product.buyingCost) {
+    if (!allowPriceBelowWholesale && product && newPrice < (product.wholesalePrice || product.buyingCost)) {
       toast({
         title: "Price Below Wholesale",
-        description: `Minimum price is KSh${product.buyingCost.toLocaleString()} (wholesale cost)`,
+        description: `Minimum price is KSh${(product.wholesalePrice || product.buyingCost).toLocaleString()} (wholesale cost)`,
         variant: "destructive",
       });
       return;
@@ -183,20 +187,20 @@ export const ProductManagement: React.FC = () => {
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
   const handleQuickAddProduct = (productData: Omit<Product, 'id'>) => {
-    const newProduct: Product = {
-      id: `quick-${Date.now()}`,
-      ...productData,
-      supplierId: '',
-      description: 'Quick added product',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    if (!currentStore) {
+      toast({
+        title: "No Store Selected",
+        description: "Please select a store first",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    addToCart(newProduct);
+    addProductToStore(currentStore.id, productData);
     
     toast({
       title: "Product Added",
-      description: `${newProduct.name} added to cart`,
+      description: `${productData.name} added to ${currentStore.name}`,
     });
   };
 
@@ -262,11 +266,11 @@ export const ProductManagement: React.FC = () => {
       status: 'completed'
     };
 
-    // Update stock for existing products
+    // Update stock for products in the current store
     cart.forEach(item => {
       const product = products.find(p => p.id === item.id);
-      if (product && !product.id.startsWith('quick-')) {
-        updateProduct(item.id, { stock: product.stock - item.quantity });
+      if (product && currentStore) {
+        updateStoreProduct(currentStore.id, item.id, { stock: product.stock - item.quantity });
       }
     });
 
@@ -287,7 +291,7 @@ export const ProductManagement: React.FC = () => {
     storeAddress: currentStore.address,
     storePhone: currentStore.phone,
     storeEmail: '',
-    allowPriceBelowWholesale: false,
+    allowPriceBelowWholesale: currentStore.pricingSettings?.allowPriceBelowWholesale || false,
     paybill: '247247',
     showStoreName: true,
     showStoreAddress: true,
@@ -330,12 +334,14 @@ export const ProductManagement: React.FC = () => {
           <div>
             <h2 className="text-lg font-bold">{currentStore?.name || 'No Store Selected'}</h2>
             <p className="text-xs text-gray-600">{currentStore?.address || 'Please select a store'}</p>
+            <p className="text-xs text-blue-600">{products.length} products available</p>
           </div>
           <div className="flex gap-2">
             <Button 
               size="sm" 
               variant="outline"
               onClick={() => setShowQuickAdd(true)}
+              disabled={!currentStore}
             >
               <Package className="h-4 w-4" />
             </Button>
@@ -502,48 +508,53 @@ export const ProductManagement: React.FC = () => {
 
       {/* Products List */}
       <div className="p-4">
-        <ScrollArea className="h-[calc(100vh-300px)]">
-          <div className="space-y-3">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex-1">
-                  <h4 className="font-medium">{product.name}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-xs">
-                      {product.category}
-                    </Badge>
-                    <span className="text-xs text-gray-500">
-                      {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Buy: {formatPrice(product.buyingCost)} | 
-                    Wholesale: {formatPrice(product.wholesalePrice || product.buyingCost)} |
-                    Retail: {formatPrice(product.retailPrice)}
-                  </div>
-                  <p className="text-sm font-semibold text-green-600 mt-1">
-                    Current: {formatPrice(product.price)}
-                  </p>
-                </div>
-                
-                <Button
-                  onClick={() => addToCart(product)}
-                  size="sm"
-                  disabled={product.stock <= 0}
-                  className="h-10 w-10 rounded-full"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            
-            {filteredProducts.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
-                No products found
-              </div>
-            )}
+        {!currentStore ? (
+          <div className="text-center text-gray-500 py-8">
+            <Store className="mx-auto h-12 w-12 mb-4 text-gray-300" />
+            <p>Please select a store to view products</p>
           </div>
-        </ScrollArea>
+        ) : (
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <div className="space-y-3">
+              {filteredProducts.map(product => (
+                <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{product.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {product.category}
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Wholesale: {formatPrice(product.wholesalePrice || product.buyingCost)}
+                    </div>
+                    <p className="text-sm font-semibold text-green-600 mt-1">
+                      Retail: {formatPrice(product.retailPrice)}
+                    </p>
+                  </div>
+                  
+                  <Button
+                    onClick={() => addToCart(product)}
+                    size="sm"
+                    disabled={product.stock <= 0}
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              {filteredProducts.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  No products found
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
       </div>
 
       {/* Quick Add Product Dialog */}

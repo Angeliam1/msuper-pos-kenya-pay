@@ -1,4 +1,3 @@
-
 export interface Product {
   id: string;
   name: string;
@@ -146,6 +145,22 @@ export interface PurchaseItem {
   totalCost: number;
 }
 
+export interface ReceiptSettings {
+  size: '58mm' | '80mm';
+  showLogo: boolean;
+  showAddress: boolean;
+  showPhone: boolean;
+  header: string;
+  footer: string;
+  autoprint?: boolean;
+}
+
+export interface PricingSettings {
+  allowPriceBelowWholesale: boolean;
+  defaultPriceType: 'retail' | 'wholesale';
+  taxRate: number;
+}
+
 export interface StoreLocation {
   id: string;
   name: string;
@@ -158,20 +173,9 @@ export interface StoreLocation {
   isActive: boolean;
   createdAt: Date;
   receiptSettings?: ReceiptSettings;
+  pricingSettings?: PricingSettings;
 }
 
-export interface ReceiptSettings {
-  size: '58mm' | '80mm' | 'A4';
-  showLogo: boolean;
-  showAddress: boolean;
-  showPhone: boolean;
-  header: string;
-  footer: string;
-  autoprint?: boolean;
-  copies?: number;
-}
-
-// Additional interfaces that were missing
 export interface Staff {
   id: string;
   firstName: string;
