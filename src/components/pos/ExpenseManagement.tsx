@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +48,8 @@ export const ExpenseManagement: React.FC<ExpenseManagementProps> = ({
       amount: parseFloat(formData.amount),
       description: formData.description,
       date: new Date(formData.date),
-      attendantId: currentAttendant.id
+      attendantId: currentAttendant.id,
+      createdAt: new Date()
     });
     setFormData({
       category: '',

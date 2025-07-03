@@ -259,7 +259,7 @@ export const StockTake: React.FC = () => {
                           <div className="flex items-center">
                             <Checkbox
                               checked={count?.counted || false}
-                              readOnly
+                              disabled
                             />
                             <span className="ml-2 text-sm">
                               {count?.counted ? 'Counted' : 'Pending'}
