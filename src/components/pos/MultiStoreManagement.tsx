@@ -127,14 +127,14 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   const openStoreSettings = (store: StoreLocation) => {
     setSelectedStoreForSettings(store);
     setStoreSettings({
-      receiptSettings: store.receiptSettings || {
-        header: 'Thank you for shopping with us!',
-        footer: 'Visit us again soon!',
-        showLogo: true,
-        showAddress: true,
-        showPhone: true,
-        size: '80mm',
-        autoprint: false
+      receiptSettings: {
+        header: store.receiptSettings?.header || 'Thank you for shopping with us!',
+        footer: store.receiptSettings?.footer || 'Visit us again soon!',
+        showLogo: store.receiptSettings?.showLogo ?? true,
+        showAddress: store.receiptSettings?.showAddress ?? true,
+        showPhone: store.receiptSettings?.showPhone ?? true,
+        size: store.receiptSettings?.size || '80mm',
+        autoprint: store.receiptSettings?.autoprint ?? false
       },
       pricingSettings: store.pricingSettings || {
         allowPriceBelowWholesale: false,

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,8 @@ import {
   UserPlus,
   Package,
   Users,
-  Receipt as ReceiptIcon
+  Receipt as ReceiptIcon,
+  Store
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, CartItem, Customer, Transaction } from '@/types';
