@@ -57,13 +57,15 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
     try {
       const hirePurchaseId = onCreateHirePurchase({
         customerId: selectedCustomerId,
+        items: cartItems,
         totalAmount,
         downPayment,
-        remainingBalance: remainingAmount,  // Fixed property name
+        remainingBalance: remainingAmount,
         installmentAmount,
         installmentPeriod,
         nextPaymentDate,
-        status: 'active'
+        status: 'active',
+        createdAt: new Date()
       });
 
       console.log('Hire purchase created:', hirePurchaseId);

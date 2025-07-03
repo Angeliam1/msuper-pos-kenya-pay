@@ -99,7 +99,8 @@ export const PurchaseManagement: React.FC = () => {
         totalAmount,
         purchaseDate: new Date(),
         attendantId: 'current-user',
-        invoiceNumber: formData.invoiceNumber
+        invoiceNumber: formData.invoiceNumber,
+        status: 'pending'
       };
 
       try {
