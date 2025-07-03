@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,10 +36,12 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
       name: 'Main Branch',
       address: 'Githunguri Town, Main Market',
       phone: '0725333337',
-      manager: 'John Kamau',
+      managerId: '1',  // Use managerId instead of manager
+      manager: 'John Kamau',  // Keep for display
       status: 'active',
       totalSales: 450000,
-      isEditable: true
+      isActive: true,  // Required property
+      createdAt: new Date()  // Required property
     }
   ]);
 
@@ -48,10 +49,12 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
     name: '',
     address: '',
     phone: '',
+    managerId: '',
     manager: '',
     status: 'active' as 'active' | 'inactive',
     totalSales: 0,
-    isEditable: true
+    isActive: true,
+    createdAt: new Date()
   });
 
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -66,15 +69,27 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
 
   const handleAddStore = () => {
     if (newStore.name && newStore.address && onAddStore) {
-      onAddStore(newStore);
+      onAddStore({
+        name: newStore.name,
+        address: newStore.address,
+        phone: newStore.phone,
+        managerId: newStore.managerId,
+        manager: newStore.manager,
+        status: newStore.status,
+        totalSales: newStore.totalSales,
+        isActive: newStore.isActive,
+        createdAt: new Date()
+      });
       setNewStore({
         name: '',
         address: '',
         phone: '',
+        managerId: '',
         manager: '',
         status: 'active',
         totalSales: 0,
-        isEditable: true
+        isActive: true,
+        createdAt: new Date()
       });
     }
   };
@@ -286,7 +301,7 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
                     <div className="flex justify-between items-start">
                       <h3 className="font-semibold">{store.name}</h3>
                       <Badge variant={store.status === 'active' ? 'default' : 'secondary'}>
-                        {store.status}
+                        {store.status || (store.isActive ? 'active' : 'inactive')}
                       </Badge>
                     </div>
                     <div className="space-y-2 text-sm text-gray-600">
@@ -295,9 +310,9 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
                         <span>{store.address}</span>
                       </div>
                       <p>Phone: {store.phone}</p>
-                      <p>Manager: {store.manager}</p>
+                      <p>Manager: {store.manager || 'Not assigned'}</p>
                       <p className="font-semibold text-green-600">
-                        Sales: {formatPrice(store.totalSales)}
+                        Sales: {formatPrice(store.totalSales || 0)}
                       </p>
                     </div>
                     <Button size="sm" variant="outline" className="w-full">

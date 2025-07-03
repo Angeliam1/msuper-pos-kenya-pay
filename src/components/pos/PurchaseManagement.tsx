@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,14 +91,14 @@ export const PurchaseManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (purchaseItems.length > 0 && formData.supplierId) {
-      const totalCost = purchaseItems.reduce((sum, item) => sum + item.totalCost, 0);
+      const totalAmount = purchaseItems.reduce((sum, item) => sum + item.totalCost, 0);
 
       const purchase: Omit<Purchase, 'id'> = {
         supplierId: formData.supplierId,
         items: purchaseItems,
-        totalCost,
-        date: new Date(),
-        attendantId: 'current-user', // This would come from auth context
+        totalAmount,
+        purchaseDate: new Date(),
+        attendantId: 'current-user',
         invoiceNumber: formData.invoiceNumber
       };
 
@@ -164,11 +163,11 @@ export const PurchaseManagement: React.FC = () => {
                       {getSupplierName(purchase.supplierId)}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {new Date(purchase.date).toLocaleDateString()}
+                      {new Date(purchase.purchaseDate).toLocaleDateString()}
                     </p>
                   </div>
                   <span className="font-semibold text-red-600">
-                    {formatPrice(purchase.totalCost)}
+                    {formatPrice(purchase.totalAmount)}
                   </span>
                 </div>
                 <div className="space-y-1">

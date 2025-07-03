@@ -109,7 +109,7 @@ export interface HirePurchase {
   items: CartItem[];
   totalAmount: number;
   downPayment: number;
-  remainingBalance: number;
+  remainingBalance: number;  // Changed from remainingAmount to remainingBalance
   installmentAmount: number;
   installmentPeriod: 'daily' | 'weekly' | 'monthly';
   nextPaymentDate: Date;
@@ -151,9 +151,9 @@ export interface Purchase {
   id: string;
   supplierId: string;
   items: PurchaseItem[];
-  totalAmount: number;
+  totalAmount: number;  // Changed from totalCost to totalAmount
   attendantId: string;
-  purchaseDate: Date;
+  purchaseDate: Date;   // This is the correct property name
   receivedDate?: Date;
   status: 'pending' | 'received' | 'cancelled';
   invoiceNumber?: string;
@@ -167,6 +167,9 @@ export interface StoreLocation {
   phone?: string;
   email?: string;
   managerId?: string;
+  manager?: string;      // Added for UI display
+  status?: 'active' | 'inactive';  // Added for UI
+  totalSales?: number;   // Added for UI display
   isActive: boolean;
   createdAt: Date;
 }

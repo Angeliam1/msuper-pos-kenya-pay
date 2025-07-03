@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +45,7 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
     role: 'cashier' as 'admin' | 'manager' | 'cashier',
     permissions: [] as string[],
     isActive: true,
+    pin: '',
     password: '',
     workSchedule: {
       startTime: '08:00',
@@ -71,6 +71,7 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
       role: 'cashier',
       permissions: [],
       isActive: true,
+      pin: '',
       password: '',
       workSchedule: {
         startTime: '08:00',
@@ -92,6 +93,7 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
       role: attendant.role,
       permissions: [...attendant.permissions],
       isActive: attendant.isActive,
+      pin: attendant.pin,
       password: '',
       workSchedule: attendant.workSchedule || {
         startTime: '08:00',
@@ -217,16 +219,29 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
                       />
                     </div>
                     <div>
-                      <Label htmlFor="password">Password *</Label>
+                      <Label htmlFor="pin">PIN *</Label>
                       <Input
-                        id="password"
+                        id="pin"
                         type="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder={editingAttendant ? "Leave blank to keep current" : "Enter password"}
-                        required={!editingAttendant}
+                        maxLength={4}
+                        value={formData.pin}
+                        onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                        placeholder="4-digit PIN"
+                        required
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder={editingAttendant ? "Leave blank to keep current" : "Enter password"}
+                      required={!editingAttendant}
+                    />
                   </div>
 
                   <div>

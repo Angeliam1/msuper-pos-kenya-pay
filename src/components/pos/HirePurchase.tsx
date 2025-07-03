@@ -59,7 +59,7 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
         customerId: selectedCustomerId,
         totalAmount,
         downPayment,
-        remainingAmount,
+        remainingBalance: remainingAmount,  // Fixed property name
         installmentAmount,
         installmentPeriod,
         nextPaymentDate,
@@ -284,7 +284,7 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
                   <TableRow key={hp.id}>
                     <TableCell>{customer?.name || 'Unknown'}</TableCell>
                     <TableCell>{formatPrice(hp.totalAmount)}</TableCell>
-                    <TableCell>{formatPrice(hp.remainingAmount)}</TableCell>
+                    <TableCell>{formatPrice(hp.remainingBalance)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
