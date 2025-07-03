@@ -15,7 +15,8 @@ export const mockProducts: Product[] = [
     description: 'Latest iPhone with advanced camera system',
     lowStockThreshold: 5,
     supplierId: '1',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '2',
@@ -30,7 +31,8 @@ export const mockProducts: Product[] = [
     description: 'Premium Android smartphone with S Pen',
     lowStockThreshold: 5,
     supplierId: '2',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '3',
@@ -45,7 +47,8 @@ export const mockProducts: Product[] = [
     description: 'Professional laptop with M3 chip',
     lowStockThreshold: 3,
     supplierId: '3',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '4',
@@ -60,7 +63,8 @@ export const mockProducts: Product[] = [
     description: 'Premium noise-cancelling headphones',
     lowStockThreshold: 10,
     supplierId: '4',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '5',
@@ -75,7 +79,8 @@ export const mockProducts: Product[] = [
     description: 'Versatile tablet for work and play',
     lowStockThreshold: 5,
     supplierId: '5',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '6',
@@ -90,7 +95,8 @@ export const mockProducts: Product[] = [
     description: 'Ultra-portable laptop for professionals',
     lowStockThreshold: 5,
     supplierId: '6',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '7',
@@ -105,7 +111,8 @@ export const mockProducts: Product[] = [
     description: 'Advanced smartwatch with health monitoring',
     lowStockThreshold: 8,
     supplierId: '7',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '8',
@@ -120,7 +127,8 @@ export const mockProducts: Product[] = [
     description: 'Professional mirrorless camera',
     lowStockThreshold: 2,
     supplierId: '8',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '9',
@@ -135,7 +143,8 @@ export const mockProducts: Product[] = [
     description: 'Next-gen gaming console',
     lowStockThreshold: 3,
     supplierId: '9',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: '10',
@@ -150,7 +159,8 @@ export const mockProducts: Product[] = [
     description: 'Premium wireless earbuds with ANC',
     lowStockThreshold: 15,
     supplierId: '10',
-    image: '/placeholder.svg'
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
 
@@ -236,7 +246,8 @@ export const mockExpenses: Expense[] = [
     category: 'Rent',
     amount: 50000,
     description: 'Monthly rent for Nairobi store',
-    attendantId: '1'
+    attendantId: '1',
+    createdAt: new Date()
   }
 ];
 

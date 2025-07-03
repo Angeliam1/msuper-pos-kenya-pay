@@ -55,9 +55,11 @@ export const ProductCatalog: React.FC = () => {
       return;
     }
 
-    const productData: Omit<Product, 'id'> = {
+    const productData: Product = {
+      id: `product-${Date.now()}`,
       ...newProduct,
       supplierId: '',
+      description: newProduct.description || '',
       createdAt: new Date(),
       updatedAt: new Date()
     };

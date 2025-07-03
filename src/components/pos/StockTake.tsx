@@ -65,18 +65,18 @@ export const StockTake: React.FC = () => {
   };
 
   const finalizeStockTake = async () => {
-    const updatedProducts: Promise<void>[] = [];
+    const updatePromises: Promise<Product>[] = [];
     
     Object.values(stockCounts).forEach(count => {
       if (count.counted && count.variance !== 0) {
-        updatedProducts.push(
+        updatePromises.push(
           updateProduct(count.productId, { stock: count.physicalCount })
         );
       }
     });
 
     try {
-      await Promise.all(updatedProducts);
+      await Promise.all(updatePromises);
       await refetch();
       setStockTakeStarted(false);
       setStockCounts({});

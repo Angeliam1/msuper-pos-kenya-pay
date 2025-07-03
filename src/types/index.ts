@@ -13,6 +13,7 @@ export interface Product {
   description: string;
   unit?: string;
   lowStockThreshold?: number;
+  image?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -128,17 +129,21 @@ export interface Purchase {
   id: string;
   supplierId: string;
   items: PurchaseItem[];
-  total: number;
-  date: Date;
-  status: 'pending' | 'received' | 'partial';
+  totalAmount: number;
+  purchaseDate: Date;
+  status: 'pending' | 'received' | 'partial' | 'cancelled';
+  attendantId: string;
+  invoiceNumber?: string;
+  notes?: string;
   createdAt: Date;
 }
 
 export interface PurchaseItem {
   productId: string;
+  productName?: string;
   quantity: number;
   unitCost: number;
-  total: number;
+  totalCost: number;
 }
 
 export interface StoreLocation {
@@ -164,4 +169,147 @@ export interface ReceiptSettings {
   footer: string;
   autoprint?: boolean;
   copies?: number;
+}
+
+// Additional interfaces that were missing
+export interface Staff {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
+  permissions: string[];
+}
+
+export interface LoyaltyProgram {
+  id: string;
+  name: string;
+  pointsPerShilling: number;
+  minimumSpend: number;
+  isActive: boolean;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  supplierId: string;
+  items: any[];
+  status: string;
+  createdAt: Date;
+}
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  type: 'in' | 'out';
+  quantity: number;
+  reason: string;
+  date: Date;
+}
+
+export interface Settings {
+  storeName: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
+  currency: string;
+  taxRate: number;
+  receiptFooter: string;
+  lowStockThreshold: number;
+  enableLoyaltyProgram: boolean;
+  loyaltyPointsPerShilling: number;
+  autoBackup: boolean;
+  printerName: string;
+  receiptWidth: number;
+  showProductImages: boolean;
+  enableBarcode: boolean;
+  requireCustomerInfo: boolean;
+  allowNegativeStock: boolean;
+  enableMultiStore: boolean;
+  defaultPaymentMethod: string;
+  enableSMS: boolean;
+  smsApiKey: string;
+  smsUsername: string;
+  enableEmailReceipts: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  theme: string;
+  language: string;
+  timezone: string;
+  dateFormat: string;
+  timeFormat: string;
+  enableAdvancedReports: boolean;
+  exportFormat: string;
+  backupFrequency: string;
+  enableAuditLog: boolean;
+  maxLoginAttempts: number;
+  sessionTimeout: number;
+  enableTwoFactor: boolean;
+  allowGuestCheckout: boolean;
+  enableProductBundles: boolean;
+  enableSubscriptions: boolean;
+  enableDropshipping: boolean;
+  enablePreorders: boolean;
+  enableWishlist: boolean;
+  enableProductReviews: boolean;
+  enableCoupons: boolean;
+  enableGiftCards: boolean;
+  enableAffiliates: boolean;
+  enableAnalytics: boolean;
+  googleAnalyticsId: string;
+  facebookPixelId: string;
+  enableSEO: boolean;
+  metaTitle: string;
+  metaDescription: string;
+  enableSitemap: boolean;
+  enableRobotsTxt: boolean;
+  enableCompression: boolean;
+  enableCaching: boolean;
+  enableCDN: boolean;
+  cdnUrl: string;
+  enableSSL: boolean;
+  enableHSTS: boolean;
+  enableCSP: boolean;
+  cspPolicy: string;
+  enableCORS: boolean;
+  corsOrigins: string;
+  enableRateLimit: boolean;
+  rateLimitRequests: number;
+  rateLimitWindow: number;
+  enableFirewall: boolean;
+  firewallRules: string;
+  enableMonitoring: boolean;
+  monitoringUrl: string;
+  enableLogging: boolean;
+  logLevel: string;
+  logRetention: number;
+  enableAlerts: boolean;
+  alertEmail: string;
+  alertThreshold: number;
+  enableBackup: boolean;
+  backupProvider: string;
+  backupRetention: number;
+  enableReplication: boolean;
+  replicationNodes: string;
+  enableCluster: boolean;
+  clusterNodes: string;
+  enableLoadBalancer: boolean;
+  loadBalancerUrl: string;
+  enableAutoScale: boolean;
+  autoScaleMin: number;
+  autoScaleMax: number;
+  enableContainer: boolean;
+  containerImage: string;
+  enableOrchestration: boolean;
+  orchestrationPlatform: string;
 }

@@ -65,7 +65,11 @@ export const QuickAddProduct: React.FC<QuickAddProductProps> = ({
       stock: parseInt(formData.stock),
       unit: formData.unit as 'pcs' | 'kg' | 'bundle' | 'litre' | 'meter' | 'box',
       barcode: formData.barcode || undefined,
-      lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 5
+      lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 5,
+      supplierId: '',
+      description: '',
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     onAddProduct(productData);

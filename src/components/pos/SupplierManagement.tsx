@@ -44,6 +44,7 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
       phone: formData.phone,
       email: formData.email,
       address: formData.address,
+      contactPerson: formData.name, // Use name as contact person if not specified
       products: editingSupplier?.products || [],
       bankDetails: formData.bankName || formData.accountNumber || formData.accountName ? {
         bankName: formData.bankName,
