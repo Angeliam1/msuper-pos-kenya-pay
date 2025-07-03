@@ -64,16 +64,16 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Our Products</h1>
-        <p className="text-gray-600">Discover our premium collection of electronics</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Our Products</h1>
+        <p className="text-gray-600">Discover our premium collection</p>
       </div>
 
       {/* Search and Filters */}
       <Card className="bg-white shadow-sm">
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <div className="space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -81,7 +81,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12"
+                className="pl-10 h-12 bg-gray-50 border-gray-200"
               />
             </div>
             
@@ -92,7 +92,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
-                  className="rounded-full"
+                  className={`rounded-full ${selectedCategory === category ? 'bg-naivas-teal hover:bg-naivas-teal/90' : ''}`}
                 >
                   {category}
                 </Button>
@@ -102,19 +102,35 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Products Grid - Naivas Style */}
+      <div className="grid grid-cols-2 gap-3">
         {filteredProducts.map(product => {
           const comparePrice = getComparePrice(product.price);
           const discountPercentage = getDiscountPercentage(comparePrice, product.price);
+          const isAnniversary = Math.random() > 0.7; // 30% chance for anniversary deals
           
           return (
-            <Card key={product.id} className="hover:shadow-xl transition-all duration-300 group overflow-hidden">
-              <CardContent className="p-0">
+            <Card key={product.id} className="relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                {/* Discount Badge */}
+                {discountPercentage > 0 && (
+                  <div className="absolute top-2 left-2 bg-naivas-orange text-white px-2 py-1 rounded text-xs font-bold z-10">
+                    {discountPercentage}% off
+                  </div>
+                )}
+                
+                {/* Anniversary Deal Badge */}
+                {isAnniversary && (
+                  <div className="absolute top-8 left-0 bg-green-700 text-white px-2 py-1 rounded-r text-xs font-bold flex items-center z-10">
+                    <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
+                    Anniversary Deals
+                  </div>
+                )}
+
                 {/* Product Image with Watermark */}
-                <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                <div className="relative aspect-square bg-gray-100 rounded-lg mb-3 overflow-hidden">
                   <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative">
-                    <div className="text-4xl font-bold text-gray-400">
+                    <div className="text-3xl font-bold text-gray-400">
                       {product.name.substring(0, 2).toUpperCase()}
                     </div>
                     
@@ -125,41 +141,27 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       </div>
                     </div>
                     
-                    {/* Discount Badge */}
-                    {discountPercentage > 0 && (
-                      <Badge className="absolute top-2 left-2 bg-red-500 text-white">
-                        -{discountPercentage}%
-                      </Badge>
-                    )}
-                    
                     {/* Quick Actions */}
-                    <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="h-8 w-8 rounded-full p-0"
+                        className="h-7 w-7 rounded-full p-0"
                         onClick={() => handleAddToWishlist(product)}
                       >
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 w-8 rounded-full p-0"
-                      >
-                        <Eye className="h-4 w-4" />
+                        <Heart className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 </div>
                 
-                <div className="p-4 space-y-3">
+                <div className="space-y-2">
                   <div>
-                    <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 mb-1">
+                    <h3 className="font-medium text-sm line-clamp-2 text-gray-800 mb-1">
                       {product.name}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
+                    <div className="flex items-center gap-1 mb-2">
+                      <Badge variant="secondary" className="text-xs bg-gray-100">
                         {product.category}
                       </Badge>
                       <div className="flex items-center gap-1">
@@ -169,41 +171,38 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                             className="h-3 w-3 fill-current text-yellow-400"
                           />
                         ))}
-                        <span className="text-xs text-gray-500 ml-1">(4.5)</span>
+                        <span className="text-xs text-gray-500">(4.5)</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-primary">
-                          {formatPrice(product.price)}
-                        </span>
-                        {comparePrice > product.price && (
-                          <span className="text-sm text-gray-500 line-through">
-                            {formatPrice(comparePrice)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <Badge 
-                          variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"}
-                          className="text-xs"
-                        >
-                          {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                        </Badge>
-                      </div>
+                  <div className="space-y-1">
+                    <div className="text-lg font-bold text-naivas-teal">
+                      {formatPrice(product.price)}
                     </div>
+                    {comparePrice > product.price && (
+                      <div className="text-sm text-gray-500 line-through">
+                        {formatPrice(comparePrice)}
+                      </div>
+                    )}
+                    <div className="text-sm text-green-600">
+                      Save KES {comparePrice - product.price}
+                    </div>
+                    
+                    <Badge 
+                      variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"}
+                      className="text-xs"
+                    >
+                      {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                    </Badge>
                   </div>
                   
                   <Button
                     onClick={() => handleAddToCart(product)}
-                    className="w-full bg-primary hover:bg-primary/90 group-hover:bg-primary/80 transition-colors"
+                    className="w-full bg-naivas-orange hover:bg-orange-600 text-white transition-colors"
                     disabled={product.stock <= 0}
                   >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+                    {product.stock > 0 ? 'ADD TO CART' : 'OUT OF STOCK'}
                   </Button>
                 </div>
               </CardContent>

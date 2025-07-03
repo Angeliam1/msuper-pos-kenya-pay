@@ -16,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 217 91% 60%;
+    --primary: 175 100% 32%; /* Naivas teal color */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
@@ -25,7 +25,7 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 217 91% 60%;
+    --accent: 175 100% 32%; /* Naivas teal color */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -33,18 +33,24 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%;
+    --ring: 175 100% 32%;
 
     --radius: 0.5rem;
 
+    /* Naivas specific colors */
+    --naivas-teal: 175 100% 32%;
+    --naivas-orange: 22 100% 60%;
+    --naivas-light-gray: 210 11% 96%;
+    --naivas-dark-gray: 215 16% 47%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 175 100% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 175 100% 32%;
   }
 
   .dark {
@@ -57,7 +63,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217 91% 60%;
+    --primary: 175 100% 32%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -66,7 +72,7 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217 91% 60%;
+    --accent: 175 100% 32%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
@@ -74,16 +80,16 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 217 91% 60%;
+    --ring: 175 100% 32%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 175 100% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 175 100% 32%;
   }
 }
 
@@ -94,5 +100,24 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Naivas specific utility classes */
+@layer utilities {
+  .bg-naivas-teal {
+    background-color: hsl(var(--naivas-teal));
+  }
+  .bg-naivas-orange {
+    background-color: hsl(var(--naivas-orange));
+  }
+  .text-naivas-teal {
+    color: hsl(var(--naivas-teal));
+  }
+  .text-naivas-orange {
+    color: hsl(var(--naivas-orange));
+  }
+  .border-naivas-teal {
+    border-color: hsl(var(--naivas-teal));
   }
 }
