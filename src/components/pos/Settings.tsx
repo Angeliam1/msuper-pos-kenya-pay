@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings as SettingsIcon, Store, Receipt, Printer, Shield, Smartphone, Palette } from 'lucide-react';
-import { StoreSettings } from './settings/StoreSettings';
-import { PrinterSettings } from './settings/PrinterSettings';
-import { ReceiptSettings } from './settings/ReceiptSettings';
-import { SMSSettings } from './settings/SMSSettings';
-import { ThemeSettings } from './settings/ThemeSettings';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings as SettingsIcon, Store, Receipt, Printer, Smartphone, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { StoreSettings } from './settings/StoreSettings';
+import { ReceiptSettings } from './settings/ReceiptSettings';
+import { PrinterSettings } from './settings/PrinterSettings';
+import { SMSSettings } from './settings/SMSSettings';
+import { ThemeSelector } from './ThemeSelector';
 
 interface SettingsProps {
   onSaveSettings: (settings: any) => void;
@@ -16,208 +22,173 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
-    storeName: 'TOPTEN ELECTRONICS LTD',
-    storeAddress: 'Githunguri Town Next To Main Market',
-    storePhone: '0725333337',
-    storeEmail: 'info@topten.com',
-    kraPin: 'P123456789A',
-    paybill: 'Paybill 247247 Acc 333337',
-    mpesaPaybill: '247247',
-    mpesaAccount: '333337',
-    mpesaTill: '9951109', // Updated with your till number
-    bankAccount: 'KCB Bank Account: 1234567890',
-    paymentInstructions: 'Pay via M-Pesa Till 9951109 or Bank Transfer',
-    taxRate: 16,
+    storeName: 'DIGITAL DEN',
+    storeAddress: '123 Electronics Street, Nairobi',
+    storePhone: '+254 700 000 000',
+    storeEmail: 'info@digitalden.co.ke',
     currency: 'KES',
-    
-    // Receipt Settings - Updated
-    showStoreName: true,
-    showStoreAddress: true,
-    showStorePhone: true,
-    showCustomerName: true,
-    showCustomerPhone: true,
-    showCustomerAddress: true,
-    showNotes: true,
-    receiptHeader: 'Thank you for shopping with us!',
-    receiptFooter: 'Visit us again soon!',
-    showQRCode: true,
-    showBarcode: true,
-    autoPrintReceipt: true,
-    showLogo: false,
-    customLine1: 'Till Number: 9951109',
-    customLine2: 'KRA PIN: P123456789A',
-    additionalNotes: '',
-    
-    // SMS Settings
-    smsEnabled: true,
-    smsProvider: 'whatsapp',
-    businessPhone: '0725333337',
-    businessName: 'TOPTEN ELECTRONICS',
-    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
-    paymentReminderTemplate: 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Pay now: {paymentLink}',
-    paymentConfirmTemplate: 'Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - {businessName}',
-    
-    // Theme Settings - only light and dark
-    theme: 'light',
-    fontSize: 'medium',
-    
-    // System Settings
+    taxRate: 16,
+    receiptFooter: 'Thank you for shopping with Digital Den!',
     lowStockThreshold: 10,
+    enableLoyaltyProgram: true,
+    loyaltyPointsPerShilling: 0.01,
     autoBackup: true,
-    backupFrequency: 'daily',
-    sessionTimeout: 30,
-    
-    // Security
-    requirePasswordChange: false,
-    twoFactorAuth: false,
-    maxLoginAttempts: 5,
-    
-    // Printer Settings
-    printerEnabled: true,
-    printerConnectionType: 'bluetooth',
-    bluetoothPrinterName: '',
-    bluetoothPrinterAddress: '',
-    ethernetPrinterIP: '192.168.1.100',
-    ethernetPrinterPort: '9100',
-    usbPrinterName: 'Default Printer',
-    paperSize: '80mm',
-    printCopies: 1,
-    autoPrint: false,
-    printTimeout: 30
+    printerName: 'Default Printer',
+    receiptWidth: 80,
+    showProductImages: true,
+    enableBarcode: true,
+    requireCustomerInfo: false,
+    allowNegativeStock: false,
+    enableMultiStore: false,
+    defaultPaymentMethod: 'cash',
+    enableSMS: false,
+    smsApiKey: '',
+    smsUsername: '',
+    enableEmailReceipts: false,
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUsername: '',
+    smtpPassword: '',
+    theme: 'light',
+    fontSize: 'medium'
   });
 
   const handleSettingChange = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
-  const handleSave = () => {
-    try {
-      onSaveSettings(settings);
-      toast({
-        title: "Settings Saved",
-        description: "Your M-Pesa till number and other settings have been saved successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Save Failed",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleTestPrint = () => {
-    console.log('Testing printer connection with settings:', {
-      connectionType: settings.printerConnectionType,
-      bluetooth: {
-        name: settings.bluetoothPrinterName,
-        address: settings.bluetoothPrinterAddress
-      },
-      ethernet: {
-        ip: settings.ethernetPrinterIP,
-        port: settings.ethernetPrinterPort
-      },
-      usb: {
-        name: settings.usbPrinterName
-      }
-    });
+  const handleSaveSettings = () => {
+    onSaveSettings(settings);
     toast({
-      title: "Test Print",
-      description: "Test print sent to printer!",
-    });
-  };
-
-  const handleTestSMS = () => {
-    console.log('Testing SMS with settings:', {
-      provider: settings.smsProvider,
-      phone: settings.businessPhone,
-      businessName: settings.businessName
-    });
-    toast({
-      title: "SMS Test",
-      description: "Test SMS configuration completed!",
+      title: "Settings Saved",
+      description: "Your settings have been saved successfully.",
     });
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <SettingsIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-          <h2 className="text-xl sm:text-2xl font-bold">Settings</h2>
-        </div>
-        <Button onClick={handleSave} className="text-sm sm:text-base">Save Changes</Button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Settings</h2>
+        <Button onClick={handleSaveSettings}>
+          Save Settings
+        </Button>
       </div>
 
       <Tabs defaultValue="store" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
-          <TabsTrigger value="store" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Store className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Store</span>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="store" className="flex items-center gap-2">
+            <Store className="h-4 w-4" />
+            Store
           </TabsTrigger>
-          <TabsTrigger value="receipt" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Receipt</span>
+          <TabsTrigger value="receipt" className="flex items-center gap-2">
+            <Receipt className="h-4 w-4" />
+            Receipt
           </TabsTrigger>
-          <TabsTrigger value="printer" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Printer className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Printer</span>
+          <TabsTrigger value="printer" className="flex items-center gap-2">
+            <Printer className="h-4 w-4" />
+            Printer
           </TabsTrigger>
-          <TabsTrigger value="sms" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>SMS</span>
+          <TabsTrigger value="sms" className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" />
+            SMS
           </TabsTrigger>
-          <TabsTrigger value="theme" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Theme</span>
+          <TabsTrigger value="theme" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Theme
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Security</span>
+          <TabsTrigger value="advanced" className="flex items-center gap-2">
+            <SettingsIcon className="h-4 w-4" />
+            Advanced
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="store" className="space-y-4 sm:space-y-6">
-          <StoreSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange} 
-          />
+        <TabsContent value="store">
+          <StoreSettings settings={settings} onSettingChange={handleSettingChange} />
         </TabsContent>
 
-        <TabsContent value="receipt" className="space-y-4 sm:space-y-6">
-          <ReceiptSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange} 
-          />
+        <TabsContent value="receipt">
+          <ReceiptSettings settings={settings} onSettingChange={handleSettingChange} />
         </TabsContent>
 
-        <TabsContent value="printer" className="space-y-4 sm:space-y-6">
-          <PrinterSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange}
-            onTestPrint={handleTestPrint}
-          />
+        <TabsContent value="printer">
+          <PrinterSettings settings={settings} onSettingChange={handleSettingChange} />
         </TabsContent>
 
-        <TabsContent value="sms" className="space-y-4 sm:space-y-6">
-          <SMSSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange}
-            onTestSMS={handleTestSMS}
-          />
+        <TabsContent value="sms">
+          <SMSSettings settings={settings} onSettingChange={handleSettingChange} />
         </TabsContent>
 
-        <TabsContent value="theme" className="space-y-4 sm:space-y-6">
-          <ThemeSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange}
-          />
+        <TabsContent value="theme">
+          <ThemeSelector />
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-4 sm:space-y-6">
-          <div className="text-center py-6 sm:py-8 text-gray-500 text-sm sm:text-base">
-            Security settings coming soon...
-          </div>
+        <TabsContent value="advanced">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    value={settings.lowStockThreshold}
+                    onChange={(e) => handleSettingChange('lowStockThreshold', parseInt(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="loyaltyPoints">Loyalty Points per KES</Label>
+                  <Input
+                    id="loyaltyPoints"
+                    type="number"
+                    step="0.01"
+                    value={settings.loyaltyPointsPerShilling}
+                    onChange={(e) => handleSettingChange('loyaltyPointsPerShilling', parseFloat(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="enableLoyalty">Enable Loyalty Program</Label>
+                  <Switch
+                    id="enableLoyalty"
+                    checked={settings.enableLoyaltyProgram}
+                    onCheckedChange={(checked) => handleSettingChange('enableLoyaltyProgram', checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="autoBackup">Auto Backup</Label>
+                  <Switch
+                    id="autoBackup"
+                    checked={settings.autoBackup}
+                    onCheckedChange={(checked) => handleSettingChange('autoBackup', checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="allowNegativeStock">Allow Negative Stock</Label>
+                  <Switch
+                    id="allowNegativeStock"
+                    checked={settings.allowNegativeStock}
+                    onCheckedChange={(checked) => handleSettingChange('allowNegativeStock', checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="enableBarcode">Enable Barcode Scanner</Label>
+                  <Switch
+                    id="enableBarcode"
+                    checked={settings.enableBarcode}
+                    onCheckedChange={(checked) => handleSettingChange('enableBarcode', checked)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Dashboard } from '@/components/pos/Dashboard';
@@ -17,6 +16,7 @@ import { ExpenseManagement } from '@/components/pos/ExpenseManagement';
 import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
 import { HirePurchase } from '@/components/pos/HirePurchase';
 import { OnlineStoreManager } from '@/components/online-store/OnlineStoreManager';
+import { ThemeProvider } from '@/components/pos/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -77,7 +77,6 @@ const Index = () => {
     createdAt: new Date()
   };
 
-  // Mock handlers
   const handleSaveSettings = (settings: any) => {
     console.log('Settings saved:', settings);
   };
@@ -114,7 +113,6 @@ const Index = () => {
     console.log('Add expense:', expense);
   };
 
-  // Mock handlers for HirePurchase
   const handleCreateHirePurchase = (hirePurchase: any) => {
     console.log('Create hire purchase:', hirePurchase);
     return `hp-${Date.now()}`;
@@ -124,10 +122,9 @@ const Index = () => {
     console.log('Cancel hire purchase');
   };
 
-  // Mock store settings
   const storeSettings = {
     smsEnabled: true,
-    businessName: 'TOPTEN ELECTRONICS',
+    businessName: 'DIGITAL DEN',
     businessPhone: '0725333337',
     mpesaPaybill: '174379',
     mpesaAccount: '9951109',
@@ -164,7 +161,7 @@ const Index = () => {
           />
         );
       case 'settings':
-        return <Settings onSaveSettings={() => {}} />;
+        return <Settings onSaveSettings={handleSaveSettings} />;
       case 'alerts':
         return <LowStockAlerts products={products} />;
       case 'staff':
@@ -172,24 +169,24 @@ const Index = () => {
           <RoleManagement
             attendants={attendants}
             currentAttendant={currentAttendant}
-            onAddAttendant={() => {}}
-            onUpdateAttendant={() => {}}
+            onAddAttendant={handleAddAttendant}
+            onUpdateAttendant={handleUpdateAttendant}
           />
         );
       case 'suppliers':
         return (
           <SupplierManagement
             suppliers={suppliers}
-            onAddSupplier={() => {}}
-            onUpdateSupplier={() => {}}
-            onDeleteSupplier={() => {}}
+            onAddSupplier={handleAddSupplier}
+            onUpdateSupplier={handleUpdateSupplier}
+            onDeleteSupplier={handleDeleteSupplier}
           />
         );
       case 'loyalty':
         return (
           <LoyaltyManagement
             customers={customers}
-            onUpdateCustomer={() => {}}
+            onUpdateCustomer={handleUpdateCustomer}
           />
         );
       case 'stores':
@@ -198,7 +195,7 @@ const Index = () => {
         return (
           <ReturnsManagement
             transactions={transactions}
-            onRefundTransaction={() => {}}
+            onRefundTransaction={handleRefundTransaction}
           />
         );
       case 'expenses':
@@ -207,7 +204,7 @@ const Index = () => {
             expenses={expenses}
             attendants={attendants}
             currentAttendant={currentAttendant}
-            onAddExpense={() => {}}
+            onAddExpense={handleAddExpense}
           />
         );
       case 'purchases':
@@ -219,17 +216,9 @@ const Index = () => {
             customers={customers}
             hirePurchases={[]}
             cartItems={[]}
-            storeSettings={{
-              smsEnabled: true,
-              businessName: 'TOPTEN ELECTRONICS',
-              businessPhone: '0725333337',
-              mpesaPaybill: '174379',
-              mpesaAccount: '9951109',
-              hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
-              smsProvider: 'phone'
-            }}
-            onCreateHirePurchase={() => `hp-${Date.now()}`}
-            onCancel={() => {}}
+            storeSettings={storeSettings}
+            onCreateHirePurchase={handleCreateHirePurchase}
+            onCancel={handleCancelHirePurchase}
           />
         );
       case 'online-store':
@@ -240,31 +229,33 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-      />
-      
-      <div className="flex-1 lg:ml-0">
-        {/* Mobile header */}
-        <div className="lg:hidden bg-white border-b p-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-background text-foreground flex theme-transition">
+        <Sidebar 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
         
-        <main className="p-4 lg:p-8">
-          {renderContent()}
-        </main>
+        <div className="flex-1 lg:ml-0">
+          {/* Mobile header */}
+          <div className="lg:hidden bg-card border-b p-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          <main className="p-4 lg:p-8">
+            {renderContent()}
+          </main>
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

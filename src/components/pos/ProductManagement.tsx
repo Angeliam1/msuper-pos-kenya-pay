@@ -15,7 +15,11 @@ import {
   User,
   XCircle,
   Receipt,
-  Printer
+  Printer,
+  Scan,
+  Grid,
+  List,
+  Package
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, Customer, Transaction, PaymentSplit, CartItem } from '@/types';
@@ -48,12 +52,15 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog"
-import { addTransaction, updateCustomer } from '@/lib/database';
+import { addTransaction, updateCustomer, updateProduct } from '@/lib/database';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts, getCustomers } from '@/lib/database';
 import { PaymentMethods } from './PaymentMethods';
+import { BarcodeScanner } from './BarcodeScanner';
 import { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
+
+type ViewMode = 'grid' | 'list';
 
 export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
@@ -63,6 +70,9 @@ export const ProductManagement: React.FC = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
   const { data: products = [] } = useQuery({
@@ -92,11 +102,23 @@ export const ProductManagement: React.FC = () => {
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.barcode?.includes(searchTerm) ||
+                         product.id.includes(searchTerm);
     return matchesCategory && matchesSearch;
   });
 
   const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      toast({
+        title: "Out of Stock",
+        description: `${product.name} is currently out of stock`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const existingItem = cart.find(item => item.id === product.id);
     if (existingItem) {
       setCart(prev => 
@@ -110,6 +132,11 @@ export const ProductManagement: React.FC = () => {
       const cartItem: CartItem = { ...product, quantity: 1 };
       setCart(prev => [...prev, cartItem]);
     }
+
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} added to cart`,
+    });
   };
 
   const removeFromCart = (productId: string) => {
@@ -161,6 +188,16 @@ export const ProductManagement: React.FC = () => {
 
       await addTransaction(transaction);
       
+      // Update stock levels
+      cart.forEach(async (item) => {
+        const product = products.find(p => p.id === item.id);
+        if (product) {
+          await updateProduct(item.id, {
+            stock: product.stock - item.quantity
+          });
+        }
+      });
+      
       // Add loyalty points automatically if customer is selected
       if (customerId) {
         const pointsEarned = Math.floor(calculateTotal() / 100); // 1 point per 100 KES
@@ -205,19 +242,143 @@ export const ProductManagement: React.FC = () => {
     contentRef: receiptRef,
   });
 
+  const renderProductGrid = () => (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {filteredProducts.map(product => (
+        <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow">
+          <CardContent className="p-3 flex flex-col items-center justify-center" onClick={() => addToCart(product)}>
+            <div className="relative aspect-square w-full h-24 rounded-md overflow-hidden mb-2">
+              <img
+                src={product.image || '/placeholder.svg'}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              {product.stock <= 0 && (
+                <div className="absolute inset-0 bg-red-500 bg-opacity-50 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">OUT OF STOCK</span>
+                </div>
+              )}
+            </div>
+            <div className="text-sm font-medium text-center">{product.name}</div>
+            <div className="text-xs text-gray-500 text-center mb-1">{formatPrice(product.price)}</div>
+            <Badge variant={product.stock > 0 ? "default" : "destructive"} className="text-xs">
+              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+            </Badge>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderProductList = () => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Product</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Price</TableHead>
+          <TableHead>Stock</TableHead>
+          <TableHead>Barcode</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredProducts.map(product => (
+          <TableRow key={product.id}>
+            <TableCell className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden">
+                <img
+                  src={product.image || '/placeholder.svg'}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <div className="font-medium">{product.name}</div>
+                <div className="text-sm text-gray-500">{product.description}</div>
+              </div>
+            </TableCell>
+            <TableCell>{product.category}</TableCell>
+            <TableCell>{formatPrice(product.price)}</TableCell>
+            <TableCell>
+              <Badge variant={product.stock > 0 ? "default" : "destructive"}>
+                {product.stock > 0 ? `${product.stock} units` : 'Out of stock'}
+              </Badge>
+            </TableCell>
+            <TableCell>{product.barcode || 'N/A'}</TableCell>
+            <TableCell>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => addToCart(product)}
+                  disabled={product.stock <= 0}
+                  size="sm"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={() => setShowInventory(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Package className="h-4 w-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  if (showBarcodeScanner) {
+    return (
+      <BarcodeScanner
+        products={products}
+        onProductFound={addToCart}
+        onClose={() => setShowBarcodeScanner(false)}
+      />
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Product List */}
       <div className="lg:col-span-3 space-y-4">
         {/* Header and Filters */}
         <Card>
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle>Products for Sale</CardTitle>
             <div className="flex items-center space-x-2">
-              <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBarcodeScanner(true)}
+              >
+                <Scan className="h-4 w-4 mr-2" />
+                Scan
+              </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search products..."
+                  placeholder="Search products, categories, or barcodes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -236,26 +397,18 @@ export const ProductManagement: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-          </CardHeader>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardContent className="p-2">
             <ScrollArea className="h-[400px] w-full rounded-md p-2">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredProducts.map(product => (
-                  <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-3 flex flex-col items-center justify-center" onClick={() => addToCart(product)}>
-                      <div className="relative aspect-square w-full h-24 rounded-md overflow-hidden mb-2">
-                        <img
-                          src={product.image || '/placeholder.svg'}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="text-sm font-medium text-center">{product.name}</div>
-                      <div className="text-xs text-gray-500 text-center">{formatPrice(product.price)}</div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {viewMode === 'grid' ? renderProductGrid() : renderProductList()}
+              {filteredProducts.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  No products found matching your criteria
+                </div>
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
@@ -265,9 +418,20 @@ export const ProductManagement: React.FC = () => {
       <div className="lg:col-span-1 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Shopping Cart
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Cart ({cart.length})
+              </div>
+              {cart.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCart([])}
+                >
+                  Clear
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-2">
@@ -336,6 +500,7 @@ export const ProductManagement: React.FC = () => {
               <div className="p-3 border rounded-md">
                 <p className="font-medium">{customer.name}</p>
                 <p className="text-sm text-gray-500">{customer.phone}</p>
+                <p className="text-sm text-gray-500">Points: {customer.loyaltyPoints || 0}</p>
               </div>
             ) : (
               <Dialog>
@@ -360,7 +525,10 @@ export const ProductManagement: React.FC = () => {
                         className="w-full justify-start"
                         onClick={() => handleSelectCustomer(customer)}
                       >
-                        {customer.name} - {customer.phone}
+                        <div className="text-left">
+                          <div>{customer.name} - {customer.phone}</div>
+                          <div className="text-sm text-gray-500">Points: {customer.loyaltyPoints || 0}</div>
+                        </div>
                       </Button>
                     ))}
                   </div>
@@ -404,7 +572,10 @@ export const ProductManagement: React.FC = () => {
             <DialogTitle>Sale Receipt</DialogTitle>
           </DialogHeader>
           <div ref={receiptRef} className="p-4">
-            <h3 className="text-lg font-semibold text-center">TOPTEN ELECTRONICS</h3>
+            <h3 className="text-lg font-semibold text-center">DIGITAL DEN</h3>
+            <p className="text-sm text-gray-500 text-center">
+              Your Electronics Hub
+            </p>
             <p className="text-sm text-gray-500 text-center">
               Nairobi, Kenya
             </p>
@@ -447,7 +618,7 @@ export const ProductManagement: React.FC = () => {
             </div>
             <Separator className="my-2" />
             <p className="text-xs text-gray-500 text-center">
-              Thank you for your purchase!
+              Thank you for shopping with Digital Den!
             </p>
           </div>
           <Button className="w-full" onClick={handlePrint}>
