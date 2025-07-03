@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,12 @@ interface CartProps {
     storeAddress: string;
     storePhone: string;
     storeEmail: string;
+    kraPin?: string;
+    mpesaPaybill?: string;
+    mpesaAccount?: string;
+    mpesaTill?: string;
+    bankAccount?: string;
+    paymentInstructions?: string;
     paybill: string;
     showStoreName: boolean;
     showStoreAddress: boolean;
@@ -37,6 +44,7 @@ interface CartProps {
     receiptHeader: string;
     receiptFooter: string;
     showBarcode: boolean;
+    receiptCodeType: 'qr' | 'barcode';
   };
 }
 
