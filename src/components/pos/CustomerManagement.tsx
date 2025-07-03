@@ -42,22 +42,40 @@ export const CustomerManagement: React.FC = () => {
 
   // Mutations
   const addCustomerMutation = useMutation({
-    mutationFn: addCustomer,
-    onSuccess: () => {
+    mutationFn: async (customerData: Omit<Customer, 'id' | 'createdAt'>) => {
+      console.log('Adding customer with data:', customerData);
+      const result = await addCustomer(customerData);
+      console.log('Add customer result:', result);
+      if (!result) {
+        throw new Error('Failed to add customer');
+      }
+      return result;
+    },
+    onSuccess: (data) => {
+      console.log('Customer added successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({ title: "Success", description: "Customer added successfully" });
       setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0, loyaltyPoints: 0 });
       setIsDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      console.error('Error adding customer:', error);
+      toast({ title: "Error", description: error.message || "Failed to add customer", variant: "destructive" });
     },
   });
 
   const updateCustomerMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Customer> }) => 
-      updateCustomer(id, updates),
-    onSuccess: () => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Customer> }) => {
+      console.log('Updating customer:', id, updates);
+      const result = await updateCustomer(id, updates);
+      console.log('Update customer result:', result);
+      if (!result) {
+        throw new Error('Failed to update customer');
+      }
+      return result;
+    },
+    onSuccess: (data) => {
+      console.log('Customer updated successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({ title: "Success", description: "Customer updated successfully" });
       setFormData({ name: '', phone: '', email: '', address: '', creditLimit: 0, loyaltyPoints: 0 });
@@ -65,7 +83,8 @@ export const CustomerManagement: React.FC = () => {
       setIsDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      console.error('Error updating customer:', error);
+      toast({ title: "Error", description: error.message || "Failed to update customer", variant: "destructive" });
     },
   });
 
@@ -73,6 +92,19 @@ export const CustomerManagement: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('Form submitted with data:', formData);
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast({ title: "Error", description: "Customer name is required", variant: "destructive" });
+      return;
+    }
+    
+    if (!formData.phone.trim()) {
+      toast({ title: "Error", description: "Customer phone is required", variant: "destructive" });
+      return;
+    }
     
     if (editingCustomer) {
       updateCustomerMutation.mutate({
@@ -192,7 +224,10 @@ export const CustomerManagement: React.FC = () => {
                     className="w-full"
                     disabled={addCustomerMutation.isPending || updateCustomerMutation.isPending}
                   >
-                    {editingCustomer ? 'Update Customer' : 'Add Customer'}
+                    {addCustomerMutation.isPending || updateCustomerMutation.isPending 
+                      ? 'Processing...' 
+                      : editingCustomer ? 'Update Customer' : 'Add Customer'
+                    }
                   </Button>
                 </form>
               </DialogContent>
