@@ -1,543 +1,522 @@
-import { supabase } from './supabase';
-import { Product, Customer, Transaction, Supplier, Purchase, Expense, Attendant } from '@/types';
-import { sanitizeInput, validateEmail, validatePhone } from '@/utils/security';
+import { Product, Customer, CartItem, Transaction, Staff, LoyaltyProgram, Store, Supplier, PurchaseOrder, Expense, StockMovement, Settings } from '@/types';
 
-// Mock data for development when Supabase is not configured
-const mockProducts: Product[] = [
-  { 
-    id: '1', 
-    name: 'Coca Cola 500ml', 
-    buyingCost: 60,
-    wholesalePrice: 70,
-    retailPrice: 80,
-    price: 80, 
-    category: 'Beverages', 
-    stock: 50, 
-    unit: 'pcs',
-    barcode: '1234567890123', 
-    lowStockThreshold: 20 
+// Mock data for products
+export const mockProducts: Product[] = [
+  {
+    id: '1',
+    name: 'iPhone 15 Pro Max',
+    category: 'Electronics',
+    price: 180000,
+    stock: 15,
+    barcode: '123456789012',
+    description: 'Latest iPhone with advanced camera system',
+    lowStockThreshold: 5,
+    supplier: 'Apple Kenya',
+    cost: 150000,
+    images: []
+  },
+  {
+    id: '2',
+    name: 'Samsung Galaxy S24 Ultra',
+    category: 'Electronics',
+    price: 165000,
+    stock: 20,
+    barcode: '234567890123',
+    description: 'Premium Android smartphone with S Pen',
+    lowStockThreshold: 5,
+    supplier: 'Samsung Electronics',
+    cost: 140000,
+    images: []
+  },
+  {
+    id: '3',
+    name: 'MacBook Pro 14" M3',
+    category: 'Computers',
+    price: 280000,
+    stock: 8,
+    barcode: '345678901234',
+    description: 'Professional laptop with M3 chip',
+    lowStockThreshold: 3,
+    supplier: 'Apple Kenya',
+    cost: 240000,
+    images: []
+  },
+  {
+    id: '4',
+    name: 'Sony WH-1000XM5',
+    category: 'Audio',
+    price: 45000,
+    stock: 25,
+    barcode: '456789012345',
+    description: 'Premium noise-cancelling headphones',
+    lowStockThreshold: 10,
+    supplier: 'Sony Kenya',
+    cost: 35000,
+    images: []
+  },
+  {
+    id: '5',
+    name: 'iPad Air 5th Gen',
+    category: 'Electronics',
+    price: 85000,
+    stock: 12,
+    barcode: '567890123456',
+    description: 'Versatile tablet for work and play',
+    lowStockThreshold: 5,
+    supplier: 'Apple Kenya',
+    cost: 70000,
+    images: []
+  },
+  {
+    id: '6',
+    name: 'Dell XPS 13',
+    category: 'Computers',
+    price: 155000,
+    stock: 10,
+    barcode: '678901234567',
+    description: 'Ultra-portable laptop for professionals',
+    lowStockThreshold: 5,
+    supplier: 'Dell Kenya',
+    cost: 130000,
+    images: []
+  },
+  {
+    id: '7',
+    name: 'Apple Watch Series 9',
+    category: 'Wearables',
+    price: 55000,
+    stock: 18,
+    barcode: '789012345678',
+    description: 'Advanced smartwatch with health monitoring',
+    lowStockThreshold: 8,
+    supplier: 'Apple Kenya',
+    cost: 45000,
+    images: []
+  },
+  {
+    id: '8',
+    name: 'Canon EOS R6 Mark II',
+    category: 'Cameras',
+    price: 350000,
+    stock: 5,
+    barcode: '890123456789',
+    description: 'Professional mirrorless camera',
+    lowStockThreshold: 2,
+    supplier: 'Canon Kenya',
+    cost: 300000,
+    images: []
+  },
+  {
+    id: '9',
+    name: 'PlayStation 5',
+    category: 'Gaming',
+    price: 75000,
+    stock: 7,
+    barcode: '901234567890',
+    description: 'Next-gen gaming console',
+    lowStockThreshold: 3,
+    supplier: 'Sony Kenya',
+    cost: 65000,
+    images: []
+  },
+  {
+    id: '10',
+    name: 'AirPods Pro 2nd Gen',
+    category: 'Audio',
+    price: 32000,
+    stock: 30,
+    barcode: '012345678901',
+    description: 'Premium wireless earbuds with ANC',
+    lowStockThreshold: 15,
+    supplier: 'Apple Kenya',
+    cost: 25000,
+    images: []
   }
 ];
 
-const mockCustomers: Customer[] = [
+// Mock data for customers
+export const mockCustomers: Customer[] = [
   {
     id: '1',
-    name: 'John Kamau',
-    phone: '0712345678',
-    email: 'john@email.com',
-    creditLimit: 50000,
-    outstandingBalance: 0,
-    loyaltyPoints: 0,
-    createdAt: new Date()
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    phone: '+254700000000',
+    address: 'Nairobi, Kenya',
+    loyaltyPoints: 150,
+    orders: [],
+    notes: 'Regular customer'
+  },
+  {
+    id: '2',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    email: 'jane.smith@example.com',
+    phone: '+254711111111',
+    address: 'Mombasa, Kenya',
+    loyaltyPoints: 200,
+    orders: [],
+    notes: 'VIP customer'
   }
 ];
 
-const mockTransactions: Transaction[] = [];
-
-const mockSuppliers: Supplier[] = [
+// Mock data for transactions
+export const mockTransactions: Transaction[] = [
   {
     id: '1',
-    name: 'Main Supplier',
-    phone: '0722345678',
-    email: 'supplier@email.com',
-    products: [],
-    createdAt: new Date()
+    date: new Date(),
+    customer: mockCustomers[0],
+    items: [
+      {
+        product: mockProducts[0],
+        quantity: 1,
+        price: mockProducts[0].price
+      }
+    ],
+    totalAmount: mockProducts[0].price,
+    paymentMethod: 'cash',
+    staff: {
+      id: '1',
+      firstName: 'Admin',
+      lastName: 'User',
+      email: 'admin@example.com',
+      phone: '+254722222222',
+      role: 'admin',
+      permissions: []
+    },
+    notes: 'First transaction'
   }
 ];
 
-const mockPurchases: Purchase[] = [];
-
-const mockAttendants: Attendant[] = [
+// Mock data for staff
+export const mockStaff: Staff[] = [
   {
     id: '1',
-    name: 'Admin User',
-    email: 'admin@store.com',
-    phone: '0712345678',
+    firstName: 'Admin',
+    lastName: 'User',
+    email: 'admin@example.com',
+    phone: '+254722222222',
     role: 'admin',
-    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
-    isActive: true,
-    pin: '1234',
-    createdAt: new Date()
+    permissions: []
+  },
+  {
+    id: '2',
+    firstName: 'Sales',
+    lastName: 'Person',
+    email: 'sales@example.com',
+    phone: '+254733333333',
+    role: 'sales',
+    permissions: []
   }
 ];
 
-const mockExpenses: Expense[] = [];
-
-// Check if Supabase is configured
-const isSupabaseConfigured = () => {
-  return supabase && typeof supabase.from === 'function';
-};
-
-// Products
-export const getProducts = async (): Promise<Product[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockProducts;
+// Mock data for loyalty programs
+export const mockLoyaltyPrograms: LoyaltyProgram[] = [
+  {
+    id: '1',
+    name: 'Gold',
+    pointsPerShilling: 0.01,
+    discountPercentage: 5,
+    minimumPoints: 100
   }
+];
 
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('name');
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return mockProducts;
+// Mock data for stores
+export const mockStores: Store[] = [
+  {
+    id: '1',
+    name: 'Nairobi Store',
+    address: 'Nairobi, Kenya',
+    phone: '+254744444444',
+    email: 'nairobi@example.com'
   }
-};
+];
 
-export const addProduct = async (product: Omit<Product, 'id'>): Promise<Product | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return null;
+// Mock data for suppliers
+export const mockSuppliers: Supplier[] = [
+  {
+    id: '1',
+    name: 'Apple Kenya',
+    contactPerson: 'John Apple',
+    phone: '+254755555555',
+    email: 'apple@example.com',
+    address: 'Nairobi, Kenya'
   }
+];
 
-  try {
-    const sanitizedProduct = {
-      name: sanitizeInput(product.name),
-      buying_cost: product.buyingCost,
-      wholesale_price: product.wholesalePrice,
-      retail_price: product.retailPrice,
-      price: product.price,
-      category: sanitizeInput(product.category),
-      stock: product.stock,
-      unit: sanitizeInput(product.unit),
-      barcode: product.barcode ? sanitizeInput(product.barcode) : null,
-      low_stock_threshold: product.lowStockThreshold,
-      description: product.description ? sanitizeInput(product.description) : null
-    };
-
-    const { data, error } = await supabase
-      .from('products')
-      .insert([sanitizedProduct])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error adding product:', error);
-    throw error;
+// Mock data for purchase orders
+export const mockPurchaseOrders: PurchaseOrder[] = [
+  {
+    id: '1',
+    date: new Date(),
+    supplier: mockSuppliers[0],
+    items: [
+      {
+        product: mockProducts[0],
+        quantity: 10,
+        cost: mockProducts[0].cost || 0
+      }
+    ],
+    totalCost: (mockProducts[0].cost || 0) * 10,
+    status: 'pending'
   }
-};
+];
 
-export const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return null;
+// Mock data for expenses
+export const mockExpenses: Expense[] = [
+  {
+    id: '1',
+    date: new Date(),
+    category: 'Rent',
+    amount: 50000,
+    description: 'Monthly rent for Nairobi store'
   }
+];
 
-  try {
-    const sanitizedUpdates: any = {};
-    
-    if (updates.name) sanitizedUpdates.name = sanitizeInput(updates.name);
-    if (updates.buyingCost !== undefined) sanitizedUpdates.buying_cost = updates.buyingCost;
-    if (updates.wholesalePrice !== undefined) sanitizedUpdates.wholesale_price = updates.wholesalePrice;
-    if (updates.retailPrice !== undefined) sanitizedUpdates.retail_price = updates.retailPrice;
-    if (updates.price !== undefined) sanitizedUpdates.price = updates.price;
-    if (updates.category) sanitizedUpdates.category = sanitizeInput(updates.category);
-    if (updates.stock !== undefined) sanitizedUpdates.stock = updates.stock;
-    if (updates.unit) sanitizedUpdates.unit = sanitizeInput(updates.unit);
-    if (updates.barcode) sanitizedUpdates.barcode = sanitizeInput(updates.barcode);
-    if (updates.lowStockThreshold !== undefined) sanitizedUpdates.low_stock_threshold = updates.lowStockThreshold;
-    if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
-
-    const { data, error } = await supabase
-      .from('products')
-      .update(sanitizedUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error updating product:', error);
-    throw error;
+// Mock data for stock movements
+export const mockStockMovements: StockMovement[] = [
+  {
+    id: '1',
+    date: new Date(),
+    product: mockProducts[0],
+    quantity: 5,
+    type: 'addition',
+    reason: 'Restock'
   }
-};
+];
 
-export const deleteProduct = async (id: string): Promise<boolean> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return false;
-  }
-
-  try {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    throw error;
-  }
-};
-
-// Customers
-export const getCustomers = async (): Promise<Customer[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockCustomers;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .order('name');
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching customers:', error);
-    return mockCustomers;
-  }
-};
-
-export const addCustomer = async (customer: Omit<Customer, 'id' | 'createdAt'>): Promise<Customer | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    // Create a mock customer with ID and createdAt
-    const mockCustomer: Customer = {
-      id: `mock-${Date.now()}`,
-      ...customer,
-      createdAt: new Date()
-    };
-    mockCustomers.push(mockCustomer);
-    return mockCustomer;
-  }
-
-  try {
-    const sanitizedCustomer = {
-      name: sanitizeInput(customer.name),
-      phone: customer.phone ? validatePhone(customer.phone) : null,
-      email: customer.email ? validateEmail(customer.email) : null,
-      address: customer.address ? sanitizeInput(customer.address) : null,
-      credit_limit: customer.creditLimit,
-      outstanding_balance: customer.outstandingBalance,
-      loyalty_points: customer.loyaltyPoints
-    };
-
-    const { data, error } = await supabase
-      .from('customers')
-      .insert([sanitizedCustomer])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error adding customer:', error);
-    throw error;
-  }
-};
-
-export const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<Customer | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    // Find and update the mock customer
-    const customerIndex = mockCustomers.findIndex(c => c.id === id);
-    if (customerIndex !== -1) {
-      mockCustomers[customerIndex] = { ...mockCustomers[customerIndex], ...updates };
-      return mockCustomers[customerIndex];
-    }
-    return null;
-  }
-
-  try {
-    const sanitizedUpdates: any = {};
-    
-    if (updates.name) sanitizedUpdates.name = sanitizeInput(updates.name);
-    if (updates.phone) sanitizedUpdates.phone = validatePhone(updates.phone);
-    if (updates.email) sanitizedUpdates.email = validateEmail(updates.email);
-    if (updates.address) sanitizedUpdates.address = sanitizeInput(updates.address);
-    if (updates.creditLimit !== undefined) sanitizedUpdates.credit_limit = updates.creditLimit;
-    if (updates.outstandingBalance !== undefined) sanitizedUpdates.outstanding_balance = updates.outstandingBalance;
-    if (updates.loyaltyPoints !== undefined) sanitizedUpdates.loyalty_points = updates.loyaltyPoints;
-
-    const { data, error } = await supabase
-      .from('customers')
-      .update(sanitizedUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error updating customer:', error);
-    throw error;
-  }
-};
-
-// Transactions
-export const getTransactions = async (): Promise<Transaction[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockTransactions;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('timestamp', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
-    return mockTransactions;
-  }
-};
-
-export const addTransaction = async (transaction: Transaction): Promise<Transaction | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    // Add to mock transactions
-    mockTransactions.push(transaction);
-    return transaction;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert([transaction])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error adding transaction:', error);
-    throw error;
-  }
-};
-
-// Suppliers
-export const getSuppliers = async (): Promise<Supplier[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockSuppliers;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .order('name');
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching suppliers:', error);
-    return mockSuppliers;
-  }
-};
-
-// Purchases
-export const getPurchases = async (): Promise<Purchase[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockPurchases;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('purchases')
-      .select('*')
-      .order('purchaseDate', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching purchases:', error);
-    return mockPurchases;
-  }
-};
-
-export const addPurchase = async (purchase: Omit<Purchase, 'id'>): Promise<Purchase | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('purchases')
-      .insert([purchase])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error adding purchase:', error);
-    throw error;
-  }
-};
-
-// Attendants
-export const getAttendants = async (): Promise<Attendant[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockAttendants;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('attendants')
-      .select('*')
-      .order('name');
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching attendants:', error);
-    return mockAttendants;
-  }
-};
-
-export const addAttendant = async (attendant: Omit<Attendant, 'id' | 'createdAt'>): Promise<Attendant | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('attendants')
-      .insert([attendant])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error adding attendant:', error);
-    throw error;
-  }
-};
-
-export const updateAttendant = async (id: string, updates: Partial<Attendant>): Promise<Attendant | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('attendants')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error updating attendant:', error);
-    throw error;
-  }
-};
-
-// Expenses
-export const getExpenses = async (): Promise<Expense[]> => {
-  if (!isSupabaseConfigured()) {
-    return mockExpenses;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .order('date', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching expenses:', error);
-    return mockExpenses;
-  }
-};
-
-export const addExpense = async (expense: Omit<Expense, 'id'>): Promise<Expense | null> => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data');
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('expenses')
-      .insert([expense])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error adding expense:', error);
-    throw error;
-  }
-};
-
-// Export functionality
-export const exportData = async (type: 'products' | 'customers' | 'transactions' | 'all' = 'all') => {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured - using mock data for export');
-    const mockData = {
-      products: mockProducts,
-      customers: mockCustomers,
-      transactions: mockTransactions,
-      exportDate: new Date().toISOString()
-    };
-    
-    const dataStr = JSON.stringify(mockData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `msuper-pos-export-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    return;
-  }
-
-  try {
-    const exportData: any = {
-      exportDate: new Date().toISOString()
-    };
-
-    if (type === 'products' || type === 'all') {
-      const { data: products } = await supabase.from('products').select('*');
-      exportData.products = products || [];
-    }
-
-    if (type === 'customers' || type === 'all') {
-      const { data: customers } = await supabase.from('customers').select('*');
-      exportData.customers = customers || [];
-    }
-
-    if (type === 'transactions' || type === 'all') {
-      const { data: transactions } = await supabase.from('transactions').select('*');
-      exportData.transactions = transactions || [];
-    }
-
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `msuper-pos-export-${type}-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  } catch (error) {
-    console.error('Error exporting data:', error);
-    throw error;
-  }
-};
+let products = [...mockProducts];
+let customers: Customer[] = [];
+let transactions: Transaction[] = [];
+let staff: Staff[] = [];
+let loyaltyPrograms: LoyaltyProgram[] = [];
+let stores: Store[] = [];
+let suppliers: Supplier[] = [];
+let purchaseOrders: PurchaseOrder[] = [];
+let expenses: Expense[] = [];
+let stockMovements: StockMovement[] = [];
+let settings: Settings = {
+  storeName: 'DIGITAL DEN',
+  storeAddress: '123 Electronics Street, Nairobi',
+  storePhone: '+254 700 000 000',
+  storeEmail: 'info@digitalden.co.ke',
+  currency: 'KES',
+  taxRate: 16,
+  receiptFooter: 'Thank you for shopping with Digital Den!',
+  lowStockThreshold: 10,
+  enableLoyaltyProgram: true,
+  loyaltyPointsPerShilling: 0.01,
+  autoBackup: true,
+  printerName: 'Default Printer',
+  receiptWidth: 80,
+  showProductImages: true,
+  enableBarcode: true,
+  requireCustomerInfo: false,
+  allowNegativeStock: false,
+  enableMultiStore: false,
+  defaultPaymentMethod: 'cash',
+  enableSMS: false,
+  smsApiKey: '',
+  smsUsername: '',
+  enableEmailReceipts: false,
+  smtpHost: '',
+  smtpPort: 587,
+  smtpUsername: '',
+  smtpPassword: '',
+  theme: 'light',
+  language: 'en',
+  timezone: 'Africa/Nairobi',
+  dateFormat: 'DD/MM/YYYY',
+  timeFormat: '24h',
+  enableAdvancedReports: true,
+  exportFormat: 'pdf',
+  backupFrequency: 'daily',
+  enableAuditLog: true,
+  maxLoginAttempts: 5,
+  sessionTimeout: 30,
+  enableTwoFactor: false,
+  allowGuestCheckout: true,
+  enableProductBundles: false,
+  enableSubscriptions: false,
+  enableDropshipping: false,
+  enablePreorders: false,
+  enableWishlist: true,
+  enableProductReviews: false,
+  enableCoupons: false,
+  enableGiftCards: false,
+  enableAffiliates: false,
+  enableAnalytics: true,
+  googleAnalyticsId: '',
+  facebookPixelId: '',
+  enableSEO: true,
+  metaTitle: 'Digital Den - Your Electronics Hub',
+  metaDescription: 'Shop the latest electronics at Digital Den Kenya',
+  enableSitemap: true,
+  enableRobotsTxt: true,
+  enableCompression: true,
+  enableCaching: true,
+  enableCDN: false,
+  cdnUrl: '',
+  enableSSL: true,
+  enableHSTS: true,
+  enableCSP: false,
+  cspPolicy: '',
+  enableCORS: false,
+  corsOrigins: '',
+  enableRateLimit: true,
+  rateLimitRequests: 100,
+  rateLimitWindow: 15,
+  enableFirewall: false,
+  firewallRules: '',
+  enableMonitoring: false,
+  monitoringUrl: '',
+  enableLogging: true,
+  logLevel: 'info',
+  logRetention: 30,
+  enableAlerts: true,
+  alertEmail: 'admin@digitalden.co.ke',
+  alertThreshold: 90,
+  enableBackup: true,
+  backupProvider: 'local',
+  backupRetention: 7,
+  enableReplication: false,
+  replicationNodes: '',
+  enableCluster: false,
+  clusterNodes: '',
+  enableLoadBalancer: false,
+  loadBalancerUrl: '',
+  enableAutoScale: false,
+  autoScaleMin: 1,
+  autoScaleMax: 10,
+  enableContainer: false,
+  containerImage: '',
+  enableOrchestration: false,
+  orchestrationPlatform: 'kubernetes',
+  enableCI: false,
+  ciProvider: 'github',
+  enableCD: false,
+  cdProvider: 'github',
+  enableTesting: false,
+  testFramework: 'jest',
+  enableQA: false,
+  qaEnvironment: 'staging',
+  enableSecurity: false,
+  securityScanner: 'snyk',
+  enableCompliance: false,
+  complianceFramework: 'iso27001',
+  enableGovernance: false,
+  governanceFramework: 'cobit',
+  enableRisk: false,
+  riskFramework: 'nist',
+  enableAudit: false,
+  auditFramework: 'sox',
+  enablePrivacy: false,
+  privacyFramework: 'gdpr',
+  enableConsent: false,
+  consentFramework: 'ccpa',
+  enableDataProtection: false,
+  dataProtectionFramework: 'pipeda',
+  enableEncryption: false,
+  encryptionAlgorithm: 'aes256',
+  enableHashing: false,
+  hashingAlgorithm: 'sha256',
+  enableSigning: false,
+  signingAlgorithm: 'rsa2048',
+  enableTokens: false,
+  tokenProvider: 'jwt',
+  enableOAuth: false,
+  oauthProvider: 'google',
+  enableSAML: false,
+  samlProvider: 'okta',
+  enableLDAP: false,
+  ldapProvider: 'activedirectory',
+  enableSSO: false,
+  ssoProvider: 'azure',
+  enableMFA: false,
+  mfaProvider: 'authy',
+  enableBiometric: false,
+  biometricProvider: 'fingerprint',
+  enableBehavioral: false,
+  behavioralProvider: 'biocatch',
+  enableFraud: false,
+  fraudProvider: 'kount',
+  enableAML: false,
+  amlProvider: 'chainalysis',
+  enableKYC: false,
+  kycProvider: 'jumio',
+  enableIDV: false,
+  idvProvider: 'onfido',
+  enableScreening: false,
+  screeningProvider: 'worldcheck',
+  enableSanctions: false,
+  sanctionsProvider: 'ofac',
+  enablePEP: false,
+  pepProvider: 'dow',
+  enableAdverseMedia: false,
+  adverseMediaProvider: 'lexisnexis',
+  enableRiskScoring: false,
+  riskScoringProvider: 'fico',
+  enableDecisionEngine: false,
+  decisionEngineProvider: 'fico',
+  enableRuleEngine: false,
+  ruleEngineProvider: 'drools',
+  enableWorkflow: false,
+  workflowProvider: 'activiti',
+  enableBPM: false,
+  bpmProvider: 'camunda',
+  enableEAI: false,
+  eaiProvider: 'mulesoft',
+  enableESB: false,
+  esbProvider: 'wso2',
+  enableSOA: false,
+  soaProvider: 'oracle',
+  enableMicroservices: false,
+  microservicesProvider: 'kubernetes',
+  enableServerless: false,
+  serverlessProvider: 'aws',
+  enableEdge: false,
+  edgeProvider: 'cloudflare',
+  enableFog: false,
+  fogProvider: 'cisco',
+  enableIoT: false,
+  iotProvider: 'aws',
+  enableBlockchain: false,
+  blockchainProvider: 'ethereum',
+  enableAI: false,
+  aiProvider: 'openai',
+  enableML: false,
+  mlProvider: 'tensorflow',
+  enableDL: false,
+  dlProvider: 'pytorch',
+  enableNLP: false,
+  nlpProvider: 'spacy',
+  enableCV: false,
+  cvProvider: 'opencv',
+  enableAR: false,
+  arProvider: 'arkit',
+  enableVR: false,
+  vrProvider: 'oculus',
+  enableMR: false,
+  mrProvider: 'hololens',
+  enableXR: false,
+  xrProvider: 'unity',
+  enable3D: false,
+  threeDProvider: 'threejs',
+  enableWebGL: false,
+  webglProvider: 'threejs',
+  enableWebXR: false,
+  webxrProvider: 'aframe',
+  enableWebAssembly: false,
+  webassemblyProvider: 'emscripten',
+  enableWebWorkers: false,
+  webworkersProvider: 'comlink',
+  enableServiceWorkers: false,
+  serviceworkersProvider: 'workbox',
+  enablePWA: false,
+  pwaProvider: 'workbox',
+  enableAMP: false,
+  ampProvider: 'google',
+  enableWebComponents: false,
+  webcomponentsProvider: 'lit',
+  enableMicrofrontends: false,
+  microfrontendsProvider: 'singlesp

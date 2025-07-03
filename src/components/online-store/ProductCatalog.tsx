@@ -68,7 +68,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Our Products</h1>
-        <p className="text-gray-600">Discover our premium collection</p>
+        <p className="text-gray-600">Discover our premium electronics collection</p>
       </div>
 
       {/* Search and Filters */}
@@ -78,7 +78,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search products..."
+                placeholder="Search electronics..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 h-12 bg-gray-50 border-gray-200"
@@ -102,12 +102,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Products Grid - Naivas Style */}
+      {/* Products Grid - Digital Den Style */}
       <div className="grid grid-cols-2 gap-3">
         {filteredProducts.map(product => {
           const comparePrice = getComparePrice(product.price);
           const discountPercentage = getDiscountPercentage(comparePrice, product.price);
-          const isAnniversary = Math.random() > 0.7; // 30% chance for anniversary deals
+          const isFeature = Math.random() > 0.7; // 30% chance for featured deals
           
           return (
             <Card key={product.id} className="relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -119,11 +119,11 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   </div>
                 )}
                 
-                {/* Anniversary Deal Badge */}
-                {isAnniversary && (
+                {/* Featured Deal Badge */}
+                {isFeature && (
                   <div className="absolute top-8 left-0 bg-green-700 text-white px-2 py-1 rounded-r text-xs font-bold flex items-center z-10">
                     <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
-                    Anniversary Deals
+                    Featured Deals
                   </div>
                 )}
 

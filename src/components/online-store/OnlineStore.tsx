@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,14 +33,14 @@ export const OnlineStore: React.FC = () => {
 
   const categories = [
     { name: 'Promos', icon: '🏷️' },
-    { name: 'Food Cupboard', icon: '🛒' },
-    { name: 'Fresh Food', icon: '🥗' },
-    { name: 'Baby & Kids', icon: '👶' },
-    { name: 'Beverage', icon: '🥤' },
     { name: 'Electronics', icon: '📱' },
-    { name: 'Cleaning', icon: '🧽' },
-    { name: 'Beauty & Cosmetics', icon: '💄' },
-    { name: 'Naivas Liqour', icon: '🍷' },
+    { name: 'Computers', icon: '💻' },
+    { name: 'Gaming', icon: '🎮' },
+    { name: 'Audio', icon: '🎧' },
+    { name: 'Accessories', icon: '🔌' },
+    { name: 'Smart Home', icon: '🏠' },
+    { name: 'Cameras', icon: '📷' },
+    { name: 'Wearables', icon: '⌚' },
   ];
 
   const addToCart = (product: Product, quantity: number = 1) => {
@@ -97,7 +96,7 @@ export const OnlineStore: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
-      {/* Mobile Header - Naivas Style */}
+      {/* Mobile Header - Digital Den Style */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="px-4 py-3">
           {/* Top Bar */}
@@ -111,8 +110,8 @@ export const OnlineStore: React.FC = () => {
             
             <div className="flex-1 text-center">
               <div className="bg-gradient-to-r from-orange-400 to-orange-500 px-4 py-2 rounded-full">
-                <h1 className="text-white font-bold text-lg">naivas</h1>
-                <p className="text-white text-xs -mt-1">saves you money</p>
+                <h1 className="text-white font-bold text-lg">DIGITAL DEN</h1>
+                <p className="text-white text-xs -mt-1">Your electronics hub</p>
               </div>
             </div>
             
@@ -137,7 +136,7 @@ export const OnlineStore: React.FC = () => {
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
-              placeholder="Search for products"
+              placeholder="Search for electronics"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-12 h-12 rounded-lg border-gray-200 bg-gray-50"
@@ -195,12 +194,12 @@ export const OnlineStore: React.FC = () => {
               {products.length} Products
             </div>
 
-            {/* Products Grid - Naivas Style */}
+            {/* Products Grid - Digital Den Style */}
             <div className="grid grid-cols-2 gap-3">
               {products.slice(0, 10).map(product => {
                 const discount = Math.floor(Math.random() * 30) + 5; // Random discount 5-35%
                 const originalPrice = Math.floor(product.price * 1.3);
-                const isAnniversary = Math.random() > 0.7; // 30% chance for anniversary deals
+                const isFeature = Math.random() > 0.7; // 30% chance for featured deals
                 
                 return (
                   <Card key={product.id} className="relative overflow-hidden shadow-sm">
@@ -210,11 +209,11 @@ export const OnlineStore: React.FC = () => {
                         {discount}% off
                       </div>
                       
-                      {/* Anniversary Deal Badge */}
-                      {isAnniversary && (
+                      {/* Feature Deal Badge */}
+                      {isFeature && (
                         <div className="absolute top-8 left-0 bg-green-700 text-white px-2 py-1 rounded-r text-xs font-bold flex items-center">
                           <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
-                          Anniversary Deals
+                          Featured Deals
                         </div>
                       )}
 
@@ -373,7 +372,7 @@ export const OnlineStore: React.FC = () => {
         
         {/* Website URL Display */}
         <div className="text-center py-1 bg-gray-50 border-t">
-          <span className="text-xs text-gray-500">naivas.online</span>
+          <span className="text-xs text-gray-500">digitalden.co.ke</span>
         </div>
       </div>
 
