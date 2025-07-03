@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import {
   UserPlus,
   Package,
   Users,
-  Receipt
+  Receipt as ReceiptIcon
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, CartItem, Customer, Transaction } from '@/types';
@@ -26,6 +27,8 @@ import { getProducts, getCustomers, addTransaction, updateProduct } from '@/lib/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QuickAddProduct } from './QuickAddProduct';
+import { Receipt } from './Receipt';
 
 interface ProductManagementProps {
   currentUser?: {
@@ -37,7 +40,27 @@ interface ProductManagementProps {
     storeName: string;
     storeAddress: string;
     storePhone: string;
+    storeEmail: string;
     allowPriceBelowWholesale: boolean;
+    paybill: string;
+    showStoreName: boolean;
+    showStoreAddress: boolean;
+    showStorePhone: boolean;
+    showCustomerName: boolean;
+    showCustomerPhone: boolean;
+    showCustomerAddress: boolean;
+    showNotes: boolean;
+    receiptHeader: string;
+    receiptFooter: string;
+    showQRCode: boolean;
+    showBarcode: boolean;
+    autoPrintReceipt: boolean;
+    kraPin?: string;
+    mpesaPaybill?: string;
+    mpesaAccount?: string;
+    mpesaTill?: string;
+    bankAccount?: string;
+    paymentInstructions?: string;
   };
 }
 
@@ -47,7 +70,21 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     storeName: 'DIGITAL DEN',
     storeAddress: '123 Electronics Street, Nairobi',
     storePhone: '+254 700 000 000',
-    allowPriceBelowWholesale: false
+    storeEmail: 'info@digitalden.co.ke',
+    allowPriceBelowWholesale: false,
+    paybill: '247247',
+    showStoreName: true,
+    showStoreAddress: true,
+    showStorePhone: true,
+    showCustomerName: true,
+    showCustomerPhone: true,
+    showCustomerAddress: true,
+    showNotes: true,
+    receiptHeader: 'Thank you for shopping with us!',
+    receiptFooter: 'Visit us again soon!',
+    showQRCode: true,
+    showBarcode: true,
+    autoPrintReceipt: false
   }
 }) => {
   const { toast } = useToast();
@@ -71,14 +108,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   const [showReceipt, setShowReceipt] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
 
-  // Quick add product form
-  const [quickProduct, setQuickProduct] = useState({
-    name: '',
-    price: '',
-    buyingCost: '',
-    stock: ''
-  });
-
   // Quick add customer form
   const [quickCustomer, setQuickCustomer] = useState({
     name: '',
@@ -95,6 +124,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     queryKey: ['customers'],
     queryFn: getCustomers,
   });
+
+  // Get unique categories from products
+  const categories = [...new Set(products.map(product => product.category))];
 
   const filteredProducts = products.filter(product => {
     const searchLower = searchTerm.toLowerCase();
@@ -205,37 +237,53 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
 
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
-  const handleQuickAddProduct = () => {
-    if (!quickProduct.name || !quickProduct.price) {
+  const handleQuickAddProduct = (productData: Omit<Product, 'id'>) => {
+    const newProduct: Product = {
+      id: `quick-${Date.now()}`,
+      ...productData,
+      supplierId: '',
+      description: 'Quick added product',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    addToCart(newProduct);
+    
+    toast({
+      title: "Product Added",
+      description: `${newProduct.name} added to cart`,
+    });
+  };
+
+  const handleQuickAddCustomer = () => {
+    if (!quickCustomer.name || !quickCustomer.phone) {
       toast({
         title: "Missing Information",
-        description: "Please fill in product name and price",
+        description: "Please fill in customer name and phone",
         variant: "destructive",
       });
       return;
     }
 
-    const newProduct: Product = {
+    const newCustomer: Customer = {
       id: `quick-${Date.now()}`,
-      name: quickProduct.name,
-      category: 'Quick Add',
-      price: parseFloat(quickProduct.price),
-      buyingCost: parseFloat(quickProduct.buyingCost) || 0,
-      retailPrice: parseFloat(quickProduct.price),
-      stock: parseInt(quickProduct.stock) || 1,
-      unit: 'piece',
-      lowStockThreshold: 5,
-      supplierId: '',
-      description: 'Quick added product'
+      name: quickCustomer.name,
+      phone: quickCustomer.phone,
+      email: quickCustomer.email,
+      address: '',
+      creditLimit: 0,
+      outstandingBalance: 0,
+      loyaltyPoints: 0,
+      createdAt: new Date()
     };
 
-    addToCart(newProduct);
-    setQuickProduct({ name: '', price: '', buyingCost: '', stock: '' });
-    setShowQuickAdd(false);
+    setSelectedCustomer(newCustomer);
+    setQuickCustomer({ name: '', phone: '', email: '' });
+    setShowCustomerAdd(false);
     
     toast({
-      title: "Product Added",
-      description: `${newProduct.name} added to cart`,
+      title: "Customer Added",
+      description: `${newCustomer.name} selected as customer`,
     });
   };
 
@@ -260,10 +308,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       status: 'completed'
     };
 
-    // Update stock
+    // Update stock for existing products
     cart.forEach(item => {
       const product = products.find(p => p.id === item.id);
-      if (product && product.id.startsWith('quick-') === false) {
+      if (product && !product.id.startsWith('quick-')) {
         updateProduct(item.id, { stock: product.stock - item.quantity });
       }
     });
@@ -496,59 +544,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       </div>
 
       {/* Quick Add Product Dialog */}
-      <Dialog open={showQuickAdd} onOpenChange={setShowQuickAdd}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Quick Add Product</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="productName">Product Name</Label>
-              <Input
-                id="productName"
-                value={quickProduct.name}
-                onChange={(e) => setQuickProduct(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter product name"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="price">Selling Price</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={quickProduct.price}
-                  onChange={(e) => setQuickProduct(prev => ({ ...prev, price: e.target.value }))}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <Label htmlFor="buyingCost">Buying Cost</Label>
-                <Input
-                  id="buyingCost"
-                  type="number"
-                  value={quickProduct.buyingCost}
-                  onChange={(e) => setQuickProduct(prev => ({ ...prev, buyingCost: e.target.value }))}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="stock">Stock Quantity</Label>
-              <Input
-                id="stock"
-                type="number"
-                value={quickProduct.stock}
-                onChange={(e) => setQuickProduct(prev => ({ ...prev, stock: e.target.value }))}
-                placeholder="1"
-              />
-            </div>
-            <Button onClick={handleQuickAddProduct} className="w-full">
-              Add to Cart
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showQuickAdd && (
+        <QuickAddProduct
+          onAddProduct={handleQuickAddProduct}
+          onClose={() => setShowQuickAdd(false)}
+          categories={categories}
+        />
+      )}
 
       {/* Quick Add Customer Dialog */}
       <Dialog open={showCustomerAdd} onOpenChange={setShowCustomerAdd}>
@@ -585,12 +587,26 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                 placeholder="customer@email.com"
               />
             </div>
-            <Button className="w-full">
+            <Button onClick={handleQuickAddCustomer} className="w-full">
               Add Customer
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Receipt Dialog */}
+      {showReceipt && currentTransaction && (
+        <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+          <DialogContent className="max-w-md">
+            <Receipt
+              transaction={currentTransaction}
+              onClose={() => setShowReceipt(false)}
+              storeSettings={storeSettings}
+              customer={selectedCustomer.id !== 'walk-in' ? selectedCustomer : undefined}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
