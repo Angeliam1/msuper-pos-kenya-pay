@@ -166,6 +166,8 @@ const Index = () => {
     receiptHeader: 'Thank you for shopping with us!',
     receiptFooter: 'Visit us again soon!',
     showBarcode: true,
+    showQRCode: true,
+    autoPrintReceipt: true,
     receiptCodeType: 'qr' as 'qr' | 'barcode',
     smsEnabled: true,
     smsProvider: 'phone' as 'phone' | 'whatsapp' | 'api',
