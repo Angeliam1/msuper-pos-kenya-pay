@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,36 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Plus, 
   Search, 
-  Edit, 
-  Trash2, 
   ShoppingCart, 
-  DollarSign, 
-  Percent,
-  PackageCheck,
   User,
   XCircle,
   Receipt,
   Printer,
   Scan,
-  Grid,
-  List,
-  Package
+  PackageCheck,
+  Minus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, Customer, Transaction, PaymentSplit, CartItem } from '@/types';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
@@ -49,8 +34,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog"
 import { addTransaction, updateCustomer, updateProduct } from '@/lib/database';
 import { useQuery } from '@tanstack/react-query';
@@ -60,19 +43,15 @@ import { BarcodeScanner } from './BarcodeScanner';
 import { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
 
-type ViewMode = 'grid' | 'list';
-
 export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All items');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [showInventory, setShowInventory] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
   const { data: products = [] } = useQuery({
@@ -98,10 +77,10 @@ export const ProductManagement: React.FC = () => {
     createdAt: new Date()
   };
 
-  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = ['All items', ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'All items' || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.barcode?.includes(searchTerm) ||
@@ -121,6 +100,14 @@ export const ProductManagement: React.FC = () => {
 
     const existingItem = cart.find(item => item.id === product.id);
     if (existingItem) {
+      if (existingItem.quantity >= product.stock) {
+        toast({
+          title: "Insufficient Stock",
+          description: `Only ${product.stock} units available`,
+          variant: "destructive",
+        });
+        return;
+      }
       setCart(prev => 
         prev.map(item => 
           item.id === product.id 
@@ -144,9 +131,24 @@ export const ProductManagement: React.FC = () => {
   };
 
   const adjustQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    
+    const product = products.find(p => p.id === productId);
+    if (product && quantity > product.stock) {
+      toast({
+        title: "Insufficient Stock",
+        description: `Only ${product.stock} units available`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCart(prev =>
       prev.map(item =>
-        item.id === productId ? { ...item, quantity: quantity > 0 ? quantity : 1 } : item
+        item.id === productId ? { ...item, quantity } : item
       )
     );
   };
@@ -155,7 +157,7 @@ export const ProductManagement: React.FC = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+  const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
   const handleSelectCustomer = (customer: Customer) => {
     setCustomer(customer);
@@ -242,94 +244,6 @@ export const ProductManagement: React.FC = () => {
     contentRef: receiptRef,
   });
 
-  const renderProductGrid = () => (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {filteredProducts.map(product => (
-        <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-3 flex flex-col items-center justify-center" onClick={() => addToCart(product)}>
-            <div className="relative aspect-square w-full h-24 rounded-md overflow-hidden mb-2">
-              <img
-                src={product.image || '/placeholder.svg'}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {product.stock <= 0 && (
-                <div className="absolute inset-0 bg-red-500 bg-opacity-50 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">OUT OF STOCK</span>
-                </div>
-              )}
-            </div>
-            <div className="text-sm font-medium text-center">{product.name}</div>
-            <div className="text-xs text-gray-500 text-center mb-1">{formatPrice(product.price)}</div>
-            <Badge variant={product.stock > 0 ? "default" : "destructive"} className="text-xs">
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-            </Badge>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-
-  const renderProductList = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Product</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Price</TableHead>
-          <TableHead>Stock</TableHead>
-          <TableHead>Barcode</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredProducts.map(product => (
-          <TableRow key={product.id}>
-            <TableCell className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden">
-                <img
-                  src={product.image || '/placeholder.svg'}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div>
-                <div className="font-medium">{product.name}</div>
-                <div className="text-sm text-gray-500">{product.description}</div>
-              </div>
-            </TableCell>
-            <TableCell>{product.category}</TableCell>
-            <TableCell>{formatPrice(product.price)}</TableCell>
-            <TableCell>
-              <Badge variant={product.stock > 0 ? "default" : "destructive"}>
-                {product.stock > 0 ? `${product.stock} units` : 'Out of stock'}
-              </Badge>
-            </TableCell>
-            <TableCell>{product.barcode || 'N/A'}</TableCell>
-            <TableCell>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => addToCart(product)}
-                  disabled={product.stock <= 0}
-                  size="sm"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={() => setShowInventory(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Package className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-
   if (showBarcodeScanner) {
     return (
       <BarcodeScanner
@@ -341,175 +255,116 @@ export const ProductManagement: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Product List */}
-      <div className="lg:col-span-3 space-y-4">
-        {/* Header and Filters */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle>Products for Sale</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBarcodeScanner(true)}
-              >
-                <Scan className="h-4 w-4 mr-2" />
-                Scan
-              </Button>
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
+    <div className="space-y-4">
+      {/* Cart Section - At the top */}
+      <Card className="bg-white">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Cart ({cart.length} items)
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search products, categories, or barcodes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {cart.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCart([])}
+              >
+                Clear All
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {cart.length === 0 ? (
+            <div className="text-center text-gray-500 py-4">
+              Your cart is empty
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-2">
-            <ScrollArea className="h-[400px] w-full rounded-md p-2">
-              {viewMode === 'grid' ? renderProductGrid() : renderProductList()}
-              {filteredProducts.length === 0 && (
-                <div className="text-center text-gray-500 py-8">
-                  No products found matching your criteria
+          ) : (
+            <div className="space-y-2">
+              {cart.map(item => (
+                <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center">
+                      <span className="text-xs font-semibold text-gray-600">
+                        {item.name.substring(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="text-xs text-gray-500">{formatPrice(item.price)} each</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adjustQuantity(item.id, item.quantity - 1)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="mx-2 font-medium w-8 text-center">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adjustQuantity(item.id, item.quantity + 1)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFromCart(item.id)}
+                      className="text-red-600 hover:bg-red-100 h-8 w-8 p-0"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                    <div className="text-right ml-2">
+                      <span className="font-semibold">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cart and Checkout */}
-      <div className="lg:col-span-1 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Cart ({cart.length})
+              ))}
+              <Separator className="my-3" />
+              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                <span className="text-lg font-semibold">Total:</span>
+                <span className="text-lg font-bold text-primary">
+                  {formatPrice(calculateTotal())}
+                </span>
               </div>
-              {cart.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCart([])}
-                >
-                  Clear
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-2">
-            <ScrollArea className="h-[320px] w-full rounded-md p-2">
-              <div className="space-y-2">
-                {cart.map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-2 border rounded-md">
-                    <div className="flex items-center space-x-2">
-                      <div className="relative aspect-square w-10 h-10 rounded-md overflow-hidden">
-                        <img
-                          src={item.image || '/placeholder.svg'}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{item.name}</p>
-                        <p className="text-xs text-gray-500">{formatPrice(item.price)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        className="w-16 text-center text-sm"
-                        onChange={(e) => adjustQuantity(item.id, parseInt(e.target.value))}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-600 hover:bg-red-100"
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {cart.length === 0 && (
-                  <div className="text-center text-gray-500">
-                    Your cart is empty
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            <Separator className="my-4" />
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold">Total:</div>
-              <div className="text-lg font-bold">{formatPrice(calculateTotal())}</div>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardContent className="space-y-4">
+      {/* Customer and Checkout Section */}
+      {cart.length > 0 && (
+        <Card className="bg-white">
+          <CardContent className="space-y-4 pt-6">
             <div className="flex items-center justify-between">
-              <Label htmlFor="customer">Customer</Label>
-              {customer ? (
+              <Label>Customer (Optional)</Label>
+              {customer && (
                 <Button variant="ghost" size="sm" onClick={handleClearCustomer}>
                   Clear
                 </Button>
-              ) : null}
+              )}
             </div>
             {customer ? (
-              <div className="p-3 border rounded-md">
+              <div className="p-3 border rounded-md bg-blue-50">
                 <p className="font-medium">{customer.name}</p>
                 <p className="text-sm text-gray-500">{customer.phone}</p>
                 <p className="text-sm text-gray-500">Points: {customer.loyaltyPoints || 0}</p>
               </div>
             ) : (
               <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <User className="mr-2 h-4 w-4" />
-                    Select Customer
-                  </Button>
-                </DialogTrigger>
+                <Button variant="outline" className="w-full" onClick={() => setShowPayment(true)}>
+                  <User className="mr-2 h-4 w-4" />
+                  Select Customer
+                </Button>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
                     <DialogTitle>Select Customer</DialogTitle>
@@ -538,15 +393,121 @@ export const ProductManagement: React.FC = () => {
 
             <Button
               className="w-full"
-              disabled={cart.length === 0}
+              size="lg"
               onClick={() => setShowPayment(true)}
             >
               <PackageCheck className="mr-2 h-4 w-4" />
-              Complete Sale
+              Complete Sale - {formatPrice(calculateTotal())}
             </Button>
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {/* Products Section */}
+      <Card className="bg-white">
+        <CardHeader className="pb-3">
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search products by name, category, or barcode..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-50 border-gray-200 rounded-full h-12"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBarcodeScanner(true)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+              >
+                <Scan className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Category Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {categories.map(category => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm ${
+                    selectedCategory === category 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <ScrollArea className="h-[400px] w-full">
+            <div className="space-y-2">
+              {filteredProducts.map(product => (
+                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    {/* Product Avatar */}
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-semibold text-gray-600">
+                        {product.name.substring(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge 
+                          variant="secondary" 
+                          className="text-xs bg-gray-100 text-gray-600 border-0"
+                        >
+                          {product.category}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                        </span>
+                        {product.barcode && (
+                          <span className="text-xs text-gray-400">#{product.barcode}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Price and Add Button */}
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <span className="font-semibold text-gray-900 text-base">
+                        {formatPrice(product.price)}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => addToCart(product)}
+                      size="sm"
+                      disabled={product.stock <= 0}
+                      className="h-10 w-10 p-0 rounded-full bg-primary hover:bg-primary/90"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {filteredProducts.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  No products found matching your search
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       {/* Payment Dialog */}
       <Dialog open={showPayment} onOpenChange={setShowPayment}>
@@ -572,54 +533,49 @@ export const ProductManagement: React.FC = () => {
             <DialogTitle>Sale Receipt</DialogTitle>
           </DialogHeader>
           <div ref={receiptRef} className="p-4">
-            <h3 className="text-lg font-semibold text-center">DIGITAL DEN</h3>
-            <p className="text-sm text-gray-500 text-center">
-              Your Electronics Hub
-            </p>
-            <p className="text-sm text-gray-500 text-center">
-              Nairobi, Kenya
-            </p>
-            <Separator className="my-2" />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm">Transaction ID:</p>
-                <p className="text-xs text-gray-500">{lastTransaction?.id}</p>
-              </div>
-              <div>
-                <p className="text-sm">Date:</p>
-                <p className="text-xs text-gray-500">
-                  {new Date().toLocaleDateString()}
-                </p>
-              </div>
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold">DIGITAL DEN</h3>
+              <p className="text-sm text-gray-500">Your Electronics Hub</p>
+              <p className="text-sm text-gray-500">123 Electronics Street, Nairobi</p>
+              <p className="text-sm text-gray-500">Tel: +254 700 000 000</p>
             </div>
             <Separator className="my-2" />
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Qty</TableHead>
-                  <TableHead>Price</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lastTransaction?.items.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{formatPrice(item.price * item.quantity)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>Transaction ID: {lastTransaction?.id}</span>
+              <span>Date: {new Date().toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>Attendant: {currentAttendant.name}</span>
+              <span>Time: {new Date().toLocaleTimeString()}</span>
+            </div>
+            {customer && (
+              <div className="text-sm mb-2">
+                <span>Customer: {customer.name} ({customer.phone})</span>
+              </div>
+            )}
             <Separator className="my-2" />
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold">Total:</div>
-              <div className="text-lg font-bold">{formatPrice(lastTransaction?.total || 0)}</div>
+            <div className="space-y-1">
+              {lastTransaction?.items.map(item => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <div className="flex-1">
+                    <span>{item.name}</span>
+                    <br />
+                    <span className="text-gray-500">{item.quantity} x {formatPrice(item.price)}</span>
+                  </div>
+                  <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
             </div>
             <Separator className="my-2" />
-            <p className="text-xs text-gray-500 text-center">
-              Thank you for shopping with Digital Den!
-            </p>
+            <div className="flex items-center justify-between font-semibold">
+              <span>TOTAL:</span>
+              <span>{formatPrice(lastTransaction?.total || 0)}</span>
+            </div>
+            <Separator className="my-2" />
+            <div className="text-center text-xs text-gray-500">
+              <p>Thank you for shopping with Digital Den!</p>
+              <p>Goods once sold are not returnable</p>
+            </div>
           </div>
           <Button className="w-full" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
