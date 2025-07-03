@@ -33,6 +33,37 @@ const mockCustomers: Customer[] = [
   }
 ];
 
+const mockTransactions: Transaction[] = [];
+
+const mockSuppliers: Supplier[] = [
+  {
+    id: '1',
+    name: 'Main Supplier',
+    phone: '0722345678',
+    email: 'supplier@email.com',
+    products: [],
+    createdAt: new Date()
+  }
+];
+
+const mockPurchases: Purchase[] = [];
+
+const mockAttendants: Attendant[] = [
+  {
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@store.com',
+    phone: '0712345678',
+    role: 'admin',
+    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
+    isActive: true,
+    pin: '1234',
+    createdAt: new Date()
+  }
+];
+
+const mockExpenses: Expense[] = [];
+
 // Check if Supabase is configured
 const isSupabaseConfigured = () => {
   return supabase && typeof supabase.from === 'function';
@@ -200,6 +231,223 @@ export const addCustomer = async (customer: Omit<Customer, 'id' | 'createdAt'>):
   }
 };
 
+export const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<Customer | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured - using mock data');
+    return null;
+  }
+
+  try {
+    const sanitizedUpdates: any = {};
+    
+    if (updates.name) sanitizedUpdates.name = sanitizeInput(updates.name);
+    if (updates.phone) sanitizedUpdates.phone = validatePhone(updates.phone);
+    if (updates.email) sanitizedUpdates.email = validateEmail(updates.email);
+    if (updates.address) sanitizedUpdates.address = sanitizeInput(updates.address);
+    if (updates.creditLimit !== undefined) sanitizedUpdates.credit_limit = updates.creditLimit;
+    if (updates.outstandingBalance !== undefined) sanitizedUpdates.outstanding_balance = updates.outstandingBalance;
+    if (updates.loyaltyPoints !== undefined) sanitizedUpdates.loyalty_points = updates.loyaltyPoints;
+
+    const { data, error } = await supabase
+      .from('customers')
+      .update(sanitizedUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    throw error;
+  }
+};
+
+// Transactions
+export const getTransactions = async (): Promise<Transaction[]> => {
+  if (!isSupabaseConfigured()) {
+    return mockTransactions;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('timestamp', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    return mockTransactions;
+  }
+};
+
+// Suppliers
+export const getSuppliers = async (): Promise<Supplier[]> => {
+  if (!isSupabaseConfigured()) {
+    return mockSuppliers;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching suppliers:', error);
+    return mockSuppliers;
+  }
+};
+
+// Purchases
+export const getPurchases = async (): Promise<Purchase[]> => {
+  if (!isSupabaseConfigured()) {
+    return mockPurchases;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('purchases')
+      .select('*')
+      .order('purchaseDate', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching purchases:', error);
+    return mockPurchases;
+  }
+};
+
+export const addPurchase = async (purchase: Omit<Purchase, 'id'>): Promise<Purchase | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured - using mock data');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('purchases')
+      .insert([purchase])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding purchase:', error);
+    throw error;
+  }
+};
+
+// Attendants
+export const getAttendants = async (): Promise<Attendant[]> => {
+  if (!isSupabaseConfigured()) {
+    return mockAttendants;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('attendants')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching attendants:', error);
+    return mockAttendants;
+  }
+};
+
+export const addAttendant = async (attendant: Omit<Attendant, 'id' | 'createdAt'>): Promise<Attendant | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured - using mock data');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('attendants')
+      .insert([attendant])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding attendant:', error);
+    throw error;
+  }
+};
+
+export const updateAttendant = async (id: string, updates: Partial<Attendant>): Promise<Attendant | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured - using mock data');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('attendants')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating attendant:', error);
+    throw error;
+  }
+};
+
+// Expenses
+export const getExpenses = async (): Promise<Expense[]> => {
+  if (!isSupabaseConfigured()) {
+    return mockExpenses;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching expenses:', error);
+    return mockExpenses;
+  }
+};
+
+export const addExpense = async (expense: Omit<Expense, 'id'>): Promise<Expense | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured - using mock data');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert([expense])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding expense:', error);
+    throw error;
+  }
+};
+
 // Export functionality
 export const exportData = async (type: 'products' | 'customers' | 'transactions' | 'all' = 'all') => {
   if (!isSupabaseConfigured()) {
@@ -207,7 +455,7 @@ export const exportData = async (type: 'products' | 'customers' | 'transactions'
     const mockData = {
       products: mockProducts,
       customers: mockCustomers,
-      transactions: [],
+      transactions: mockTransactions,
       exportDate: new Date().toISOString()
     };
     

@@ -14,6 +14,7 @@ export interface Product {
   lowStockThreshold: number;
   description?: string;
   image?: string;
+  supplierId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -21,7 +22,7 @@ export interface Product {
 export interface Customer {
   id: string;
   name: string;
-  phone?: string;
+  phone: string;
   email?: string;
   address?: string;
   creditLimit: number;
@@ -63,12 +64,29 @@ export interface Transaction {
 export interface Supplier {
   id: string;
   name: string;
-  phone?: string;
+  phone: string;
   email?: string;
   address?: string;
   contactPerson?: string;
   paymentTerms?: string;
+  products: string[];
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  };
+  mpesaDetails?: {
+    phoneNumber: string;
+    businessNumber?: string;
+  };
   createdAt: Date;
+}
+
+export interface WorkSchedule {
+  startTime: string;
+  endTime: string;
+  workDays: string[];
+  enforceSchedule: boolean;
 }
 
 export interface Attendant {
@@ -80,6 +98,7 @@ export interface Attendant {
   permissions: string[];
   isActive: boolean;
   pin: string;
+  workSchedule?: WorkSchedule;
   assignedStoreId?: string;
   createdAt: Date;
 }
@@ -120,16 +139,18 @@ export interface Expense {
   notes?: string;
 }
 
+export interface PurchaseItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+}
+
 export interface Purchase {
   id: string;
   supplierId: string;
-  items: Array<{
-    productId: string;
-    productName: string;
-    quantity: number;
-    buyingCost: number;
-    total: number;
-  }>;
+  items: PurchaseItem[];
   totalAmount: number;
   attendantId: string;
   purchaseDate: Date;
@@ -187,4 +208,8 @@ export interface StoreSettings {
   businessName: string;
   businessPhone: string;
   hirePurchaseTemplate: string;
+  mpesaPaybill?: string;
+  mpesaAccount?: string;
+  mpesaTill?: string;
+  bankAccount?: string;
 }
