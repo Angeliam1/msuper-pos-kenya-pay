@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,11 @@ import {
   Package,
   Users,
   Receipt as ReceiptIcon,
-  Store
+  Store,
+  CreditCard,
+  Smartphone,
+  Banknote,
+  Calculator
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, CartItem, Customer, Transaction } from '@/types';
@@ -30,6 +33,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QuickAddProduct } from './QuickAddProduct';
 import { Receipt } from './Receipt';
+import { SplitPayment } from './SplitPayment';
+import { MPesaPayment } from './MPesaPayment';
+import { HirePurchase } from './HirePurchase';
 import { useStore } from '@/contexts/StoreContext';
 
 export const ProductManagement: React.FC = () => {
@@ -53,7 +59,11 @@ export const ProductManagement: React.FC = () => {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showSplitPayment, setShowSplitPayment] = useState(false);
+  const [showMPesaPayment, setShowMPesaPayment] = useState(false);
+  const [showHirePurchase, setShowHirePurchase] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'split' | 'hire-purchase'>('cash');
 
   // Quick add customer form
   const [quickCustomer, setQuickCustomer] = useState({
@@ -238,7 +248,7 @@ export const ProductManagement: React.FC = () => {
     });
   };
 
-  const processCheckout = () => {
+  const processCheckout = (paymentType: 'cash' | 'mpesa' | 'split' | 'hire-purchase' = 'cash') => {
     if (cart.length === 0) {
       toast({
         title: "Empty Cart",
@@ -257,6 +267,25 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
+    // Handle different payment methods
+    switch (paymentType) {
+      case 'mpesa':
+        setShowMPesaPayment(true);
+        break;
+      case 'split':
+        setShowSplitPayment(true);
+        break;
+      case 'hire-purchase':
+        setShowHirePurchase(true);
+        break;
+      default:
+        // Cash payment - complete immediately
+        completeTransaction([{ method: 'cash', amount: calculateTotal() }]);
+        break;
+    }
+  };
+
+  const completeTransaction = (paymentSplits: any[]) => {
     const transaction: Transaction = {
       id: `TXN-${Date.now()}`,
       items: cart,
@@ -264,7 +293,7 @@ export const ProductManagement: React.FC = () => {
       timestamp: new Date(),
       customerId: selectedCustomer.id,
       attendantId: 'current-user', // This should come from auth context
-      paymentSplits: [{ method: 'cash', amount: calculateTotal() }],
+      paymentSplits: paymentSplits,
       status: 'completed'
     };
 
@@ -497,13 +526,41 @@ export const ProductManagement: React.FC = () => {
               </span>
             </div>
             
-            <Button 
-              className="w-full mt-3" 
-              size="lg"
-              onClick={processCheckout}
-            >
-              Checkout - {formatPrice(calculateTotal())}
-            </Button>
+            {/* Payment Method Buttons */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <Button 
+                className="bg-green-600 hover:bg-green-700" 
+                size="sm"
+                onClick={() => processCheckout('cash')}
+              >
+                <Banknote className="h-4 w-4 mr-1" />
+                Cash
+              </Button>
+              <Button 
+                className="bg-green-800 hover:bg-green-900" 
+                size="sm"
+                onClick={() => processCheckout('mpesa')}
+              >
+                <Smartphone className="h-4 w-4 mr-1" />
+                M-Pesa
+              </Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700" 
+                size="sm"
+                onClick={() => processCheckout('split')}
+              >
+                <Calculator className="h-4 w-4 mr-1" />
+                Split
+              </Button>
+              <Button 
+                className="bg-orange-600 hover:bg-orange-700" 
+                size="sm"
+                onClick={() => processCheckout('hire-purchase')}
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                H/P
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -609,6 +666,37 @@ export const ProductManagement: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Method Dialogs */}
+      {showSplitPayment && (
+        <SplitPayment
+          total={calculateTotal()}
+          onComplete={completeTransaction}
+          onCancel={() => setShowSplitPayment(false)}
+        />
+      )}
+
+      {showMPesaPayment && (
+        <MPesaPayment
+          total={calculateTotal()}
+          customer={selectedCustomer}
+          onComplete={completeTransaction}
+          onCancel={() => setShowMPesaPayment(false)}
+        />
+      )}
+
+      {showHirePurchase && (
+        <HirePurchase
+          items={cart}
+          customer={selectedCustomer}
+          onComplete={(hirePurchaseData) => {
+            // Handle hire purchase completion
+            completeTransaction([{ method: 'credit', amount: hirePurchaseData.downPayment }]);
+            setShowHirePurchase(false);
+          }}
+          onCancel={() => setShowHirePurchase(false)}
+        />
+      )}
 
       {/* Receipt Dialog */}
       {showReceipt && currentTransaction && (

@@ -13,6 +13,7 @@ import { ReceiptSettings } from './settings/ReceiptSettings';
 import { PrinterSettings } from './settings/PrinterSettings';
 import { SMSSettings } from './settings/SMSSettings';
 import { ThemeSelector } from './ThemeSelector';
+import { useStore } from '@/contexts/StoreContext';
 
 interface SettingsProps {
   onSaveSettings: (settings: any) => void;
@@ -20,32 +21,27 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const { toast } = useToast();
+  const { currentStore, updateStore } = useStore();
+  
   const [settings, setSettings] = useState({
     currency: 'KES',
     taxRate: 16,
-    receiptFooter: 'Thank you for shopping with Digital Den!',
     lowStockThreshold: 10,
     enableLoyaltyProgram: true,
     loyaltyPointsPerShilling: 0.01,
     autoBackup: true,
-    printerName: 'Default Printer',
-    receiptWidth: 80,
     showProductImages: true,
     enableBarcode: true,
     requireCustomerInfo: false,
     allowNegativeStock: false,
-    enableMultiStore: false,
     defaultPaymentMethod: 'cash',
-    enableSMS: false,
-    smsApiKey: '',
-    smsUsername: '',
-    enableEmailReceipts: false,
-    smtpHost: '',
-    smtpPort: 587,
-    smtpUsername: '',
-    smtpPassword: '',
     theme: 'light',
     fontSize: 'medium',
+    // Store-specific settings that will be managed per store
+    receiptHeader: currentStore?.receiptSettings?.header || 'Thank you for shopping with us!',
+    receiptFooter: currentStore?.receiptSettings?.footer || 'Visit us again soon!',
+    businessName: currentStore?.name || 'DIGITAL DEN',
+    businessPhone: currentStore?.phone || '0725333337',
     printerEnabled: true,
     printerConnectionType: 'bluetooth',
     bluetoothPrinterName: '',
@@ -55,14 +51,12 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     usbPrinterName: '',
     printCopies: 1,
     printTimeout: 30,
-    autoPrint: true,
+    autoPrint: currentStore?.receiptSettings?.autoprint || true,
     smsEnabled: false,
     smsProvider: 'phone',
-    businessPhone: '0725333337',
-    businessName: 'DIGITAL DEN',
-    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
-    paymentReminderTemplate: 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Pay now: {paymentLink}',
-    paymentConfirmTemplate: 'Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - {businessName}'
+    hirePurchaseTemplate: `Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - ${currentStore?.name || 'DIGITAL DEN'}`,
+    paymentReminderTemplate: `Hi {customerName}, your payment of KES {amount} is pending at ${currentStore?.name || 'DIGITAL DEN'} (${currentStore?.phone || '0725333337'}) and is {daysLate} days late. Pay now: {paymentLink}`,
+    paymentConfirmTemplate: `Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - ${currentStore?.name || 'DIGITAL DEN'}`
   });
 
   const handleSettingChange = (key: string, value: any) => {
@@ -73,10 +67,22 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   };
 
   const handleSaveSettings = () => {
+    // Save store-specific settings to the current store
+    if (currentStore) {
+      updateStore(currentStore.id, {
+        receiptSettings: {
+          ...currentStore.receiptSettings,
+          header: settings.receiptHeader,
+          footer: settings.receiptFooter,
+          autoprint: settings.autoPrint,
+        }
+      });
+    }
+
     onSaveSettings(settings);
     toast({
       title: "Settings Saved",
-      description: "Your settings have been saved successfully.",
+      description: `Settings have been saved${currentStore ? ` for ${currentStore.name}` : ''}.`,
     });
   };
 
@@ -88,26 +94,39 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     console.log('Testing printer with settings:', {
       connectionType: settings.printerConnectionType,
       printerName: settings.bluetoothPrinterName || settings.usbPrinterName,
-      ip: settings.ethernetPrinterIP
+      ip: settings.ethernetPrinterIP,
+      store: currentStore?.name
     });
   };
 
   const handleTestSMS = () => {
     toast({
       title: "Test SMS",
-      description: "Testing SMS configuration...",
+      description: `Testing SMS configuration for ${currentStore?.name || 'current store'}...`,
     });
     console.log('Testing SMS with settings:', {
       provider: settings.smsProvider,
       businessPhone: settings.businessPhone,
-      businessName: settings.businessName
+      businessName: settings.businessName,
+      store: currentStore?.name
     });
   };
+
+  if (!currentStore) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Please select a store to configure settings</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Global Settings</h2>
+        <div>
+          <h2 className="text-2xl font-bold">POS Settings</h2>
+          <p className="text-gray-600">Settings for {currentStore.name}</p>
+        </div>
         <Button onClick={handleSaveSettings}>
           Save Settings
         </Button>
@@ -164,7 +183,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         <TabsContent value="advanced">
           <Card>
             <CardHeader>
-              <CardTitle>Advanced Settings</CardTitle>
+              <CardTitle>Advanced POS Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

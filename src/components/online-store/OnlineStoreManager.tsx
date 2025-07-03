@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { OnlineStoreProducts } from './OnlineStoreProducts';
+import { OnlineStoreProductManagement } from './OnlineStoreProductManagement';
 import { OnlineStoreOrders } from './OnlineStoreOrders';
 import { OnlineStoreSettings } from './OnlineStoreSettings';
 import { OnlineStoreAnalytics } from './OnlineStoreAnalytics';
@@ -147,7 +147,7 @@ export const OnlineStoreManager: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="products" className="mt-6">
-          <OnlineStoreProducts />
+          <OnlineStoreProductManagement />
         </TabsContent>
 
         <TabsContent value="orders" className="mt-6">

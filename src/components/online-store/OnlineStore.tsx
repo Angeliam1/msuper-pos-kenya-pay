@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,18 @@ import { OrderHistory } from './OrderHistory';
 import { ProductShowcase } from './ProductShowcase';
 import { WhatsAppChat } from './WhatsAppChat';
 import { Product, CartItem, Customer } from '@/types';
-import { useQuery } from '@tanstack/react-query';
-import { getProducts } from '@/lib/database';
+
+// Online store specific product interface
+interface OnlineProduct extends Product {
+  originalPrice: number;
+  salesPrice: number;
+  offerPrice?: number;
+  images: string[];
+  features: string[];
+  tags: string[];
+  isFeatured: boolean;
+  description: string;
+}
 
 type OnlineStoreView = 'home' | 'catalog' | 'cart' | 'checkout' | 'auth' | 'orders' | 'categories';
 
@@ -26,10 +37,52 @@ export const OnlineStore: React.FC = () => {
   const [sortBy, setSortBy] = useState('Relevance');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: getProducts,
-  });
+  // Mock online store products - separate from POS products
+  const onlineProducts: OnlineProduct[] = [
+    {
+      id: 'online-1',
+      name: 'iPhone 15 Pro Max 256GB',
+      description: 'Latest iPhone with A17 Pro chip, titanium design, and advanced camera system with 5x telephoto zoom.',
+      features: ['A17 Pro Chip', '256GB Storage', 'Pro Camera System', '5G Connectivity', 'Titanium Design'],
+      category: 'Smartphones',
+      buyingCost: 120000,
+      wholesalePrice: 130000,
+      retailPrice: 150000,
+      price: 135000, // Sales price
+      originalPrice: 150000,
+      salesPrice: 135000,
+      offerPrice: 125000,
+      stock: 25,
+      supplierId: 'supplier-1',
+      barcode: '123456789',
+      images: ['iphone1.jpg', 'iphone2.jpg', 'iphone3.jpg'],
+      tags: ['Apple', 'Premium', 'Latest', '5G'],
+      isFeatured: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'online-2',
+      name: 'MacBook Air M3 13-inch',
+      description: 'Ultra-thin and lightweight laptop with M3 chip for incredible performance and all-day battery life.',
+      features: ['M3 Chip', '8GB RAM', '256GB SSD', 'Liquid Retina Display', '18-hour battery'],
+      category: 'Laptops',
+      buyingCost: 140000,
+      wholesalePrice: 150000,
+      retailPrice: 180000,
+      price: 165000,
+      originalPrice: 180000,
+      salesPrice: 165000,
+      stock: 15,
+      supplierId: 'supplier-1',
+      barcode: '123456790',
+      images: ['macbook1.jpg', 'macbook2.jpg'],
+      tags: ['Apple', 'MacBook', 'M3', 'Laptop'],
+      isFeatured: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  ];
 
   const categories = [
     { name: 'Promos', icon: '🏷️' },
@@ -43,7 +96,7 @@ export const OnlineStore: React.FC = () => {
     { name: 'Wearables', icon: '⌚' },
   ];
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = (product: OnlineProduct, quantity: number = 1) => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       if (existingItem) {
@@ -53,7 +106,7 @@ export const OnlineStore: React.FC = () => {
             : item
         );
       }
-      return [...prev, { ...product, quantity }];
+      return [...prev, { ...product, quantity, price: product.offerPrice || product.salesPrice }];
     });
   };
 
@@ -82,17 +135,6 @@ export const OnlineStore: React.FC = () => {
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-naivas-teal mx-auto mb-4"></div>
-          <h2 className="text-lg font-semibold">Loading Digital Den Store...</h2>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
@@ -191,26 +233,27 @@ export const OnlineStore: React.FC = () => {
 
             {/* Product Count */}
             <div className="text-gray-600 text-sm">
-              {products.length} Products
+              {onlineProducts.length} Products
             </div>
 
             {/* Products Grid - Digital Den Style */}
             <div className="grid grid-cols-2 gap-3">
-              {products.slice(0, 10).map(product => {
-                const discount = Math.floor(Math.random() * 30) + 5; // Random discount 5-35%
-                const originalPrice = Math.floor(product.price * 1.3);
-                const isFeature = Math.random() > 0.7; // 30% chance for featured deals
+              {onlineProducts.map(product => {
+                const discount = Math.round(((product.originalPrice - (product.offerPrice || product.salesPrice)) / product.originalPrice) * 100);
+                const currentPrice = product.offerPrice || product.salesPrice;
                 
                 return (
                   <Card key={product.id} className="relative overflow-hidden shadow-sm">
                     <CardContent className="p-3">
                       {/* Discount Badge */}
-                      <div className="absolute top-2 left-2 bg-naivas-orange text-white px-2 py-1 rounded text-xs font-bold">
-                        {discount}% off
-                      </div>
+                      {discount > 0 && (
+                        <div className="absolute top-2 left-2 bg-naivas-orange text-white px-2 py-1 rounded text-xs font-bold">
+                          {discount}% off
+                        </div>
+                      )}
                       
                       {/* Feature Deal Badge */}
-                      {isFeature && (
+                      {product.isFeatured && (
                         <div className="absolute top-8 left-0 bg-green-700 text-white px-2 py-1 rounded-r text-xs font-bold flex items-center">
                           <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
                           Featured Deals
@@ -232,14 +275,18 @@ export const OnlineStore: React.FC = () => {
                         
                         <div className="space-y-1">
                           <div className="text-lg font-bold text-naivas-teal">
-                            {formatPrice(product.price)}
+                            {formatPrice(currentPrice)}
                           </div>
-                          <div className="text-sm text-gray-500 line-through">
-                            {formatPrice(originalPrice)}
-                          </div>
-                          <div className="text-sm text-green-600">
-                            Save KES {originalPrice - product.price}
-                          </div>
+                          {product.originalPrice !== currentPrice && (
+                            <div className="text-sm text-gray-500 line-through">
+                              {formatPrice(product.originalPrice)}
+                            </div>
+                          )}
+                          {discount > 0 && (
+                            <div className="text-sm text-green-600">
+                              Save KES {(product.originalPrice - currentPrice).toLocaleString()}
+                            </div>
+                          )}
                         </div>
 
                         <button 
