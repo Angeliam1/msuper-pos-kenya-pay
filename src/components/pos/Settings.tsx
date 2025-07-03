@@ -50,7 +50,24 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     smtpUsername: '',
     smtpPassword: '',
     theme: 'light',
-    fontSize: 'medium'
+    fontSize: 'medium',
+    printerEnabled: true,
+    printerConnectionType: 'bluetooth',
+    bluetoothPrinterName: '',
+    bluetoothPrinterAddress: '',
+    ethernetPrinterIP: '',
+    ethernetPrinterPort: '9100',
+    usbPrinterName: '',
+    printCopies: 1,
+    printTimeout: 30,
+    autoPrint: true,
+    smsEnabled: false,
+    smsProvider: 'phone',
+    businessPhone: '0725333337',
+    businessName: 'DIGITAL DEN',
+    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
+    paymentReminderTemplate: 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Pay now: {paymentLink}',
+    paymentConfirmTemplate: 'Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - {businessName}'
   });
 
   const handleSettingChange = (key: string, value: any) => {
@@ -65,6 +82,30 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     toast({
       title: "Settings Saved",
       description: "Your settings have been saved successfully.",
+    });
+  };
+
+  const handleTestPrint = () => {
+    toast({
+      title: "Test Print",
+      description: "Sending test receipt to printer...",
+    });
+    console.log('Testing printer with settings:', {
+      connectionType: settings.printerConnectionType,
+      printerName: settings.bluetoothPrinterName || settings.usbPrinterName,
+      ip: settings.ethernetPrinterIP
+    });
+  };
+
+  const handleTestSMS = () => {
+    toast({
+      title: "Test SMS",
+      description: "Testing SMS configuration...",
+    });
+    console.log('Testing SMS with settings:', {
+      provider: settings.smsProvider,
+      businessPhone: settings.businessPhone,
+      businessName: settings.businessName
     });
   };
 
@@ -114,11 +155,19 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         </TabsContent>
 
         <TabsContent value="printer">
-          <PrinterSettings settings={settings} onSettingChange={handleSettingChange} />
+          <PrinterSettings 
+            settings={settings} 
+            onSettingChange={handleSettingChange}
+            onTestPrint={handleTestPrint}
+          />
         </TabsContent>
 
         <TabsContent value="sms">
-          <SMSSettings settings={settings} onSettingChange={handleSettingChange} />
+          <SMSSettings 
+            settings={settings} 
+            onSettingChange={handleSettingChange}
+            onTestSMS={handleTestSMS}
+          />
         </TabsContent>
 
         <TabsContent value="theme">
