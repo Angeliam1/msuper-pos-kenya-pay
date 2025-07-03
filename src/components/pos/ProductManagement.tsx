@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,65 +28,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QuickAddProduct } from './QuickAddProduct';
 import { Receipt } from './Receipt';
+import { useStore } from '@/contexts/StoreContext';
 
-interface ProductManagementProps {
-  currentUser?: {
-    id: string;
-    name: string;
-    role: string;
-  };
-  storeSettings?: {
-    storeName: string;
-    storeAddress: string;
-    storePhone: string;
-    storeEmail: string;
-    allowPriceBelowWholesale: boolean;
-    paybill: string;
-    showStoreName: boolean;
-    showStoreAddress: boolean;
-    showStorePhone: boolean;
-    showCustomerName: boolean;
-    showCustomerPhone: boolean;
-    showCustomerAddress: boolean;
-    showNotes: boolean;
-    receiptHeader: string;
-    receiptFooter: string;
-    showQRCode: boolean;
-    showBarcode: boolean;
-    autoPrintReceipt: boolean;
-    kraPin?: string;
-    mpesaPaybill?: string;
-    mpesaAccount?: string;
-    mpesaTill?: string;
-    bankAccount?: string;
-    paymentInstructions?: string;
-  };
-}
-
-export const ProductManagement: React.FC<ProductManagementProps> = ({ 
-  currentUser, 
-  storeSettings = {
-    storeName: 'DIGITAL DEN',
-    storeAddress: '123 Electronics Street, Nairobi',
-    storePhone: '+254 700 000 000',
-    storeEmail: 'info@digitalden.co.ke',
-    allowPriceBelowWholesale: false,
-    paybill: '247247',
-    showStoreName: true,
-    showStoreAddress: true,
-    showStorePhone: true,
-    showCustomerName: true,
-    showCustomerPhone: true,
-    showCustomerAddress: true,
-    showNotes: true,
-    receiptHeader: 'Thank you for shopping with us!',
-    receiptFooter: 'Visit us again soon!',
-    showQRCode: true,
-    showBarcode: true,
-    autoPrintReceipt: false
-  }
-}) => {
+export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
+  const { currentStore } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -297,13 +242,22 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       return;
     }
 
+    if (!currentStore) {
+      toast({
+        title: "No Store Selected",
+        description: "Please select a store to process checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const transaction: Transaction = {
       id: `TXN-${Date.now()}`,
       items: cart,
       total: calculateTotal(),
       timestamp: new Date(),
       customerId: selectedCustomer.id,
-      attendantId: currentUser?.id || 'unknown',
+      attendantId: 'current-user', // This should come from auth context
       paymentSplits: [{ method: 'cash', amount: calculateTotal() }],
       status: 'completed'
     };
@@ -327,12 +281,56 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
     });
   };
 
+  // Create store settings from current store
+  const storeSettings = currentStore ? {
+    storeName: currentStore.name,
+    storeAddress: currentStore.address,
+    storePhone: currentStore.phone,
+    storeEmail: '',
+    allowPriceBelowWholesale: false,
+    paybill: '247247',
+    showStoreName: true,
+    showStoreAddress: true,
+    showStorePhone: true,
+    showCustomerName: true,
+    showCustomerPhone: true,
+    showCustomerAddress: true,
+    showNotes: true,
+    receiptHeader: currentStore.receiptSettings?.header || 'Thank you for shopping with us!',
+    receiptFooter: currentStore.receiptSettings?.footer || 'Visit us again soon!',
+    showQRCode: true,
+    showBarcode: true,
+    autoPrintReceipt: currentStore.receiptSettings?.autoprint || false
+  } : {
+    storeName: 'STORE NOT SELECTED',
+    storeAddress: '',
+    storePhone: '',
+    storeEmail: '',
+    allowPriceBelowWholesale: false,
+    paybill: '',
+    showStoreName: true,
+    showStoreAddress: true,
+    showStorePhone: true,
+    showCustomerName: true,
+    showCustomerPhone: true,
+    showCustomerAddress: true,
+    showNotes: true,
+    receiptHeader: 'Thank you for shopping with us!',
+    receiptFooter: 'Visit us again soon!',
+    showQRCode: true,
+    showBarcode: true,
+    autoPrintReceipt: false
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b z-10 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">{storeSettings.storeName}</h2>
+          <div>
+            <h2 className="text-lg font-bold">{currentStore?.name || 'No Store Selected'}</h2>
+            <p className="text-xs text-gray-600">{currentStore?.address || 'Please select a store'}</p>
+          </div>
           <div className="flex gap-2">
             <Button 
               size="sm" 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Dashboard } from '@/components/pos/Dashboard';
@@ -16,7 +17,10 @@ import { ExpenseManagement } from '@/components/pos/ExpenseManagement';
 import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
 import { HirePurchase } from '@/components/pos/HirePurchase';
 import { OnlineStoreManager } from '@/components/online-store/OnlineStoreManager';
+import { ProductCatalog } from '@/components/pos/ProductCatalog';
+import { StockTake } from '@/components/pos/StockTake';
 import { ThemeProvider } from '@/components/pos/ThemeProvider';
+import { StoreProvider } from '@/contexts/StoreContext';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -147,7 +151,9 @@ const Index = () => {
           />
         );
       case 'products':
-        return <ProductManagement />;
+        return <ProductCatalog />;
+      case 'stock-take':
+        return <StockTake />;
       case 'customers':
         return <CustomerManagement />;
       case 'history':
@@ -229,33 +235,35 @@ const Index = () => {
   };
 
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-background text-foreground flex theme-transition">
-        <Sidebar 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab}
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-        />
-        
-        <div className="flex-1 lg:ml-0">
-          {/* Mobile header */}
-          <div className="lg:hidden bg-card border-b p-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
+    <StoreProvider>
+      <ThemeProvider>
+        <div className="min-h-screen bg-background text-foreground flex theme-transition">
+          <Sidebar 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab}
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+          />
           
-          <main className="p-4 lg:p-8">
-            {renderContent()}
-          </main>
+          <div className="flex-1 lg:ml-0">
+            {/* Mobile header */}
+            <div className="lg:hidden bg-card border-b p-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <main className="p-4 lg:p-8">
+              {renderContent()}
+            </main>
+          </div>
         </div>
-      </div>
-    </ThemeProvider>
+      </ThemeProvider>
+    </StoreProvider>
   );
 };
 
