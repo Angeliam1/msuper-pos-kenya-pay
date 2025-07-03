@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'msuper-pos-kenya-pay',
   webDir: 'dist',
   server: {
-    url: 'https://9d26a037-6e06-4ca6-b7a1-c402e1f68291.lovableproject.com?forceHideBadge=true',
+    url: 'https://www.digitalden.co.ke',
     cleartext: true
   },
   plugins: {
