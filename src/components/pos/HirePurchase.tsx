@@ -306,3 +306,5 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
     </div>
   );
 };
+
+export const HirePurchase = HirePurchaseComponent;

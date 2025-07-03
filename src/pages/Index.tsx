@@ -19,39 +19,174 @@ import { HirePurchase } from '@/components/pos/HirePurchase';
 import { OnlineStore } from '@/components/online-store/OnlineStore';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getProducts, getCustomers, getTransactions, getAttendants, getSuppliers, getExpenses } from '@/lib/database';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('pos');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Fetch data for components
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: getProducts,
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: getCustomers,
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: getTransactions,
+  });
+
+  const { data: attendants = [] } = useQuery({
+    queryKey: ['attendants'],
+    queryFn: getAttendants,
+  });
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: getSuppliers,
+  });
+
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: getExpenses,
+  });
+
+  // Calculate dashboard metrics
+  const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
+  const todaySales = transactions
+    .filter(t => new Date(t.timestamp).toDateString() === new Date().toDateString())
+    .reduce((sum, t) => sum + t.total, 0);
+  const transactionCount = transactions.length;
+
+  // Mock current attendant for components that need it
+  const currentAttendant = attendants[0] || {
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@store.com',
+    phone: '0712345678',
+    role: 'admin' as const,
+    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
+    isActive: true,
+    pin: '1234',
+    createdAt: new Date()
+  };
+
+  // Mock handlers
+  const handleSaveSettings = (settings: any) => {
+    console.log('Settings saved:', settings);
+  };
+
+  const handleAddAttendant = (attendant: any) => {
+    console.log('Add attendant:', attendant);
+  };
+
+  const handleUpdateAttendant = (id: string, updates: any) => {
+    console.log('Update attendant:', id, updates);
+  };
+
+  const handleAddSupplier = (supplier: any) => {
+    console.log('Add supplier:', supplier);
+  };
+
+  const handleUpdateSupplier = (id: string, updates: any) => {
+    console.log('Update supplier:', id, updates);
+  };
+
+  const handleDeleteSupplier = (id: string) => {
+    console.log('Delete supplier:', id);
+  };
+
+  const handleUpdateCustomer = (id: string, updates: any) => {
+    console.log('Update customer:', id, updates);
+  };
+
+  const handleRefundTransaction = (id: string, reason: string) => {
+    console.log('Refund transaction:', id, reason);
+  };
+
+  const handleAddExpense = (expense: any) => {
+    console.log('Add expense:', expense);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return (
+          <Dashboard
+            totalSales={totalSales}
+            todaySales={todaySales}
+            transactionCount={transactionCount}
+            transactions={transactions}
+            products={products}
+          />
+        );
       case 'products':
         return <ProductManagement />;
       case 'customers':
         return <CustomerManagement />;
       case 'history':
-        return <TransactionHistory />;
+        return <TransactionHistory transactions={transactions} />;
       case 'reports':
-        return <Reports />;
+        return (
+          <Reports
+            transactions={transactions}
+            products={products}
+            attendants={attendants}
+          />
+        );
       case 'settings':
-        return <Settings />;
+        return <Settings onSaveSettings={handleSaveSettings} />;
       case 'alerts':
-        return <LowStockAlerts />;
+        return <LowStockAlerts products={products} />;
       case 'staff':
-        return <RoleManagement />;
+        return (
+          <RoleManagement
+            attendants={attendants}
+            currentAttendant={currentAttendant}
+            onAddAttendant={handleAddAttendant}
+            onUpdateAttendant={handleUpdateAttendant}
+          />
+        );
       case 'suppliers':
-        return <SupplierManagement />;
+        return (
+          <SupplierManagement
+            suppliers={suppliers}
+            onAddSupplier={handleAddSupplier}
+            onUpdateSupplier={handleUpdateSupplier}
+            onDeleteSupplier={handleDeleteSupplier}
+          />
+        );
       case 'loyalty':
-        return <LoyaltyManagement />;
+        return (
+          <LoyaltyManagement
+            customers={customers}
+            onUpdateCustomer={handleUpdateCustomer}
+          />
+        );
       case 'stores':
         return <MultiStoreManagement />;
       case 'returns':
-        return <ReturnsManagement />;
+        return (
+          <ReturnsManagement
+            transactions={transactions}
+            onRefundTransaction={handleRefundTransaction}
+          />
+        );
       case 'expenses':
-        return <ExpenseManagement />;
+        return (
+          <ExpenseManagement
+            expenses={expenses}
+            attendants={attendants}
+            currentAttendant={currentAttendant}
+            onAddExpense={handleAddExpense}
+          />
+        );
       case 'purchases':
         return <PurchaseManagement />;
       case 'hire-purchase':
@@ -59,7 +194,15 @@ const Index = () => {
       case 'online-store':
         return <OnlineStore />;
       default:
-        return <Dashboard />;
+        return (
+          <Dashboard
+            totalSales={totalSales}
+            todaySales={todaySales}
+            transactionCount={transactionCount}
+            transactions={transactions}
+            products={products}
+          />
+        );
     }
   };
 
