@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { Product, Customer, Supplier, Transaction, Purchase, Expense, Attendant } from '@/types';
 
@@ -356,4 +355,151 @@ export const addPurchase = async (purchase: Omit<Purchase, 'id'>): Promise<Purch
     receiptImage: data.receipt_image,
     invoiceNumber: data.invoice_number
   };
+};
+
+// Expense functions
+export const getExpenses = async (): Promise<Expense[]> => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  
+  return data.map(expense => ({
+    id: expense.id,
+    category: expense.category,
+    amount: expense.amount,
+    description: expense.description,
+    date: new Date(expense.created_at),
+    attendantId: expense.attendant_id
+  }));
+};
+
+export const addExpense = async (expense: Omit<Expense, 'id'>): Promise<Expense> => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert([{
+      category: expense.category,
+      amount: expense.amount,
+      description: expense.description,
+      attendant_id: expense.attendantId
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  
+  return {
+    id: data.id,  
+    category: data.category,
+    amount: data.amount,
+    description: data.description,
+    date: new Date(data.created_at),
+    attendantId: data.attendant_id
+  };
+};
+
+// Attendant functions
+export const getAttendants = async (): Promise<Attendant[]> => {
+  const { data, error } = await supabase
+    .from('attendants')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  
+  return data.map(attendant => ({
+    id: attendant.id,
+    name: attendant.name,
+    email: attendant.email,
+    phone: attendant.phone,
+    role: attendant.role,
+    permissions: attendant.permissions,
+    isActive: attendant.is_active,
+    assignedStoreId: attendant.assigned_store_id,
+    pin: attendant.pin,
+    createdAt: new Date(attendant.created_at),
+    workSchedule: attendant.work_schedule
+  }));
+};
+
+export const addAttendant = async (attendant: Omit<Attendant, 'id' | 'createdAt'>): Promise<Attendant> => {
+  const { data, error } = await supabase
+    .from('attendants')
+    .insert([{
+      name: attendant.name,
+      email: attendant.email,
+      phone: attendant.phone,  
+      role: attendant.role,
+      permissions: attendant.permissions,
+      is_active: attendant.isActive,
+      assigned_store_id: attendant.assignedStoreId,
+      pin: attendant.pin,
+      work_schedule: attendant.workSchedule
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    role: data.role,
+    permissions: data.permissions,  
+    isActive: data.is_active,
+    assignedStoreId: data.assigned_store_id,
+    pin: data.pin,
+    createdAt: new Date(data.created_at),
+    workSchedule: data.work_schedule
+  };
+};
+
+// Utility functions for security
+export const sanitizeInput = (input: string): string => {
+  return input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+              .replace(/javascript:/gi, '')
+              .replace(/on\w+=/gi, '');
+};
+
+export const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+export const validatePhone = (phone: string): boolean => {
+  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+  return phoneRegex.test(phone.replace(/\s/g, ''));
+};
+
+// Data export functions
+export const exportData = async (dataType: 'products' | 'customers' | 'transactions' | 'all') => {
+  const exportData: any = {};
+  
+  try {
+    if (dataType === 'products' || dataType === 'all') {
+      exportData.products = await getProducts();
+    }
+    if (dataType === 'customers' || dataType === 'all') {
+      exportData.customers = await getCustomers();
+    }
+    if (dataType === 'transactions' || dataType === 'all') {
+      exportData.transactions = await getTransactions();
+    }
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pos-data-${dataType}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Export failed:', error);
+    throw error;
+  }
 };
