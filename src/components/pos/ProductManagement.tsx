@@ -670,29 +670,33 @@ export const ProductManagement: React.FC = () => {
       {/* Payment Method Dialogs */}
       {showSplitPayment && (
         <SplitPayment
-          total={calculateTotal()}
-          onComplete={completeTransaction}
+          totalAmount={calculateTotal()}
+          customers={customers}
+          onConfirmPayment={completeTransaction}
           onCancel={() => setShowSplitPayment(false)}
         />
       )}
 
       {showMPesaPayment && (
         <MPesaPayment
-          total={calculateTotal()}
-          customer={selectedCustomer}
-          onComplete={completeTransaction}
+          amount={calculateTotal()}
+          onSuccess={(reference: string) => {
+            completeTransaction([{ method: 'mpesa', amount: calculateTotal(), reference }]);
+            setShowMPesaPayment(false);
+          }}
           onCancel={() => setShowMPesaPayment(false)}
         />
       )}
 
       {showHirePurchase && (
         <HirePurchase
-          items={cart}
-          customer={selectedCustomer}
-          onComplete={(hirePurchaseData) => {
-            // Handle hire purchase completion
+          totalAmount={calculateTotal()}
+          customers={customers}
+          cartItems={cart}
+          onCreateHirePurchase={(hirePurchaseData) => {
             completeTransaction([{ method: 'credit', amount: hirePurchaseData.downPayment }]);
             setShowHirePurchase(false);
+            return `HP-${Date.now()}`;
           }}
           onCancel={() => setShowHirePurchase(false)}
         />
