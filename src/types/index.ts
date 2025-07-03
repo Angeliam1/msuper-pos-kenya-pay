@@ -1,130 +1,45 @@
 
+// Core business types
 export interface Product {
   id: string;
   name: string;
   buyingCost: number;
-  wholesalePrice: number;
+  wholesalePrice?: number;
   retailPrice: number;
-  price: number; // This will be the selling price (retail by default)
+  price: number;
   category: string;
   stock: number;
-  unit: 'pcs' | 'kg' | 'bundle' | 'litre' | 'meter' | 'box';
-  image?: string;
-  supplierId?: string;
+  unit: string;
   barcode?: string;
-  lowStockThreshold?: number;
+  lowStockThreshold: number;
+  description?: string;
+  image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  creditLimit: number;
+  outstandingBalance: number;
+  loyaltyPoints: number;
+  totalPurchases?: number;
+  lastPurchaseDate?: Date;
+  createdAt: Date;
 }
 
 export interface CartItem extends Product {
   quantity: number;
 }
 
-export interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  email?: string;
-  address?: string;
-  creditLimit: number;
-  outstandingBalance: number;
-  loyaltyPoints: number;
-  createdAt: Date;
-}
-
-export interface Supplier {
-  id: string;
-  name: string;
-  phone: string;
-  email?: string;
-  address?: string;
-  products: string[];
-  bankDetails?: {
-    bankName: string;
-    accountNumber: string;
-    accountName: string;
-  };
-  mpesaDetails?: {
-    phoneNumber: string;
-    businessNumber?: string;
-  };
-  createdAt: Date;
-}
-
-export interface Expense {
-  id: string;
-  category: string;
-  amount: number;
-  description: string;
-  date: Date;
-  attendantId: string;
-}
-
-export interface Purchase {
-  id: string;
-  supplierId: string;
-  items: PurchaseItem[];
-  totalCost: number;
-  date: Date;
-  attendantId: string;
-  receiptImage?: string;
-  invoiceNumber?: string;
-}
-
-export interface PurchaseItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  unitCost: number;
-  totalCost: number;
-}
-
-export interface WorkSchedule {
-  startTime: string;
-  endTime: string;
-  workDays: string[];
-  enforceSchedule: boolean;
-}
-
-export interface Attendant {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'admin' | 'manager' | 'cashier';
-  permissions: string[];
-  isActive: boolean;
-  assignedStoreId?: string;
-  pin?: string;
-  createdAt: Date;
-  workSchedule?: WorkSchedule;
-}
-
 export interface PaymentSplit {
-  method: 'mpesa' | 'cash' | 'credit';
+  method: 'cash' | 'mpesa' | 'credit' | 'bank';
   amount: number;
   reference?: string;
-}
-
-export interface HirePurchase {
-  id: string;
-  customerId: string;
-  totalAmount: number;
-  downPayment: number;
-  remainingAmount: number;
-  installmentAmount: number;
-  installmentPeriod: 'weekly' | 'monthly';
-  nextPaymentDate: Date;
-  status: 'active' | 'completed' | 'defaulted';
-}
-
-export interface HeldTransaction {
-  id: string;
-  items: CartItem[];
-  customerId?: string;
-  customerName?: string;
-  heldAt: Date;
-  heldBy: string;
-  note?: string;
 }
 
 export interface Transaction {
@@ -138,35 +53,138 @@ export interface Transaction {
   hirePurchaseId?: string;
   status: 'completed' | 'voided' | 'refunded';
   voidedAt?: Date;
-  refundedAt?: Date;
   voidReason?: string;
+  refundedAt?: Date;
   refundReason?: string;
+  receiptNumber?: string;
+  notes?: string;
 }
 
-export interface LowStockAlert {
+export interface Supplier {
   id: string;
-  productId: string;
-  productName: string;
-  currentStock: number;
-  threshold: number;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  contactPerson?: string;
+  paymentTerms?: string;
   createdAt: Date;
+}
+
+export interface Attendant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'admin' | 'manager' | 'cashier';
+  permissions: string[];
+  isActive: boolean;
+  pin: string;
+  assignedStoreId?: string;
+  createdAt: Date;
+}
+
+export interface HirePurchase {
+  id: string;
+  customerId: string;
+  items: CartItem[];
+  totalAmount: number;
+  downPayment: number;
+  remainingBalance: number;
+  installmentAmount: number;
+  installmentPeriod: 'daily' | 'weekly' | 'monthly';
+  nextPaymentDate: Date;
+  createdAt: Date;
+  completedAt?: Date;
+  status: 'active' | 'completed' | 'defaulted';
+}
+
+export interface HeldTransaction {
+  id: string;
+  items: CartItem[];
+  customerId?: string;
+  customerName?: string;
+  heldAt: Date;
+  heldBy: string;
+  note?: string;
+}
+
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  attendantId: string;
+  date: Date;
+  receiptNumber?: string;
+  notes?: string;
+}
+
+export interface Purchase {
+  id: string;
+  supplierId: string;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    buyingCost: number;
+    total: number;
+  }>;
+  totalAmount: number;
+  attendantId: string;
+  purchaseDate: Date;
+  receivedDate?: Date;
+  status: 'pending' | 'received' | 'cancelled';
+  invoiceNumber?: string;
+  notes?: string;
 }
 
 export interface StoreLocation {
   id: string;
   name: string;
   address: string;
-  phone: string;
-  manager: string;
-  status: 'active' | 'inactive';
-  totalSales: number;
-  isEditable: boolean;
+  phone?: string;
+  email?: string;
+  managerId?: string;
+  isActive: boolean;
+  createdAt: Date;
 }
 
-export interface AppTheme {
-  primary: string;
-  secondary: string;
-  accent: string;
-  background: string;
-  text: string;
+// UI and component types
+export interface User {
+  id: string;
+  storeName: string;
+  adminEmail: string;
+  password: string;
+  pin: string;
+  phone: string;
+  currency: string;
+  theme: string;
+  createdAt: Date;
+}
+
+export interface StoreSettings {
+  storeName: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
+  paybill: string;
+  showStoreName: boolean;
+  showStoreAddress: boolean;
+  showStorePhone: boolean;
+  showCustomerName: boolean;
+  showCustomerPhone: boolean;
+  showCustomerAddress: boolean;
+  showNotes: boolean;
+  receiptHeader: string;
+  receiptFooter: string;
+  showBarcode: boolean;
+  showQRCode: boolean;
+  autoPrintReceipt: boolean;
+  receiptCodeType: 'qr' | 'barcode';
+  smsEnabled: boolean;
+  smsProvider: 'phone' | 'whatsapp' | 'api';
+  businessName: string;
+  businessPhone: string;
+  hirePurchaseTemplate: string;
 }

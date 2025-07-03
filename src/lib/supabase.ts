@@ -1,17 +1,32 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false
-  }
-});
+// Create a mock client if environment variables are not set
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    })
+  : {
+      // Mock client for development without Supabase setup
+      auth: {
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        signInWithPassword: () => Promise.resolve({ error: { message: 'Supabase not configured' } }),
+        signUp: () => Promise.resolve({ error: { message: 'Supabase not configured' } }),
+        signOut: () => Promise.resolve({ error: null }),
+        updateUser: () => Promise.resolve({ error: { message: 'Supabase not configured' } })
+      },
+      from: () => ({
+        select: () => Promise.resolve({ data: [], error: null }),
+        insert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        update: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        delete: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
+      })
+    } as any;

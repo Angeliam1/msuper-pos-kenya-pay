@@ -26,6 +26,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch(() => {
+      // Handle case where supabase is not configured
+      setUser(null);
+      setLoading(false);
     });
 
     // Listen for auth changes
@@ -81,8 +85,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setAttendant(null);
+    try {
+      await supabase.auth.signOut();
+      setAttendant(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const updateProfile = async (updates: any) => {
