@@ -518,8 +518,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
                       {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
                     </span>
                   </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Buy: {formatPrice(product.buyingCost)} | 
+                    Wholesale: {formatPrice(product.wholesalePrice || product.buyingCost)} |
+                    Retail: {formatPrice(product.retailPrice)}
+                  </div>
                   <p className="text-sm font-semibold text-green-600 mt-1">
-                    {formatPrice(product.price)}
+                    Current: {formatPrice(product.price)}
                   </p>
                 </div>
                 
@@ -602,7 +607,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
               transaction={currentTransaction}
               onClose={() => setShowReceipt(false)}
               storeSettings={storeSettings}
-              customer={selectedCustomer.id !== 'walk-in' ? selectedCustomer : undefined}
+              customer={selectedCustomer.id !== 'walk-in' ? {
+                name: selectedCustomer.name,
+                phone: selectedCustomer.phone,
+                address: selectedCustomer.address || '',
+                loyaltyPoints: selectedCustomer.loyaltyPoints
+              } : undefined}
             />
           </DialogContent>
         </Dialog>
