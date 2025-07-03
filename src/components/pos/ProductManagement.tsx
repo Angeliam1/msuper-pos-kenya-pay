@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import {
   Printer
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product, Customer, Transaction, PaymentSplit } from '@/types';
+import { Product, Customer, Transaction, PaymentSplit, CartItem } from '@/types';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Label } from '@/components/ui/label';
@@ -59,7 +60,7 @@ export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [cart, setCart] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -97,7 +98,19 @@ export const ProductManagement: React.FC = () => {
   });
 
   const addToCart = (product: Product) => {
-    setCart(prev => [...prev, product]);
+    const existingItem = cart.find(item => item.id === product.id);
+    if (existingItem) {
+      setCart(prev => 
+        prev.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+    } else {
+      const cartItem: CartItem = { ...product, quantity: 1 };
+      setCart(prev => [...prev, cartItem]);
+    }
   };
 
   const removeFromCart = (productId: string) => {
@@ -113,7 +126,7 @@ export const ProductManagement: React.FC = () => {
   };
 
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
@@ -142,8 +155,9 @@ export const ProductManagement: React.FC = () => {
         total: calculateTotal(),
         paymentSplits,
         timestamp: new Date(),
-        attendant: currentAttendant?.name || 'System',
-        customerId
+        attendantId: currentAttendant?.id || '1',
+        customerId,
+        status: 'completed'
       };
 
       await addTransaction(transaction);
@@ -153,7 +167,7 @@ export const ProductManagement: React.FC = () => {
         const pointsEarned = Math.floor(calculateTotal() / 100); // 1 point per 100 KES
         const customer = customers.find(c => c.id === customerId);
         if (customer) {
-          const currentPoints = (customer as any).loyaltyPoints || 0;
+          const currentPoints = customer.loyaltyPoints || 0;
           await updateCustomer(customerId, {
             ...customer,
             loyaltyPoints: currentPoints + pointsEarned
@@ -232,7 +246,7 @@ export const ProductManagement: React.FC = () => {
                     <CardContent className="p-3 flex flex-col items-center justify-center" onClick={() => addToCart(product)}>
                       <div className="relative aspect-square w-full h-24 rounded-md overflow-hidden mb-2">
                         <img
-                          src={product.image}
+                          src={product.image || '/placeholder.svg'}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
@@ -265,7 +279,7 @@ export const ProductManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <div className="relative aspect-square w-10 h-10 rounded-md overflow-hidden">
                         <img
-                          src={item.image}
+                          src={item.image || '/placeholder.svg'}
                           alt={item.name}
                           className="w-full h-full object-cover"
                         />
@@ -279,7 +293,7 @@ export const ProductManagement: React.FC = () => {
                       <Input
                         type="number"
                         min="1"
-                        defaultValue={1}
+                        value={item.quantity}
                         className="w-16 text-center text-sm"
                         onChange={(e) => adjustQuantity(item.id, parseInt(e.target.value))}
                       />
@@ -422,7 +436,7 @@ export const ProductManagement: React.FC = () => {
                   <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{formatPrice(item.price * (item.quantity || 1))}</TableCell>
+                    <TableCell>{formatPrice(item.price * item.quantity)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

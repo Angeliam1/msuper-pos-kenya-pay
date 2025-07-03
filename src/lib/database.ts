@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { Product, Customer, Transaction, Supplier, Purchase, Expense, Attendant } from '@/types';
 import { sanitizeInput, validateEmail, validatePhone } from '@/utils/security';
@@ -293,6 +292,29 @@ export const getTransactions = async (): Promise<Transaction[]> => {
   } catch (error) {
     console.error('Error fetching transactions:', error);
     return mockTransactions;
+  }
+};
+
+export const addTransaction = async (transaction: Transaction): Promise<Transaction | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured - using mock data');
+    // Add to mock transactions
+    mockTransactions.push(transaction);
+    return transaction;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert([transaction])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding transaction:', error);
+    throw error;
   }
 };
 
