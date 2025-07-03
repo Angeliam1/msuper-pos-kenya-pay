@@ -11,9 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Store, Plus, Edit, MapPin, Package, ArrowRight, Users, Settings, Receipt } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Store, Plus, Edit, MapPin, Package, ArrowRight, Users, Settings, Receipt, Building, CreditCard, Printer, Phone, Mail } from 'lucide-react';
 import { StoreLocation, Product, Attendant } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface MultiStoreManagementProps {
   products?: Product[];
@@ -28,7 +30,8 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   onImportProducts,
   onAssignStaff
 }) => {
-  const { stores, addStore, updateStore, getStoreProducts } = useStore();
+  const { stores, addStore, updateStore, getStoreProducts, currentStore, setCurrentStore } = useStore();
+  const { toast } = useToast();
   
   const [newStore, setNewStore] = useState({
     name: '',
@@ -45,6 +48,7 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showStaffDialog, setShowStaffDialog] = useState(false);
   const [showStoreSettings, setShowStoreSettings] = useState(false);
+  const [showAddStoreDialog, setShowAddStoreDialog] = useState(false);
   const [selectedStoreForSettings, setSelectedStoreForSettings] = useState<StoreLocation | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [fromStoreId, setFromStoreId] = useState('');
@@ -52,8 +56,24 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   const [selectedAttendant, setSelectedAttendant] = useState('');
   const [assignToStore, setAssignToStore] = useState('');
 
-  // Store settings form state
+  // Complete store settings form state
   const [storeSettings, setStoreSettings] = useState({
+    // Basic store info
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    manager: '',
+    kraPin: '',
+    
+    // Payment settings
+    mpesaPaybill: '',
+    mpesaAccount: '',
+    mpesaTill: '',
+    bankAccount: '',
+    paymentInstructions: '',
+    
+    // Receipt settings
     receiptSettings: {
       header: '',
       footer: '',
@@ -63,6 +83,8 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
       size: '80mm' as '58mm' | '80mm',
       autoprint: false
     },
+    
+    // Pricing settings
     pricingSettings: {
       allowPriceBelowWholesale: false,
       defaultPriceType: 'retail' as 'retail' | 'wholesale',
@@ -93,6 +115,11 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
         totalSales: 0,
         isActive: true,
         createdAt: new Date()
+      });
+      setShowAddStoreDialog(false);
+      toast({
+        title: "Store Added",
+        description: "New store has been added successfully.",
       });
     }
   };
@@ -127,6 +154,17 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   const openStoreSettings = (store: StoreLocation) => {
     setSelectedStoreForSettings(store);
     setStoreSettings({
+      name: store.name,
+      address: store.address,
+      phone: store.phone,
+      email: '',
+      manager: store.manager,
+      kraPin: '',
+      mpesaPaybill: '',
+      mpesaAccount: '',
+      mpesaTill: '',
+      bankAccount: '',
+      paymentInstructions: '',
       receiptSettings: {
         header: store.receiptSettings?.header || 'Thank you for shopping with us!',
         footer: store.receiptSettings?.footer || 'Visit us again soon!',
@@ -148,11 +186,30 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   const saveStoreSettings = () => {
     if (selectedStoreForSettings) {
       updateStore(selectedStoreForSettings.id, {
+        name: storeSettings.name,
+        address: storeSettings.address,
+        phone: storeSettings.phone,
+        manager: storeSettings.manager,
         receiptSettings: storeSettings.receiptSettings,
         pricingSettings: storeSettings.pricingSettings
       });
       setShowStoreSettings(false);
       setSelectedStoreForSettings(null);
+      toast({
+        title: "Store Settings Saved",
+        description: "Store settings have been updated successfully.",
+      });
+    }
+  };
+
+  const handleStoreSelection = (storeId: string) => {
+    const selected = stores.find(store => store.id === storeId);
+    if (selected) {
+      setCurrentStore(selected);
+      toast({
+        title: "Store Selected",
+        description: `Now managing ${selected.name}`,
+      });
     }
   };
 
@@ -161,8 +218,61 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Multi-Store Management</h2>
+        <h2 className="text-2xl font-bold">Store Management</h2>
         <div className="flex gap-2">
+          <Dialog open={showAddStoreDialog} onOpenChange={setShowAddStoreDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Store
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Store</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Store Name</Label>
+                    <Input
+                      value={newStore.name}
+                      onChange={(e) => setNewStore(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Branch name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Manager</Label>
+                    <Input
+                      value={newStore.manager}
+                      onChange={(e) => setNewStore(prev => ({ ...prev, manager: e.target.value }))}
+                      placeholder="Manager name"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Address</Label>
+                  <Input
+                    value={newStore.address}
+                    onChange={(e) => setNewStore(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Store address"
+                  />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input
+                    value={newStore.phone}
+                    onChange={(e) => setNewStore(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <Button onClick={handleAddStore} className="w-full">
+                  Add Store
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -260,66 +370,49 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
               </div>
             </DialogContent>
           </Dialog>
-
-          <Dialog open={showStaffDialog} onOpenChange={setShowStaffDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Users className="h-4 w-4 mr-2" />
-                Assign Staff
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Assign Staff to Store</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Select Staff Member</Label>
-                  <Select value={selectedAttendant} onValueChange={setSelectedAttendant}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {attendants.map(attendant => (
-                        <SelectItem key={attendant.id} value={attendant.id}>
-                          {attendant.name} - {attendant.role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Assign to Store</Label>
-                  <Select value={assignToStore} onValueChange={setAssignToStore}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select store" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stores.map(store => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setShowStaffDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleAssignStaff}
-                    disabled={!selectedAttendant || !assignToStore}
-                  >
-                    Assign Staff
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
+      {/* Store Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Select Active Store
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Label>Currently Managing:</Label>
+            <Select value={currentStore?.id || ''} onValueChange={handleStoreSelection}>
+              <SelectTrigger className="w-80">
+                <SelectValue placeholder="Select a store to manage" />
+              </SelectTrigger>
+              <SelectContent>
+                {stores.map(store => (
+                  <SelectItem key={store.id} value={store.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{store.name}</span>
+                      <Badge variant={store.status === 'active' ? 'default' : 'secondary'}>
+                        {store.status}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {currentStore && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold text-blue-900">{currentStore.name}</h4>
+              <p className="text-blue-700">{currentStore.address}</p>
+              <p className="text-sm text-blue-600">Products: {getStoreProducts(currentStore.id).length}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Stores Grid */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -330,7 +423,7 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stores.map(store => (
-              <Card key={store.id} className="border-2">
+              <Card key={store.id} className={`border-2 ${currentStore?.id === store.id ? 'border-blue-500 bg-blue-50' : ''}`}>
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
@@ -354,13 +447,20 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openStoreSettings(store)}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => openStoreSettings(store)}
+                      >
                         <Settings className="h-4 w-4 mr-1" />
                         Settings
                       </Button>
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                      <Button 
+                        size="sm" 
+                        variant={currentStore?.id === store.id ? "default" : "outline"}
+                        onClick={() => handleStoreSelection(store.id)}
+                      >
+                        {currentStore?.id === store.id ? 'Active' : 'Select'}
                       </Button>
                     </div>
                   </div>
@@ -371,22 +471,135 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
         </CardContent>
       </Card>
 
-      {/* Store Settings Dialog */}
+      {/* Comprehensive Store Settings Dialog */}
       <Dialog open={showStoreSettings} onOpenChange={setShowStoreSettings}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Store Settings - {selectedStoreForSettings?.name}
             </DialogTitle>
           </DialogHeader>
-          <Tabs defaultValue="receipt" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="receipt">Receipt Settings</TabsTrigger>
-              <TabsTrigger value="pricing">Pricing Settings</TabsTrigger>
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="payment">Payment</TabsTrigger>
+              <TabsTrigger value="receipt">Receipt</TabsTrigger>
+              <TabsTrigger value="pricing">Pricing</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="basic" className="space-y-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Store Name</Label>
+                    <Input
+                      value={storeSettings.name}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Manager</Label>
+                    <Input
+                      value={storeSettings.manager}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, manager: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Address</Label>
+                  <Input
+                    value={storeSettings.address}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, address: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Phone</Label>
+                    <Input
+                      value={storeSettings.phone}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={storeSettings.email}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>KRA PIN</Label>
+                  <Input
+                    value={storeSettings.kraPin}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, kraPin: e.target.value }))}
+                    placeholder="P123456789A"
+                  />
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="payment" className="space-y-4">
+              <div className="space-y-4">
+                <h4 className="font-medium flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Payment Options
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>M-Pesa Paybill</Label>
+                    <Input
+                      value={storeSettings.mpesaPaybill}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, mpesaPaybill: e.target.value }))}
+                      placeholder="247247"
+                    />
+                  </div>
+                  <div>
+                    <Label>M-Pesa Account</Label>
+                    <Input
+                      value={storeSettings.mpesaAccount}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, mpesaAccount: e.target.value }))}
+                      placeholder="333337"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>M-Pesa Till Number</Label>
+                    <Input
+                      value={storeSettings.mpesaTill}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, mpesaTill: e.target.value }))}
+                      placeholder="123456"
+                    />
+                  </div>
+                  <div>
+                    <Label>Bank Account</Label>
+                    <Input
+                      value={storeSettings.bankAccount}
+                      onChange={(e) => setStoreSettings(prev => ({ ...prev, bankAccount: e.target.value }))}
+                      placeholder="Bank Account Details"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Payment Instructions</Label>
+                  <Textarea
+                    value={storeSettings.paymentInstructions}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, paymentInstructions: e.target.value }))}
+                    placeholder="Additional payment instructions..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </TabsContent>
             
             <TabsContent value="receipt" className="space-y-4">
               <div className="space-y-4">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Receipt Configuration
+                </h4>
                 <div>
                   <Label>Receipt Header</Label>
                   <Textarea
@@ -467,6 +680,7 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
             
             <TabsContent value="pricing" className="space-y-4">
               <div className="space-y-4">
+                <h4 className="font-medium">Pricing Configuration</h4>
                 <div>
                   <Label>Default Price Type</Label>
                   <Select 
@@ -521,52 +735,6 @@ export const MultiStoreManagement: React.FC<MultiStoreManagementProps> = ({
           </div>
         </DialogContent>
       </Dialog>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Store</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Store Name</Label>
-              <Input
-                value={newStore.name}
-                onChange={(e) => setNewStore(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Branch name"
-              />
-            </div>
-            <div>
-              <Label>Manager</Label>
-              <Input
-                value={newStore.manager}
-                onChange={(e) => setNewStore(prev => ({ ...prev, manager: e.target.value }))}
-                placeholder="Manager name"
-              />
-            </div>
-          </div>
-          <div>
-            <Label>Address</Label>
-            <Input
-              value={newStore.address}
-              onChange={(e) => setNewStore(prev => ({ ...prev, address: e.target.value }))}
-              placeholder="Store address"
-            />
-          </div>
-          <div>
-            <Label>Phone</Label>
-            <Input
-              value={newStore.phone}
-              onChange={(e) => setNewStore(prev => ({ ...prev, phone: e.target.value }))}
-              placeholder="Phone number"
-            />
-          </div>
-          <Button onClick={handleAddStore} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Store
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 };

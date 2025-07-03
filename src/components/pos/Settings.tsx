@@ -7,9 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Store, Receipt, Printer, Smartphone, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, Receipt, Printer, Smartphone, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { StoreSettings } from './settings/StoreSettings';
 import { ReceiptSettings } from './settings/ReceiptSettings';
 import { PrinterSettings } from './settings/PrinterSettings';
 import { SMSSettings } from './settings/SMSSettings';
@@ -22,10 +21,6 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
-    storeName: 'DIGITAL DEN',
-    storeAddress: '123 Electronics Street, Nairobi',
-    storePhone: '+254 700 000 000',
-    storeEmail: 'info@digitalden.co.ke',
     currency: 'KES',
     taxRate: 16,
     receiptFooter: 'Thank you for shopping with Digital Den!',
@@ -112,18 +107,14 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Settings</h2>
+        <h2 className="text-2xl font-bold">Global Settings</h2>
         <Button onClick={handleSaveSettings}>
           Save Settings
         </Button>
       </div>
 
-      <Tabs defaultValue="store" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="store" className="flex items-center gap-2">
-            <Store className="h-4 w-4" />
-            Store
-          </TabsTrigger>
+      <Tabs defaultValue="receipt" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="receipt" className="flex items-center gap-2">
             <Receipt className="h-4 w-4" />
             Receipt
@@ -145,10 +136,6 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
             Advanced
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="store">
-          <StoreSettings settings={settings} onSettingChange={handleSettingChange} />
-        </TabsContent>
 
         <TabsContent value="receipt">
           <ReceiptSettings settings={settings} onSettingChange={handleSettingChange} />
