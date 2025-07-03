@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ReceiptSettingsProps {
@@ -65,7 +64,33 @@ export const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="showBarcode" className="text-sm">Show Code</Label>
+              <Label htmlFor="autoPrintReceipt" className="text-sm">Auto Print Receipt</Label>
+              <Switch
+                id="autoPrintReceipt"
+                checked={settings.autoPrintReceipt}
+                onCheckedChange={(checked) => onSettingChange('autoPrintReceipt', checked)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base sm:text-lg">Receipt Codes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showQRCode" className="text-sm">Show QR Code</Label>
+              <Switch
+                id="showQRCode"
+                checked={settings.showQRCode}
+                onCheckedChange={(checked) => onSettingChange('showQRCode', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showBarcode" className="text-sm">Show Barcode</Label>
               <Switch
                 id="showBarcode"
                 checked={settings.showBarcode}
@@ -73,24 +98,9 @@ export const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({
               />
             </div>
           </div>
-          
-          {settings.showBarcode && (
-            <div>
-              <Label htmlFor="receiptCodeType" className="text-sm">Code Type</Label>
-              <Select
-                value={settings.receiptCodeType || 'qr'}
-                onValueChange={(value) => onSettingChange('receiptCodeType', value)}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="qr">QR Code</SelectItem>
-                  <SelectItem value="barcode">Barcode</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <p className="text-xs text-gray-600">
+            Both QR codes and barcodes can be enabled simultaneously for maximum compatibility.
+          </p>
         </CardContent>
       </Card>
 

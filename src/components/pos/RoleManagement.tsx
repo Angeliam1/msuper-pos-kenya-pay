@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Attendant } from '@/types';
-import { Plus, Edit, Shield, User } from 'lucide-react';
+import { Plus, Edit, Shield, User, Clock, Lock } from 'lucide-react';
 
 interface RoleManagementProps {
   attendants: Attendant[];
@@ -45,7 +45,14 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
     phone: '',
     role: 'cashier' as 'admin' | 'manager' | 'cashier',
     permissions: [] as string[],
-    isActive: true
+    isActive: true,
+    password: '',
+    workSchedule: {
+      startTime: '08:00',
+      endTime: '20:00',
+      workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as string[],
+      enforceSchedule: true
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -63,7 +70,14 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
       phone: '',
       role: 'cashier',
       permissions: [],
-      isActive: true
+      isActive: true,
+      password: '',
+      workSchedule: {
+        startTime: '08:00',
+        endTime: '20:00',
+        workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+        enforceSchedule: true
+      }
     });
     setEditingAttendant(null);
     setIsDialogOpen(false);
@@ -77,7 +91,14 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
       phone: attendant.phone,
       role: attendant.role,
       permissions: [...attendant.permissions],
-      isActive: attendant.isActive
+      isActive: attendant.isActive,
+      password: '',
+      workSchedule: attendant.workSchedule || {
+        startTime: '08:00',
+        endTime: '20:00',
+        workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+        enforceSchedule: true
+      }
     });
     setIsDialogOpen(true);
   };
@@ -96,6 +117,26 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
     }
   };
 
+  const handleWorkDayChange = (day: string, checked: boolean) => {
+    if (checked) {
+      setFormData({
+        ...formData,
+        workSchedule: {
+          ...formData.workSchedule,
+          workDays: [...formData.workSchedule.workDays, day]
+        }
+      });
+    } else {
+      setFormData({
+        ...formData,
+        workSchedule: {
+          ...formData.workSchedule,
+          workDays: formData.workSchedule.workDays.filter(d => d !== day)
+        }
+      });
+    }
+  };
+
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin': return 'destructive';
@@ -106,6 +147,19 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
 
   const canManageStaff = currentAttendant.role === 'admin' || 
                         currentAttendant.permissions.includes('staff');
+
+  const isWithinWorkHours = (attendant: Attendant) => {
+    if (!attendant.workSchedule?.enforceSchedule) return true;
+    
+    const now = new Date();
+    const currentDay = now.toLocaleLowerday().toLowerCase();
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    if (!attendant.workSchedule.workDays.includes(currentDay)) return false;
+    
+    return currentTime >= attendant.workSchedule.startTime && 
+           currentTime <= attendant.workSchedule.endTime;
+  };
 
   return (
     <Card>
@@ -123,41 +177,58 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
                   Add Staff
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingAttendant ? 'Edit Staff Member' : 'Add New Staff Member'}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Name *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="phone">Phone *</Label>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Password *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder={editingAttendant ? "Leave blank to keep current" : "Enter password"}
+                        required={!editingAttendant}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="phone">Phone *</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
-                    />
-                  </div>
+
                   <div>
                     <Label>Role</Label>
                     <Select value={formData.role} onValueChange={(value: any) => setFormData({ ...formData, role: value })}>
@@ -173,6 +244,69 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div>
+                    <Label>Work Schedule</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <Label htmlFor="startTime" className="text-sm">Start Time</Label>
+                        <Input
+                          id="startTime"
+                          type="time"
+                          value={formData.workSchedule.startTime}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            workSchedule: { ...formData.workSchedule, startTime: e.target.value }
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endTime" className="text-sm">End Time</Label>
+                        <Input
+                          id="endTime"
+                          type="time"
+                          value={formData.workSchedule.endTime}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            workSchedule: { ...formData.workSchedule, endTime: e.target.value }
+                          })}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3">
+                      <Label className="text-sm">Work Days</Label>
+                      <div className="grid grid-cols-4 gap-2 mt-2">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                          <div key={day} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={day}
+                              checked={formData.workSchedule.workDays.includes(day)}
+                              onCheckedChange={(checked) => handleWorkDayChange(day, checked as boolean)}
+                            />
+                            <Label htmlFor={day} className="text-xs capitalize">
+                              {day.slice(0, 3)}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 mt-3">
+                      <Checkbox
+                        id="enforceSchedule"
+                        checked={formData.workSchedule.enforceSchedule}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          workSchedule: { ...formData.workSchedule, enforceSchedule: checked as boolean }
+                        })}
+                      />
+                      <Label htmlFor="enforceSchedule" className="text-sm">
+                        Enforce work schedule (lock POS outside work hours)
+                      </Label>
+                    </div>
+                  </div>
+
                   <div>
                     <Label>Permissions</Label>
                     <div className="grid grid-cols-2 gap-2 mt-2">
@@ -192,6 +326,7 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
                       ))}
                     </div>
                   </div>
+                  
                   <Button type="submit" className="w-full">
                     {editingAttendant ? 'Update Staff' : 'Add Staff'}
                   </Button>
@@ -209,7 +344,8 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
               <TableHead>Contact</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Permissions</TableHead>
+              <TableHead>Work Hours</TableHead>
+              <TableHead>Access</TableHead>
               {canManageStaff && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -237,9 +373,30 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={attendant.isActive ? 'default' : 'secondary'}>
-                    {attendant.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant={attendant.isActive ? 'default' : 'secondary'}>
+                      {attendant.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                    {attendant.workSchedule?.enforceSchedule && (
+                      <Badge variant={isWithinWorkHours(attendant) ? 'default' : 'destructive'} className="text-xs">
+                        {isWithinWorkHours(attendant) ? (
+                          <><Clock className="h-3 w-3 mr-1" />Available</>
+                        ) : (
+                          <><Lock className="h-3 w-3 mr-1" />Locked</>
+                        )}
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {attendant.workSchedule ? (
+                    <div className="text-xs">
+                      <div>{attendant.workSchedule.startTime} - {attendant.workSchedule.endTime}</div>
+                      <div className="text-gray-600">{attendant.workSchedule.workDays.length} days/week</div>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-500">No schedule</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="text-xs">

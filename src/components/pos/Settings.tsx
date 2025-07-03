@@ -30,7 +30,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     taxRate: 16,
     currency: 'KES',
     
-    // Receipt Settings
+    // Receipt Settings - Updated
     showStoreName: true,
     showStoreAddress: true,
     showStorePhone: true,
@@ -40,8 +40,9 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     showNotes: true,
     receiptHeader: 'Thank you for shopping with us!',
     receiptFooter: 'Visit us again soon!',
+    showQRCode: true,
     showBarcode: true,
-    receiptCodeType: 'qr',
+    autoPrintReceipt: true,
     showLogo: false,
     customLine1: 'Paybill 247247 Acc 333337',
     customLine2: 'KRA PIN: P123456789A',

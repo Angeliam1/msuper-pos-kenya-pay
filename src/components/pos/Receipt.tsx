@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Transaction } from '@/types';
-import { Printer, Download, QrCode, Gift } from 'lucide-react';
+import { Printer, Download, QrCode, Gift, BarChart3 } from 'lucide-react';
 
 interface ReceiptProps {
   transaction: Transaction;
@@ -30,8 +29,9 @@ interface ReceiptProps {
     showNotes: boolean;
     receiptHeader: string;
     receiptFooter: string;
+    showQRCode: boolean;
     showBarcode: boolean;
-    receiptCodeType: 'qr' | 'barcode';
+    autoPrintReceipt: boolean;
   };
   customer?: {
     name: string;
@@ -61,6 +61,15 @@ export const Receipt: React.FC<ReceiptProps> = ({
     console.log('Downloading receipt...');
   };
 
+  // Auto print receipt if enabled
+  React.useEffect(() => {
+    if (storeSettings.autoPrintReceipt) {
+      setTimeout(() => {
+        window.print();
+      }, 1000); // Delay to ensure receipt is fully rendered
+    }
+  }, [storeSettings.autoPrintReceipt]);
+
   // Generate QR code data with transaction info for quick search
   const generateQRData = () => {
     const qrData = {
@@ -74,7 +83,10 @@ export const Receipt: React.FC<ReceiptProps> = ({
     return JSON.stringify(qrData);
   };
 
-  const qrCodeData = generateQRData();
+  const generateBarcodeData = () => {
+    // Generate barcode data - typically transaction ID with store prefix
+    return `${storeSettings.storeName.substring(0, 3).toUpperCase()}${transaction.id}`;
+  };
 
   return (
     <Card className="max-w-md mx-auto bg-white">
@@ -204,15 +216,30 @@ export const Receipt: React.FC<ReceiptProps> = ({
           </div>
         )}
 
-        {storeSettings.showBarcode && (
-          <div className="flex justify-center py-3 sm:py-4">
-            <div className="flex flex-col items-center">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-black flex items-center justify-center mb-2">
-                <QrCode className="text-white h-12 w-12 sm:h-16 sm:w-16" />
-              </div>
-              <div className="text-xs text-gray-600 text-center max-w-[200px] break-all">
-                Transaction: {transaction.id}
-              </div>
+        {/* QR Code and Barcode Section */}
+        {(storeSettings.showQRCode || storeSettings.showBarcode) && (
+          <div className="border-t border-dashed border-gray-400 pt-3">
+            <div className="flex justify-center space-x-6">
+              {storeSettings.showQRCode && (
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 bg-black flex items-center justify-center mb-1">
+                    <QrCode className="text-white h-10 w-10" />
+                  </div>
+                  <div className="text-xs text-gray-600 text-center">QR Code</div>
+                </div>
+              )}
+              
+              {storeSettings.showBarcode && (
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-16 bg-black flex items-center justify-center mb-1">
+                    <BarChart3 className="text-white h-10 w-14" />
+                  </div>
+                  <div className="text-xs text-gray-600 text-center">Barcode</div>
+                </div>
+              )}
+            </div>
+            <div className="text-xs text-gray-600 text-center mt-2 max-w-[200px] mx-auto break-all">
+              Transaction: {transaction.id}
             </div>
           </div>
         )}
