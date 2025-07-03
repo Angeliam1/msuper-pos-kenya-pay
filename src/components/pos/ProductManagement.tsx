@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -203,7 +202,7 @@ export const ProductManagement: React.FC = () => {
 
   const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
-    content: () => receiptRef.current!,
+    contentRef: receiptRef,
   });
 
   return (
