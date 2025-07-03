@@ -713,17 +713,12 @@ const Index = () => {
         if (!hasPermission('products')) {
           return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
         }
-        return <ProductManagement products={products} onAddProduct={addProduct} onUpdateProduct={updateProduct} onDeleteProduct={deleteProduct} />;
+        return <ProductManagement />;
       case 'customers':
         if (!hasPermission('customers')) {
           return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
         }
-        return <CustomerManagement 
-          customers={customers} 
-          transactions={transactions}
-          onAddCustomer={addCustomer} 
-          onUpdateCustomer={updateCustomer} 
-        />;
+        return <CustomerManagement />;
       case 'loyalty':
         return <LoyaltyManagement customers={customers} onUpdateCustomer={updateCustomer} />;
       case 'stores':
@@ -757,7 +752,7 @@ const Index = () => {
         if (!hasPermission('suppliers')) {
           return <div className="p-8 text-center text-gray-500">Access Denied - Insufficient Permissions</div>;
         }
-        return <PurchaseManagement purchases={purchases} suppliers={suppliers} products={products} currentAttendantId={currentAttendant?.id || '1'} onAddPurchase={addPurchase} onUpdateProductStock={updateProductStock} />;
+        return <PurchaseManagement />;
       case 'stock-take':
         return <div className="p-8 text-center text-gray-500">Stock Take Management - Coming Soon</div>;
       case 'sms':
