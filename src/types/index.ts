@@ -103,13 +103,160 @@ export interface Attendant {
   createdAt: Date;
 }
 
+export interface Staff {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: 'admin' | 'manager' | 'cashier';
+  permissions: string[];
+}
+
+export interface LoyaltyProgram {
+  id: string;
+  name: string;
+  pointsPerShilling: number;
+  discountPercentage: number;
+  minimumPoints: number;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  date: Date;
+  supplier: Supplier;
+  items: {
+    product: Product;
+    quantity: number;
+    cost: number;
+  }[];
+  totalCost: number;
+  status: 'pending' | 'received' | 'cancelled';
+}
+
+export interface StockMovement {
+  id: string;
+  date: Date;
+  product: Product;
+  quantity: number;
+  type: 'addition' | 'reduction';
+  reason: string;
+}
+
+export interface Settings {
+  storeName: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
+  currency: string;
+  taxRate: number;
+  receiptFooter: string;
+  lowStockThreshold: number;
+  enableLoyaltyProgram: boolean;
+  loyaltyPointsPerShilling: number;
+  autoBackup: boolean;
+  printerName: string;
+  receiptWidth: number;
+  showProductImages: boolean;
+  enableBarcode: boolean;
+  requireCustomerInfo: boolean;
+  allowNegativeStock: boolean;
+  enableMultiStore: boolean;
+  defaultPaymentMethod: string;
+  enableSMS: boolean;
+  smsApiKey: string;
+  smsUsername: string;
+  enableEmailReceipts: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  theme: string;
+  language: string;
+  timezone: string;
+  dateFormat: string;
+  timeFormat: string;
+  enableAdvancedReports: boolean;
+  exportFormat: string;
+  backupFrequency: string;
+  enableAuditLog: boolean;
+  maxLoginAttempts: number;
+  sessionTimeout: number;
+  enableTwoFactor: boolean;
+  allowGuestCheckout: boolean;
+  enableProductBundles: boolean;
+  enableSubscriptions: boolean;
+  enableDropshipping: boolean;
+  enablePreorders: boolean;
+  enableWishlist: boolean;
+  enableProductReviews: boolean;
+  enableCoupons: boolean;
+  enableGiftCards: boolean;
+  enableAffiliates: boolean;
+  enableAnalytics: boolean;
+  googleAnalyticsId: string;
+  facebookPixelId: string;
+  enableSEO: boolean;
+  metaTitle: string;
+  metaDescription: string;
+  enableSitemap: boolean;
+  enableRobotsTxt: boolean;
+  enableCompression: boolean;
+  enableCaching: boolean;
+  enableCDN: boolean;
+  cdnUrl: string;
+  enableSSL: boolean;
+  enableHSTS: boolean;
+  enableCSP: boolean;
+  cspPolicy: string;
+  enableCORS: boolean;
+  corsOrigins: string;
+  enableRateLimit: boolean;
+  rateLimitRequests: number;
+  rateLimitWindow: number;
+  enableFirewall: boolean;
+  firewallRules: string;
+  enableMonitoring: boolean;
+  monitoringUrl: string;
+  enableLogging: boolean;
+  logLevel: string;
+  logRetention: number;
+  enableAlerts: boolean;
+  alertEmail: string;
+  alertThreshold: number;
+  enableBackup: boolean;
+  backupProvider: string;
+  backupRetention: number;
+  enableReplication: boolean;
+  replicationNodes: string;
+  enableCluster: boolean;
+  clusterNodes: string;
+  enableLoadBalancer: boolean;
+  loadBalancerUrl: string;
+  enableAutoScale: boolean;
+  autoScaleMin: number;
+  autoScaleMax: number;
+  enableContainer: boolean;
+  containerImage: string;
+  enableOrchestration: boolean;
+  orchestrationPlatform: string;
+}
+
 export interface HirePurchase {
   id: string;
   customerId: string;
   items: CartItem[];
   totalAmount: number;
   downPayment: number;
-  remainingBalance: number;  // Changed from remainingAmount to remainingBalance
+  remainingBalance: number;
   installmentAmount: number;
   installmentPeriod: 'daily' | 'weekly' | 'monthly';
   nextPaymentDate: Date;
@@ -151,9 +298,9 @@ export interface Purchase {
   id: string;
   supplierId: string;
   items: PurchaseItem[];
-  totalAmount: number;  // Changed from totalCost to totalAmount
+  totalAmount: number;
   attendantId: string;
-  purchaseDate: Date;   // This is the correct property name
+  purchaseDate: Date;
   receivedDate?: Date;
   status: 'pending' | 'received' | 'cancelled';
   invoiceNumber?: string;
@@ -167,9 +314,9 @@ export interface StoreLocation {
   phone?: string;
   email?: string;
   managerId?: string;
-  manager?: string;      // Added for UI display
-  status?: 'active' | 'inactive';  // Added for UI
-  totalSales?: number;   // Added for UI display
+  manager?: string;
+  status?: 'active' | 'inactive';
+  totalSales?: number;
   isActive: boolean;
   createdAt: Date;
 }

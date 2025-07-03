@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Dashboard } from '@/components/pos/Dashboard';
@@ -22,7 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getProducts, getCustomers, getTransactions, getAttendants, getSuppliers, getExpenses } from '@/lib/database';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('pos'); // Changed from 'dashboard' to 'pos'
+  const [activeTab, setActiveTab] = useState('pos');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Fetch data for components
@@ -64,7 +65,7 @@ const Index = () => {
   const transactionCount = transactions.length;
 
   // Mock current attendant for components that need it
-  const currentAttendant = attendants[0] || {
+  const currentAttendant = attendants.length > 0 ? attendants[0] : {
     id: '1',
     name: 'Admin User',
     email: 'admin@store.com',
@@ -137,7 +138,7 @@ const Index = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'pos':
-        return <ProductManagement />; // This shows the POS with products for sale
+        return <ProductManagement />;
       case 'dashboard':
         return (
           <Dashboard
@@ -163,7 +164,7 @@ const Index = () => {
           />
         );
       case 'settings':
-        return <Settings onSaveSettings={handleSaveSettings} />;
+        return <Settings onSaveSettings={() => {}} />;
       case 'alerts':
         return <LowStockAlerts products={products} />;
       case 'staff':
@@ -171,24 +172,24 @@ const Index = () => {
           <RoleManagement
             attendants={attendants}
             currentAttendant={currentAttendant}
-            onAddAttendant={handleAddAttendant}
-            onUpdateAttendant={handleUpdateAttendant}
+            onAddAttendant={() => {}}
+            onUpdateAttendant={() => {}}
           />
         );
       case 'suppliers':
         return (
           <SupplierManagement
             suppliers={suppliers}
-            onAddSupplier={handleAddSupplier}
-            onUpdateSupplier={handleUpdateSupplier}
-            onDeleteSupplier={handleDeleteSupplier}
+            onAddSupplier={() => {}}
+            onUpdateSupplier={() => {}}
+            onDeleteSupplier={() => {}}
           />
         );
       case 'loyalty':
         return (
           <LoyaltyManagement
             customers={customers}
-            onUpdateCustomer={handleUpdateCustomer}
+            onUpdateCustomer={() => {}}
           />
         );
       case 'stores':
@@ -197,7 +198,7 @@ const Index = () => {
         return (
           <ReturnsManagement
             transactions={transactions}
-            onRefundTransaction={handleRefundTransaction}
+            onRefundTransaction={() => {}}
           />
         );
       case 'expenses':
@@ -206,7 +207,7 @@ const Index = () => {
             expenses={expenses}
             attendants={attendants}
             currentAttendant={currentAttendant}
-            onAddExpense={handleAddExpense}
+            onAddExpense={() => {}}
           />
         );
       case 'purchases':
@@ -218,15 +219,23 @@ const Index = () => {
             customers={customers}
             hirePurchases={[]}
             cartItems={[]}
-            storeSettings={storeSettings}
-            onCreateHirePurchase={handleCreateHirePurchase}
-            onCancel={handleCancelHirePurchase}
+            storeSettings={{
+              smsEnabled: true,
+              businessName: 'TOPTEN ELECTRONICS',
+              businessPhone: '0725333337',
+              mpesaPaybill: '174379',
+              mpesaAccount: '9951109',
+              hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
+              smsProvider: 'phone'
+            }}
+            onCreateHirePurchase={() => `hp-${Date.now()}`}
+            onCancel={() => {}}
           />
         );
       case 'online-store':
         return <OnlineStoreManager />;
       default:
-        return <ProductManagement />; // Changed default to show POS instead of dashboard
+        return <ProductManagement />;
     }
   };
 

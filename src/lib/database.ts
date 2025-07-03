@@ -1,4 +1,4 @@
-import { Product, Customer, CartItem, Transaction, Staff, LoyaltyProgram, Store, Supplier, PurchaseOrder, Expense, StockMovement, Settings } from '@/types';
+import { Product, Customer, CartItem, Transaction, Staff, LoyaltyProgram, Store, Supplier, PurchaseOrder, Expense, StockMovement, Settings, Purchase, Attendant } from '@/types';
 
 // Mock data for products
 export const mockProducts: Product[] = [
@@ -7,130 +7,150 @@ export const mockProducts: Product[] = [
     name: 'iPhone 15 Pro Max',
     category: 'Electronics',
     price: 180000,
+    buyingCost: 150000,
+    retailPrice: 180000,
     stock: 15,
+    unit: 'piece',
     barcode: '123456789012',
     description: 'Latest iPhone with advanced camera system',
     lowStockThreshold: 5,
-    supplier: 'Apple Kenya',
-    cost: 150000,
-    images: []
+    supplierId: '1',
+    image: '/placeholder.svg'
   },
   {
     id: '2',
     name: 'Samsung Galaxy S24 Ultra',
     category: 'Electronics',
     price: 165000,
+    buyingCost: 140000,
+    retailPrice: 165000,
     stock: 20,
+    unit: 'piece',
     barcode: '234567890123',
     description: 'Premium Android smartphone with S Pen',
     lowStockThreshold: 5,
-    supplier: 'Samsung Electronics',
-    cost: 140000,
-    images: []
+    supplierId: '2',
+    image: '/placeholder.svg'
   },
   {
     id: '3',
     name: 'MacBook Pro 14" M3',
     category: 'Computers',
     price: 280000,
+    buyingCost: 240000,
+    retailPrice: 280000,
     stock: 8,
+    unit: 'piece',
     barcode: '345678901234',
     description: 'Professional laptop with M3 chip',
     lowStockThreshold: 3,
-    supplier: 'Apple Kenya',
-    cost: 240000,
-    images: []
+    supplierId: '3',
+    image: '/placeholder.svg'
   },
   {
     id: '4',
     name: 'Sony WH-1000XM5',
     category: 'Audio',
     price: 45000,
+    buyingCost: 35000,
+    retailPrice: 45000,
     stock: 25,
+    unit: 'piece',
     barcode: '456789012345',
     description: 'Premium noise-cancelling headphones',
     lowStockThreshold: 10,
-    supplier: 'Sony Kenya',
-    cost: 35000,
-    images: []
+    supplierId: '4',
+    image: '/placeholder.svg'
   },
   {
     id: '5',
     name: 'iPad Air 5th Gen',
     category: 'Electronics',
     price: 85000,
+    buyingCost: 70000,
+    retailPrice: 85000,
     stock: 12,
+    unit: 'piece',
     barcode: '567890123456',
     description: 'Versatile tablet for work and play',
     lowStockThreshold: 5,
-    supplier: 'Apple Kenya',
-    cost: 70000,
-    images: []
+    supplierId: '5',
+    image: '/placeholder.svg'
   },
   {
     id: '6',
     name: 'Dell XPS 13',
     category: 'Computers',
     price: 155000,
+    buyingCost: 130000,
+    retailPrice: 155000,
     stock: 10,
+    unit: 'piece',
     barcode: '678901234567',
     description: 'Ultra-portable laptop for professionals',
     lowStockThreshold: 5,
-    supplier: 'Dell Kenya',
-    cost: 130000,
-    images: []
+    supplierId: '6',
+    image: '/placeholder.svg'
   },
   {
     id: '7',
     name: 'Apple Watch Series 9',
     category: 'Wearables',
     price: 55000,
+    buyingCost: 45000,
+    retailPrice: 55000,
     stock: 18,
+    unit: 'piece',
     barcode: '789012345678',
     description: 'Advanced smartwatch with health monitoring',
     lowStockThreshold: 8,
-    supplier: 'Apple Kenya',
-    cost: 45000,
-    images: []
+    supplierId: '7',
+    image: '/placeholder.svg'
   },
   {
     id: '8',
     name: 'Canon EOS R6 Mark II',
     category: 'Cameras',
     price: 350000,
+    buyingCost: 300000,
+    retailPrice: 350000,
     stock: 5,
+    unit: 'piece',
     barcode: '890123456789',
     description: 'Professional mirrorless camera',
     lowStockThreshold: 2,
-    supplier: 'Canon Kenya',
-    cost: 300000,
-    images: []
+    supplierId: '8',
+    image: '/placeholder.svg'
   },
   {
     id: '9',
     name: 'PlayStation 5',
     category: 'Gaming',
     price: 75000,
+    buyingCost: 65000,
+    retailPrice: 75000,
     stock: 7,
+    unit: 'piece',
     barcode: '901234567890',
     description: 'Next-gen gaming console',
     lowStockThreshold: 3,
-    supplier: 'Sony Kenya',
-    cost: 65000,
-    images: []
+    supplierId: '9',
+    image: '/placeholder.svg'
   },
   {
     id: '10',
     name: 'AirPods Pro 2nd Gen',
     category: 'Audio',
     price: 32000,
+    buyingCost: 25000,
+    retailPrice: 32000,
     stock: 30,
+    unit: 'piece',
     barcode: '012345678901',
     description: 'Premium wireless earbuds with ANC',
     lowStockThreshold: 15,
-    supplier: 'Apple Kenya',
-    cost: 25000,
-    images: []
+    supplierId: '10',
+    image: '/placeholder.svg'
   }
 ];
 
@@ -138,55 +158,30 @@ export const mockProducts: Product[] = [
 export const mockCustomers: Customer[] = [
   {
     id: '1',
-    firstName: 'John',
-    lastName: 'Doe',
+    name: 'John Doe',
     email: 'john.doe@example.com',
     phone: '+254700000000',
     address: 'Nairobi, Kenya',
     loyaltyPoints: 150,
-    orders: [],
-    notes: 'Regular customer'
+    creditLimit: 50000,
+    outstandingBalance: 0,
+    createdAt: new Date()
   },
   {
     id: '2',
-    firstName: 'Jane',
-    lastName: 'Smith',
+    name: 'Jane Smith',
     email: 'jane.smith@example.com',
     phone: '+254711111111',
     address: 'Mombasa, Kenya',
     loyaltyPoints: 200,
-    orders: [],
-    notes: 'VIP customer'
+    creditLimit: 75000,
+    outstandingBalance: 0,
+    createdAt: new Date()
   }
 ];
 
 // Mock data for transactions
-export const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    date: new Date(),
-    customer: mockCustomers[0],
-    items: [
-      {
-        product: mockProducts[0],
-        quantity: 1,
-        price: mockProducts[0].price
-      }
-    ],
-    totalAmount: mockProducts[0].price,
-    paymentMethod: 'cash',
-    staff: {
-      id: '1',
-      firstName: 'Admin',
-      lastName: 'User',
-      email: 'admin@example.com',
-      phone: '+254722222222',
-      role: 'admin',
-      permissions: []
-    },
-    notes: 'First transaction'
-  }
-];
+export const mockTransactions: Transaction[] = [];
 
 // Mock data for staff
 export const mockStaff: Staff[] = [
@@ -198,37 +193,21 @@ export const mockStaff: Staff[] = [
     phone: '+254722222222',
     role: 'admin',
     permissions: []
-  },
-  {
-    id: '2',
-    firstName: 'Sales',
-    lastName: 'Person',
-    email: 'sales@example.com',
-    phone: '+254733333333',
-    role: 'sales',
-    permissions: []
   }
 ];
 
-// Mock data for loyalty programs
-export const mockLoyaltyPrograms: LoyaltyProgram[] = [
+// Mock data for attendants
+export const mockAttendants: Attendant[] = [
   {
     id: '1',
-    name: 'Gold',
-    pointsPerShilling: 0.01,
-    discountPercentage: 5,
-    minimumPoints: 100
-  }
-];
-
-// Mock data for stores
-export const mockStores: Store[] = [
-  {
-    id: '1',
-    name: 'Nairobi Store',
-    address: 'Nairobi, Kenya',
-    phone: '+254744444444',
-    email: 'nairobi@example.com'
+    name: 'Admin User',
+    email: 'admin@example.com',
+    phone: '+254722222222',
+    role: 'admin',
+    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
+    isActive: true,
+    pin: '1234',
+    createdAt: new Date()
   }
 ];
 
@@ -240,27 +219,14 @@ export const mockSuppliers: Supplier[] = [
     contactPerson: 'John Apple',
     phone: '+254755555555',
     email: 'apple@example.com',
-    address: 'Nairobi, Kenya'
+    address: 'Nairobi, Kenya',
+    products: [],
+    createdAt: new Date()
   }
 ];
 
-// Mock data for purchase orders
-export const mockPurchaseOrders: PurchaseOrder[] = [
-  {
-    id: '1',
-    date: new Date(),
-    supplier: mockSuppliers[0],
-    items: [
-      {
-        product: mockProducts[0],
-        quantity: 10,
-        cost: mockProducts[0].cost || 0
-      }
-    ],
-    totalCost: (mockProducts[0].cost || 0) * 10,
-    status: 'pending'
-  }
-];
+// Mock data for purchases
+export const mockPurchases: Purchase[] = [];
 
 // Mock data for expenses
 export const mockExpenses: Expense[] = [
@@ -269,31 +235,22 @@ export const mockExpenses: Expense[] = [
     date: new Date(),
     category: 'Rent',
     amount: 50000,
-    description: 'Monthly rent for Nairobi store'
-  }
-];
-
-// Mock data for stock movements
-export const mockStockMovements: StockMovement[] = [
-  {
-    id: '1',
-    date: new Date(),
-    product: mockProducts[0],
-    quantity: 5,
-    type: 'addition',
-    reason: 'Restock'
+    description: 'Monthly rent for Nairobi store',
+    attendantId: '1'
   }
 ];
 
 let products = [...mockProducts];
-let customers: Customer[] = [];
+let customers = [...mockCustomers];
 let transactions: Transaction[] = [];
 let staff: Staff[] = [];
+let attendants = [...mockAttendants];
 let loyaltyPrograms: LoyaltyProgram[] = [];
 let stores: Store[] = [];
-let suppliers: Supplier[] = [];
+let suppliers = [...mockSuppliers];
 let purchaseOrders: PurchaseOrder[] = [];
-let expenses: Expense[] = [];
+let purchases = [...mockPurchases];
+let expenses = [...mockExpenses];
 let stockMovements: StockMovement[] = [];
 let settings: Settings = {
   storeName: 'DIGITAL DEN',
@@ -399,10 +356,12 @@ export const getProducts = (): Product[] => products;
 export const getCustomers = (): Customer[] => customers;
 export const getTransactions = (): Transaction[] => transactions;
 export const getStaff = (): Staff[] => staff;
+export const getAttendants = (): Attendant[] => attendants;
 export const getLoyaltyPrograms = (): LoyaltyProgram[] => loyaltyPrograms;
 export const getStores = (): Store[] => stores;
 export const getSuppliers = (): Supplier[] => suppliers;
 export const getPurchaseOrders = (): PurchaseOrder[] => purchaseOrders;
+export const getPurchases = (): Purchase[] => purchases;
 export const getExpenses = (): Expense[] => expenses;
 export const getStockMovements = (): StockMovement[] => stockMovements;
 export const getSettings = (): Settings => settings;
@@ -411,26 +370,36 @@ export const addProduct = (product: Product): void => {
   products.push(product);
 };
 
-export const updateProduct = (id: string, updates: Partial<Product>): void => {
+export const updateProduct = (id: string, updates: Partial<Product>): Product => {
   const index = products.findIndex(p => p.id === id);
   if (index !== -1) {
     products[index] = { ...products[index], ...updates };
+    return products[index];
   }
+  throw new Error('Product not found');
 };
 
 export const deleteProduct = (id: string): void => {
   products = products.filter(p => p.id !== id);
 };
 
-export const addCustomer = (customer: Customer): void => {
+export const addCustomer = (customerData: Omit<Customer, 'id' | 'createdAt'>): Customer => {
+  const customer: Customer = {
+    ...customerData,
+    id: `customer-${Date.now()}`,
+    createdAt: new Date()
+  };
   customers.push(customer);
+  return customer;
 };
 
-export const updateCustomer = (id: string, updates: Partial<Customer>): void => {
+export const updateCustomer = (id: string, updates: Partial<Customer>): Customer => {
   const index = customers.findIndex(c => c.id === id);
   if (index !== -1) {
     customers[index] = { ...customers[index], ...updates };
+    return customers[index];
   }
+  throw new Error('Customer not found');
 };
 
 export const addTransaction = (transaction: Transaction): void => {
@@ -456,6 +425,15 @@ export const addPurchaseOrder = (order: PurchaseOrder): void => {
   purchaseOrders.push(order);
 };
 
+export const addPurchase = (purchaseData: Omit<Purchase, 'id'>): Purchase => {
+  const purchase: Purchase = {
+    ...purchaseData,
+    id: `purchase-${Date.now()}`
+  };
+  purchases.push(purchase);
+  return purchase;
+};
+
 export const addExpense = (expense: Expense): void => {
   expenses.push(expense);
 };
@@ -466,4 +444,22 @@ export const addStockMovement = (movement: StockMovement): void => {
 
 export const updateSettings = (newSettings: Partial<Settings>): void => {
   settings = { ...settings, ...newSettings };
+};
+
+export const exportData = async (type: 'products' | 'customers' | 'transactions' | 'all'): Promise<void> => {
+  const data = {
+    products: type === 'all' || type === 'products' ? products : undefined,
+    customers: type === 'all' || type === 'customers' ? customers : undefined,
+    transactions: type === 'all' || type === 'transactions' ? transactions : undefined
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${type}-export-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
