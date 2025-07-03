@@ -15,7 +15,7 @@ import { ReturnsManagement } from '@/components/pos/ReturnsManagement';
 import { ExpenseManagement } from '@/components/pos/ExpenseManagement';
 import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
 import { HirePurchase } from '@/components/pos/HirePurchase';
-import { OnlineStore } from '@/components/online-store/OnlineStore';
+import { OnlineStoreManager } from '@/components/online-store/OnlineStoreManager';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -222,7 +222,7 @@ const Index = () => {
           />
         );
       case 'online-store':
-        return <OnlineStore />;
+        return <OnlineStoreManager />;
       default:
         return (
           <Dashboard
