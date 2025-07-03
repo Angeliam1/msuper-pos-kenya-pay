@@ -12,25 +12,89 @@ import {
   Minus,
   Edit3,
   Check,
-  X
+  X,
+  UserPlus,
+  Package,
+  Users,
+  Receipt
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product, CartItem } from '@/types';
+import { Product, CartItem, Customer, Transaction } from '@/types';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { useQuery } from '@tanstack/react-query';
-import { getProducts } from '@/lib/database';
+import { getProducts, getCustomers, addTransaction, updateProduct } from '@/lib/database';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export const ProductManagement: React.FC = () => {
+interface ProductManagementProps {
+  currentUser?: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  storeSettings?: {
+    storeName: string;
+    storeAddress: string;
+    storePhone: string;
+    allowPriceBelowWholesale: boolean;
+  };
+}
+
+export const ProductManagement: React.FC<ProductManagementProps> = ({ 
+  currentUser, 
+  storeSettings = {
+    storeName: 'DIGITAL DEN',
+    storeAddress: '123 Electronics Street, Nairobi',
+    storePhone: '+254 700 000 000',
+    allowPriceBelowWholesale: false
+  }
+}) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer>({
+    id: 'walk-in',
+    name: 'Walk-in Customer',
+    email: '',
+    phone: '',
+    address: '',
+    loyaltyPoints: 0,
+    creditLimit: 0,
+    outstandingBalance: 0,
+    createdAt: new Date()
+  });
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showCustomerAdd, setShowCustomerAdd] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+
+  // Quick add product form
+  const [quickProduct, setQuickProduct] = useState({
+    name: '',
+    price: '',
+    buyingCost: '',
+    stock: ''
+  });
+
+  // Quick add customer form
+  const [quickCustomer, setQuickCustomer] = useState({
+    name: '',
+    phone: '',
+    email: ''
+  });
 
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: getProducts,
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: getCustomers,
   });
 
   const filteredProducts = products.filter(product => {
@@ -102,6 +166,17 @@ export const ProductManagement: React.FC = () => {
   };
 
   const updateCartItemPrice = (productId: string, newPrice: number) => {
+    const product = products.find(p => p.id === productId);
+    
+    if (!storeSettings.allowPriceBelowWholesale && product && newPrice < product.buyingCost) {
+      toast({
+        title: "Price Below Wholesale",
+        description: `Minimum price is KSh${product.buyingCost.toLocaleString()} (wholesale cost)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCart(prev =>
       prev.map(item =>
         item.id === productId ? { ...item, price: newPrice } : item
@@ -131,10 +206,105 @@ export const ProductManagement: React.FC = () => {
 
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
+  const handleQuickAddProduct = () => {
+    if (!quickProduct.name || !quickProduct.price) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in product name and price",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newProduct: Product = {
+      id: `quick-${Date.now()}`,
+      name: quickProduct.name,
+      category: 'Quick Add',
+      price: parseFloat(quickProduct.price),
+      buyingCost: parseFloat(quickProduct.buyingCost) || 0,
+      retailPrice: parseFloat(quickProduct.price),
+      stock: parseInt(quickProduct.stock) || 1,
+      unit: 'piece',
+      lowStockThreshold: 5,
+      supplierId: '',
+      description: 'Quick added product'
+    };
+
+    addToCart(newProduct);
+    setQuickProduct({ name: '', price: '', buyingCost: '', stock: '' });
+    setShowQuickAdd(false);
+    
+    toast({
+      title: "Product Added",
+      description: `${newProduct.name} added to cart`,
+    });
+  };
+
+  const processCheckout = () => {
+    if (cart.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to cart before checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const transaction: Transaction = {
+      id: `TXN-${Date.now()}`,
+      items: cart,
+      total: calculateTotal(),
+      timestamp: new Date(),
+      customerId: selectedCustomer.id,
+      attendantId: currentUser?.id || 'unknown',
+      paymentMethod: 'cash',
+      paymentSplits: [{ method: 'cash', amount: calculateTotal() }],
+      status: 'completed'
+    };
+
+    // Update stock
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.id);
+      if (product && product.id.startsWith('quick-') === false) {
+        updateProduct(item.id, { stock: product.stock - item.quantity });
+      }
+    });
+
+    addTransaction(transaction);
+    setCurrentTransaction(transaction);
+    setShowReceipt(true);
+    setCart([]);
+
+    toast({
+      title: "Sale Completed",
+      description: `Transaction ${transaction.id} processed successfully`,
+    });
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b z-10 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold">{storeSettings.storeName}</h2>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setShowQuickAdd(true)}
+            >
+              <Package className="h-4 w-4" />
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setShowCustomerAdd(true)}
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -143,6 +313,29 @@ export const ProductManagement: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 rounded-full"
           />
+        </div>
+
+        {/* Customer Selection */}
+        <div className="mt-3">
+          <Select 
+            value={selectedCustomer.id} 
+            onValueChange={(value) => {
+              const customer = customers.find(c => c.id === value) || selectedCustomer;
+              setSelectedCustomer(customer);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select customer" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="walk-in">Walk-in Customer</SelectItem>
+              {customers.map(customer => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name} - {customer.phone}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -252,7 +445,11 @@ export const ProductManagement: React.FC = () => {
               </span>
             </div>
             
-            <Button className="w-full mt-3" size="lg">
+            <Button 
+              className="w-full mt-3" 
+              size="lg"
+              onClick={processCheckout}
+            >
               Checkout - {formatPrice(calculateTotal())}
             </Button>
           </div>
@@ -261,7 +458,7 @@ export const ProductManagement: React.FC = () => {
 
       {/* Products List */}
       <div className="p-4">
-        <ScrollArea className="h-[calc(100vh-200px)]">
+        <ScrollArea className="h-[calc(100vh-300px)]">
           <div className="space-y-3">
             {filteredProducts.map(product => (
               <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
@@ -299,6 +496,103 @@ export const ProductManagement: React.FC = () => {
           </div>
         </ScrollArea>
       </div>
+
+      {/* Quick Add Product Dialog */}
+      <Dialog open={showQuickAdd} onOpenChange={setShowQuickAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Quick Add Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="productName">Product Name</Label>
+              <Input
+                id="productName"
+                value={quickProduct.name}
+                onChange={(e) => setQuickProduct(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter product name"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="price">Selling Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={quickProduct.price}
+                  onChange={(e) => setQuickProduct(prev => ({ ...prev, price: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="buyingCost">Buying Cost</Label>
+                <Input
+                  id="buyingCost"
+                  type="number"
+                  value={quickProduct.buyingCost}
+                  onChange={(e) => setQuickProduct(prev => ({ ...prev, buyingCost: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="stock">Stock Quantity</Label>
+              <Input
+                id="stock"
+                type="number"
+                value={quickProduct.stock}
+                onChange={(e) => setQuickProduct(prev => ({ ...prev, stock: e.target.value }))}
+                placeholder="1"
+              />
+            </div>
+            <Button onClick={handleQuickAddProduct} className="w-full">
+              Add to Cart
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Add Customer Dialog */}
+      <Dialog open={showCustomerAdd} onOpenChange={setShowCustomerAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Quick Add Customer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="customerName">Customer Name</Label>
+              <Input
+                id="customerName"
+                value={quickCustomer.name}
+                onChange={(e) => setQuickCustomer(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter customer name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customerPhone">Phone Number</Label>
+              <Input
+                id="customerPhone"
+                value={quickCustomer.phone}
+                onChange={(e) => setQuickCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+254..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="customerEmail">Email (Optional)</Label>
+              <Input
+                id="customerEmail"
+                type="email"
+                value={quickCustomer.email}
+                onChange={(e) => setQuickCustomer(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="customer@email.com"
+              />
+            </div>
+            <Button className="w-full">
+              Add Customer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
