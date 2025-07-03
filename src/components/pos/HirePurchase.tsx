@@ -6,29 +6,29 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { HirePurchase, Customer } from '@/types';
+import type { HirePurchase as HirePurchaseType, Customer } from '@/types';
 import { Calendar, CreditCard, ArrowLeft, MessageSquare, CheckCircle } from 'lucide-react';
 import { sendHirePurchaseSMS } from '@/utils/smsService';
 import { useToast } from '@/hooks/use-toast';
 
 interface HirePurchaseProps {
-  totalAmount: number;
-  customers: Customer[];
-  hirePurchases: HirePurchase[];
-  cartItems: any[];
-  storeSettings: any;
-  onCreateHirePurchase: (hirePurchase: Omit<HirePurchase, 'id'>) => string;
-  onCancel: () => void;
+  totalAmount?: number;
+  customers?: Customer[];
+  hirePurchases?: HirePurchaseType[];
+  cartItems?: any[];
+  storeSettings?: any;
+  onCreateHirePurchase?: (hirePurchase: Omit<HirePurchaseType, 'id'>) => string;
+  onCancel?: () => void;
 }
 
 export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
-  totalAmount,
-  customers,
-  hirePurchases,
+  totalAmount = 0,
+  customers = [],
+  hirePurchases = [],
   cartItems = [],
   storeSettings = {},
-  onCreateHirePurchase,
-  onCancel
+  onCreateHirePurchase = () => 'mock-id',
+  onCancel = () => {}
 }) => {
   const { toast } = useToast();
   const [selectedCustomerId, setSelectedCustomerId] = useState('');

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Dashboard } from '@/components/pos/Dashboard';
@@ -114,6 +113,27 @@ const Index = () => {
     console.log('Add expense:', expense);
   };
 
+  // Mock handlers for HirePurchase
+  const handleCreateHirePurchase = (hirePurchase: any) => {
+    console.log('Create hire purchase:', hirePurchase);
+    return `hp-${Date.now()}`;
+  };
+
+  const handleCancelHirePurchase = () => {
+    console.log('Cancel hire purchase');
+  };
+
+  // Mock store settings
+  const storeSettings = {
+    smsEnabled: true,
+    businessName: 'TOPTEN ELECTRONICS',
+    businessPhone: '0725333337',
+    mpesaPaybill: '174379',
+    mpesaAccount: '9951109',
+    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
+    smsProvider: 'phone'
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -190,7 +210,17 @@ const Index = () => {
       case 'purchases':
         return <PurchaseManagement />;
       case 'hire-purchase':
-        return <HirePurchase />;
+        return (
+          <HirePurchase
+            totalAmount={1000}
+            customers={customers}
+            hirePurchases={[]}
+            cartItems={[]}
+            storeSettings={storeSettings}
+            onCreateHirePurchase={handleCreateHirePurchase}
+            onCancel={handleCancelHirePurchase}
+          />
+        );
       case 'online-store':
         return <OnlineStore />;
       default:
