@@ -391,132 +391,79 @@ let settings: Settings = {
   enableContainer: false,
   containerImage: '',
   enableOrchestration: false,
-  orchestrationPlatform: 'kubernetes',
-  enableCI: false,
-  ciProvider: 'github',
-  enableCD: false,
-  cdProvider: 'github',
-  enableTesting: false,
-  testFramework: 'jest',
-  enableQA: false,
-  qaEnvironment: 'staging',
-  enableSecurity: false,
-  securityScanner: 'snyk',
-  enableCompliance: false,
-  complianceFramework: 'iso27001',
-  enableGovernance: false,
-  governanceFramework: 'cobit',
-  enableRisk: false,
-  riskFramework: 'nist',
-  enableAudit: false,
-  auditFramework: 'sox',
-  enablePrivacy: false,
-  privacyFramework: 'gdpr',
-  enableConsent: false,
-  consentFramework: 'ccpa',
-  enableDataProtection: false,
-  dataProtectionFramework: 'pipeda',
-  enableEncryption: false,
-  encryptionAlgorithm: 'aes256',
-  enableHashing: false,
-  hashingAlgorithm: 'sha256',
-  enableSigning: false,
-  signingAlgorithm: 'rsa2048',
-  enableTokens: false,
-  tokenProvider: 'jwt',
-  enableOAuth: false,
-  oauthProvider: 'google',
-  enableSAML: false,
-  samlProvider: 'okta',
-  enableLDAP: false,
-  ldapProvider: 'activedirectory',
-  enableSSO: false,
-  ssoProvider: 'azure',
-  enableMFA: false,
-  mfaProvider: 'authy',
-  enableBiometric: false,
-  biometricProvider: 'fingerprint',
-  enableBehavioral: false,
-  behavioralProvider: 'biocatch',
-  enableFraud: false,
-  fraudProvider: 'kount',
-  enableAML: false,
-  amlProvider: 'chainalysis',
-  enableKYC: false,
-  kycProvider: 'jumio',
-  enableIDV: false,
-  idvProvider: 'onfido',
-  enableScreening: false,
-  screeningProvider: 'worldcheck',
-  enableSanctions: false,
-  sanctionsProvider: 'ofac',
-  enablePEP: false,
-  pepProvider: 'dow',
-  enableAdverseMedia: false,
-  adverseMediaProvider: 'lexisnexis',
-  enableRiskScoring: false,
-  riskScoringProvider: 'fico',
-  enableDecisionEngine: false,
-  decisionEngineProvider: 'fico',
-  enableRuleEngine: false,
-  ruleEngineProvider: 'drools',
-  enableWorkflow: false,
-  workflowProvider: 'activiti',
-  enableBPM: false,
-  bpmProvider: 'camunda',
-  enableEAI: false,
-  eaiProvider: 'mulesoft',
-  enableESB: false,
-  esbProvider: 'wso2',
-  enableSOA: false,
-  soaProvider: 'oracle',
-  enableMicroservices: false,
-  microservicesProvider: 'kubernetes',
-  enableServerless: false,
-  serverlessProvider: 'aws',
-  enableEdge: false,
-  edgeProvider: 'cloudflare',
-  enableFog: false,
-  fogProvider: 'cisco',
-  enableIoT: false,
-  iotProvider: 'aws',
-  enableBlockchain: false,
-  blockchainProvider: 'ethereum',
-  enableAI: false,
-  aiProvider: 'openai',
-  enableML: false,
-  mlProvider: 'tensorflow',
-  enableDL: false,
-  dlProvider: 'pytorch',
-  enableNLP: false,
-  nlpProvider: 'spacy',
-  enableCV: false,
-  cvProvider: 'opencv',
-  enableAR: false,
-  arProvider: 'arkit',
-  enableVR: false,
-  vrProvider: 'oculus',
-  enableMR: false,
-  mrProvider: 'hololens',
-  enableXR: false,
-  xrProvider: 'unity',
-  enable3D: false,
-  threeDProvider: 'threejs',
-  enableWebGL: false,
-  webglProvider: 'threejs',
-  enableWebXR: false,
-  webxrProvider: 'aframe',
-  enableWebAssembly: false,
-  webassemblyProvider: 'emscripten',
-  enableWebWorkers: false,
-  webworkersProvider: 'comlink',
-  enableServiceWorkers: false,
-  serviceworkersProvider: 'workbox',
-  enablePWA: false,
-  pwaProvider: 'workbox',
-  enableAMP: false,
-  ampProvider: 'google',
-  enableWebComponents: false,
-  webcomponentsProvider: 'lit',
-  enableMicrofrontends: false,
-  microfrontendsProvider: 'singlesp
+  orchestrationPlatform: 'kubernetes'
+};
+
+// Database functions
+export const getProducts = (): Product[] => products;
+export const getCustomers = (): Customer[] => customers;
+export const getTransactions = (): Transaction[] => transactions;
+export const getStaff = (): Staff[] => staff;
+export const getLoyaltyPrograms = (): LoyaltyProgram[] => loyaltyPrograms;
+export const getStores = (): Store[] => stores;
+export const getSuppliers = (): Supplier[] => suppliers;
+export const getPurchaseOrders = (): PurchaseOrder[] => purchaseOrders;
+export const getExpenses = (): Expense[] => expenses;
+export const getStockMovements = (): StockMovement[] => stockMovements;
+export const getSettings = (): Settings => settings;
+
+export const addProduct = (product: Product): void => {
+  products.push(product);
+};
+
+export const updateProduct = (id: string, updates: Partial<Product>): void => {
+  const index = products.findIndex(p => p.id === id);
+  if (index !== -1) {
+    products[index] = { ...products[index], ...updates };
+  }
+};
+
+export const deleteProduct = (id: string): void => {
+  products = products.filter(p => p.id !== id);
+};
+
+export const addCustomer = (customer: Customer): void => {
+  customers.push(customer);
+};
+
+export const updateCustomer = (id: string, updates: Partial<Customer>): void => {
+  const index = customers.findIndex(c => c.id === id);
+  if (index !== -1) {
+    customers[index] = { ...customers[index], ...updates };
+  }
+};
+
+export const addTransaction = (transaction: Transaction): void => {
+  transactions.push(transaction);
+};
+
+export const addStaff = (staffMember: Staff): void => {
+  staff.push(staffMember);
+};
+
+export const updateStaff = (id: string, updates: Partial<Staff>): void => {
+  const index = staff.findIndex(s => s.id === id);
+  if (index !== -1) {
+    staff[index] = { ...staff[index], ...updates };
+  }
+};
+
+export const addSupplier = (supplier: Supplier): void => {
+  suppliers.push(supplier);
+};
+
+export const addPurchaseOrder = (order: PurchaseOrder): void => {
+  purchaseOrders.push(order);
+};
+
+export const addExpense = (expense: Expense): void => {
+  expenses.push(expense);
+};
+
+export const addStockMovement = (movement: StockMovement): void => {
+  stockMovements.push(movement);
+};
+
+export const updateSettings = (newSettings: Partial<Settings>): void => {
+  settings = { ...settings, ...newSettings };
+};
