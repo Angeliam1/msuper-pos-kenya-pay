@@ -24,9 +24,9 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     paybill: 'Paybill 247247 Acc 333337',
     mpesaPaybill: '247247',
     mpesaAccount: '333337',
-    mpesaTill: '123456',
+    mpesaTill: '9951109', // Updated with your till number
     bankAccount: 'KCB Bank Account: 1234567890',
-    paymentInstructions: 'Pay via M-Pesa or Bank Transfer',
+    paymentInstructions: 'Pay via M-Pesa Till 9951109 or Bank Transfer',
     taxRate: 16,
     currency: 'KES',
     
@@ -44,7 +44,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     showBarcode: true,
     autoPrintReceipt: true,
     showLogo: false,
-    customLine1: 'Paybill 247247 Acc 333337',
+    customLine1: 'Till Number: 9951109',
     customLine2: 'KRA PIN: P123456789A',
     additionalNotes: '',
     
@@ -95,7 +95,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
       onSaveSettings(settings);
       toast({
         title: "Settings Saved",
-        description: "Your settings have been saved successfully.",
+        description: "Your M-Pesa till number and other settings have been saved successfully.",
       });
     } catch (error) {
       toast({

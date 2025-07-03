@@ -59,8 +59,15 @@ export const MPesaPayment: React.FC<MPesaPaymentProps> = ({
           <p className="text-2xl font-bold text-green-600">{formatPrice(amount)}</p>
         </div>
 
+        {/* Till Number Information */}
+        <div className="text-center p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm font-medium text-blue-700">M-Pesa Till Number</p>
+          <p className="text-3xl font-bold text-blue-600">9951109</p>
+          <p className="text-xs text-gray-600 mt-1">Use this till number for manual payments</p>
+        </div>
+
         <div className="space-y-2">
-          <Label htmlFor="phone">M-Pesa Phone Number</Label>
+          <Label htmlFor="phone">Customer Phone Number (Optional)</Label>
           <Input
             id="phone"
             type="tel"
@@ -70,7 +77,7 @@ export const MPesaPayment: React.FC<MPesaPaymentProps> = ({
             maxLength={10}
           />
           <p className="text-xs text-gray-500">
-            Enter the phone number registered with M-Pesa
+            Enter customer phone number for STK push (if available)
           </p>
         </div>
 
@@ -81,22 +88,30 @@ export const MPesaPayment: React.FC<MPesaPaymentProps> = ({
             <p className="text-sm text-gray-600">Check your phone for M-Pesa prompt</p>
           </div>
         ) : (
-          <Button
-            onClick={handleSendSTKPush}
-            className="w-full bg-green-600 hover:bg-green-700"
-            disabled={phoneNumber.length < 10}
-          >
-            Send Payment Request
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleSendSTKPush}
+              className="w-full bg-green-600 hover:bg-green-700"
+              disabled={phoneNumber.length < 10}
+            >
+              Send STK Push Request
+            </Button>
+            <Button
+              onClick={() => onSuccess(`MANUAL_${Date.now()}`)}
+              variant="outline"
+              className="w-full"
+            >
+              Mark as Paid (Manual Payment)
+            </Button>
+          </div>
         )}
 
         <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="font-medium text-sm mb-2">How it works:</h4>
+          <h4 className="font-medium text-sm mb-2">Payment Options:</h4>
           <ol className="text-xs text-gray-600 space-y-1">
-            <li>1. Enter your M-Pesa registered phone number</li>
-            <li>2. Click "Send Payment Request"</li>
-            <li>3. Enter your M-Pesa PIN on your phone</li>
-            <li>4. Transaction will be completed automatically</li>
+            <li><strong>Option 1:</strong> Send money to Till Number <strong>9951109</strong></li>
+            <li><strong>Option 2:</strong> Use STK Push (enter customer phone above)</li>
+            <li><strong>Option 3:</strong> Customer pays manually and you mark as paid</li>
           </ol>
         </div>
       </CardContent>
