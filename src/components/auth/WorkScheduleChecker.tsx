@@ -18,7 +18,7 @@ export const WorkScheduleChecker: React.FC<WorkScheduleCheckerProps> = ({
     if (!attendant.workSchedule?.enforceSchedule) return true;
     
     const now = new Date();
-    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const currentTime = now.toTimeString().slice(0, 5);
     
     if (!attendant.workSchedule.workDays.includes(currentDay)) return false;
@@ -31,7 +31,7 @@ export const WorkScheduleChecker: React.FC<WorkScheduleCheckerProps> = ({
     if (!attendant.workSchedule) return null;
     
     const now = new Date();
-    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const currentTime = now.toTimeString().slice(0, 5);
     
     // If today is a work day but after hours, show tomorrow's start time

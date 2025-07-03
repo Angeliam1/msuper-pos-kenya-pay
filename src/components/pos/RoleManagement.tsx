@@ -152,7 +152,7 @@ export const RoleManagement: React.FC<RoleManagementProps> = ({
     if (!attendant.workSchedule?.enforceSchedule) return true;
     
     const now = new Date();
-    const currentDay = now.toLocaleLowerday().toLowerCase();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const currentTime = now.toTimeString().slice(0, 5);
     
     if (!attendant.workSchedule.workDays.includes(currentDay)) return false;

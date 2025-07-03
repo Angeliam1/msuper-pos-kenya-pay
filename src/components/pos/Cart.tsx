@@ -44,6 +44,8 @@ interface CartProps {
     receiptHeader: string;
     receiptFooter: string;
     showBarcode: boolean;
+    showQRCode: boolean;
+    autoPrintReceipt: boolean;
     receiptCodeType: 'qr' | 'barcode';
   };
 }

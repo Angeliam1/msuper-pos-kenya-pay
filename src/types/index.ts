@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -77,6 +78,13 @@ export interface PurchaseItem {
   totalCost: number;
 }
 
+export interface WorkSchedule {
+  startTime: string;
+  endTime: string;
+  workDays: string[];
+  enforceSchedule: boolean;
+}
+
 export interface Attendant {
   id: string;
   name: string;
@@ -88,6 +96,7 @@ export interface Attendant {
   assignedStoreId?: string;
   pin?: string;
   createdAt: Date;
+  workSchedule?: WorkSchedule;
 }
 
 export interface PaymentSplit {
