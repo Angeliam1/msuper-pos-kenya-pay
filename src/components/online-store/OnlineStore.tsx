@@ -1,22 +1,23 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, User, Store, Phone, Mail } from 'lucide-react';
+import { ShoppingCart, User, Store, Phone, Mail, Play } from 'lucide-react';
 import { ProductCatalog } from './ProductCatalog';
 import { ShoppingCartComponent } from './ShoppingCartComponent';
 import { CheckoutProcess } from './CheckoutProcess';
 import { CustomerAuth } from './CustomerAuth';
 import { OrderHistory } from './OrderHistory';
+import { ProductShowcase } from './ProductShowcase';
+import { WhatsAppChat } from './WhatsAppChat';
 import { Product, CartItem, Customer } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts } from '@/lib/database';
 
-type OnlineStoreView = 'catalog' | 'cart' | 'checkout' | 'auth' | 'orders';
+type OnlineStoreView = 'home' | 'catalog' | 'cart' | 'checkout' | 'auth' | 'orders';
 
 export const OnlineStore: React.FC = () => {
-  const [currentView, setCurrentView] = useState<OnlineStoreView>('catalog');
+  const [currentView, setCurrentView] = useState<OnlineStoreView>('home');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
 
@@ -24,6 +25,31 @@ export const OnlineStore: React.FC = () => {
     queryKey: ['products'],
     queryFn: getProducts,
   });
+
+  // Mock video data for product showcase
+  const productVideos = [
+    {
+      id: '1',
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop',
+      title: 'iPhone 15 Pro Max - Unboxing & Review',
+      description: 'Latest iPhone with titanium design and advanced camera system'
+    },
+    {
+      id: '2',
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=300&fit=crop',
+      title: 'Samsung Galaxy Watch 6 - Features Demo',
+      description: 'Smartwatch with health monitoring and fitness tracking'
+    },
+    {
+      id: '3',
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=400&h=300&fit=crop',
+      title: 'MacBook Pro M3 - Performance Test',
+      description: 'Professional laptop with M3 chip and stunning display'
+    }
+  ];
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setCartItems(prev => {
@@ -65,12 +91,20 @@ export const OnlineStore: React.FC = () => {
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
+  const handleVideoAddToCart = (videoId: string) => {
+    // Find corresponding product for the video
+    const product = products.find(p => p.id === videoId);
+    if (product) {
+      addToCart(product);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <h2 className="text-lg font-semibold">Loading Store...</h2>
+          <h2 className="text-lg font-semibold">Loading Digital Den Store...</h2>
         </div>
       </div>
     );
@@ -79,15 +113,26 @@ export const OnlineStore: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+            <div className="flex items-center cursor-pointer" onClick={() => setCurrentView('home')}>
               <Store className="h-8 w-8 text-primary mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">MSUPER Store</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Digital Den</h1>
+                <p className="text-xs text-gray-600">www.digitalden.co.ke</p>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
+              <Button
+                variant={currentView === 'home' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('home')}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Home
+              </Button>
+              
               <Button
                 variant={currentView === 'catalog' ? 'default' : 'ghost'}
                 onClick={() => setCurrentView('catalog')}
@@ -131,19 +176,22 @@ export const OnlineStore: React.FC = () => {
       </header>
 
       {/* Store Info Banner */}
-      <div className="bg-primary text-primary-foreground py-3">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center space-x-6 text-sm">
             <div className="flex items-center">
               <Phone className="h-4 w-4 mr-1" />
-              <span>Call: +254 700 000 000</span>
+              <span>Call: +254 725 333 337</span>
             </div>
             <div className="flex items-center">
               <Mail className="h-4 w-4 mr-1" />
-              <span>Email: info@msuper.com</span>
+              <span>Email: info@digitalden.co.ke</span>
             </div>
             <div>
-              <span>Free delivery on orders above KES 2,000</span>
+              <span>🚚 Free delivery on orders above KES 2,000</span>
+            </div>
+            <div>
+              <span>💬 Need help? Click the chat button!</span>
             </div>
           </div>
         </div>
@@ -151,6 +199,56 @@ export const OnlineStore: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {currentView === 'home' && (
+          <div className="space-y-8">
+            {/* Hero Section */}
+            <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+              <CardContent className="p-8 text-center">
+                <h2 className="text-4xl font-bold mb-4">Welcome to Digital Den</h2>
+                <p className="text-xl mb-6">Your one-stop shop for premium electronics</p>
+                <Button 
+                  size="lg" 
+                  variant="secondary"
+                  onClick={() => setCurrentView('catalog')}
+                >
+                  Shop Now
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Product Video Showcase */}
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
+              <ProductShowcase 
+                videos={productVideos}
+                onAddToCart={handleVideoAddToCart}
+              />
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">1000+</div>
+                  <div className="text-gray-600">Happy Customers</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">500+</div>
+                  <div className="text-gray-600">Products Available</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">24/7</div>
+                  <div className="text-gray-600">Customer Support</div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
         {currentView === 'catalog' && (
           <ProductCatalog
             products={products}
@@ -184,21 +282,21 @@ export const OnlineStore: React.FC = () => {
           <CustomerAuth
             currentCustomer={currentCustomer}
             onCustomerChange={setCurrentCustomer}
-            onBack={() => setCurrentView('catalog')}
+            onBack={() => setCurrentView('home')}
           />
         )}
 
         {currentView === 'orders' && currentCustomer && (
           <OrderHistory
             customer={currentCustomer}
-            onBack={() => setCurrentView('catalog')}
+            onBack={() => setCurrentView('home')}
           />
         )}
       </main>
 
       {/* Cart Summary Fixed Bottom */}
       {cartItems.length > 0 && currentView !== 'cart' && currentView !== 'checkout' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-30">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="font-semibold">
@@ -211,6 +309,9 @@ export const OnlineStore: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* WhatsApp Chat Component */}
+      <WhatsAppChat />
     </div>
   );
 };

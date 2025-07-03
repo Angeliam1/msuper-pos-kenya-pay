@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ interface OnlineProduct {
   category: string;
   stock: number;
   sku: string;
-  images: string[];
+  images: ProductImage[];
   isActive: boolean;
   isFeatured: boolean;
   seoTitle?: string;
@@ -42,11 +41,20 @@ interface OnlineProduct {
   dimensions?: string;
 }
 
+interface ProductImage {
+  id: string;
+  url: string;
+  alt: string;
+  isPrimary: boolean;
+  hasWatermark: boolean;
+}
+
 export const OnlineStoreProducts: React.FC = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<OnlineProduct | null>(null);
 
   // Mock online store products - separate from POS inventory
   const [products, setProducts] = useState<OnlineProduct[]>([
@@ -59,7 +67,15 @@ export const OnlineStoreProducts: React.FC = () => {
       category: 'Electronics',
       stock: 25,
       sku: 'IPH15PM-256',
-      images: [],
+      images: [
+        {
+          id: 'img1',
+          url: 'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop',
+          alt: 'iPhone 15 Pro Max front view',
+          isPrimary: true,
+          hasWatermark: true
+        }
+      ],
       isActive: true,
       isFeatured: true,
       seoTitle: 'iPhone 15 Pro Max - Best Price in Kenya',
@@ -73,10 +89,19 @@ export const OnlineStoreProducts: React.FC = () => {
       name: 'Samsung Galaxy Watch 6',
       description: 'Advanced smartwatch with health monitoring and GPS',
       price: 45000,
+      compareAtPrice: 55000,
       category: 'Electronics',
       stock: 15,
       sku: 'SGW6-44MM',
-      images: [],
+      images: [
+        {
+          id: 'img2',
+          url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop',
+          alt: 'Samsung Galaxy Watch 6',
+          isPrimary: true,
+          hasWatermark: true
+        }
+      ],
       isActive: true,
       isFeatured: false,
       tags: ['smartwatch', 'samsung', 'fitness', 'health'],
@@ -118,6 +143,16 @@ export const OnlineStoreProducts: React.FC = () => {
       title: "Product Updated",
       description: "Featured status has been updated",
     });
+  };
+
+  const getPrimaryImage = (product: OnlineProduct) => {
+    const primaryImage = product.images.find(img => img.isPrimary);
+    return primaryImage || product.images[0];
+  };
+
+  const getDiscountPercentage = (comparePrice: number, actualPrice: number) => {
+    if (!comparePrice || comparePrice <= actualPrice) return 0;
+    return Math.round(((comparePrice - actualPrice) / comparePrice) * 100);
   };
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
@@ -248,97 +283,148 @@ export const OnlineStoreProducts: React.FC = () => {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map(product => (
-          <Card key={product.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Product Image Placeholder */}
-                <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Package className="h-12 w-12 text-gray-400" />
-                </div>
+        {filteredProducts.map(product => {
+          const primaryImage = getPrimaryImage(product);
+          const discountPercentage = product.compareAtPrice ? 
+            getDiscountPercentage(product.compareAtPrice, product.price) : 0;
 
-                {/* Product Info */}
-                <div>
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-semibold text-lg">{product.name}</h3>
-                    <div className="flex items-center gap-1">
-                      {product.isFeatured && (
-                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleActive(product.id)}
-                      >
-                        {product.isActive ? (
-                          <Eye className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
+          return (
+            <Card key={product.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {/* Product Image */}
+                  <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    {primaryImage ? (
+                      <div className="relative w-full h-full">
+                        <img
+                          src={primaryImage.url}
+                          alt={primaryImage.alt}
+                          className="w-full h-full object-cover"
+                        />
+                        {primaryImage.hasWatermark && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="text-white text-xs font-bold opacity-30 rotate-12 select-none">
+                              DIGITALDEN.CO.KE
+                            </div>
+                          </div>
                         )}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
-                  
-                  <div className="flex items-center justify-between mt-2">
-                    <div>
-                      <span className="text-2xl font-bold text-green-600">
-                        {formatPrice(product.price)}
-                      </span>
-                      {product.compareAtPrice && (
-                        <span className="text-sm text-gray-500 line-through ml-2">
-                          {formatPrice(product.compareAtPrice)}
-                        </span>
-                      )}
-                    </div>
-                    <Badge variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"}>
-                      {product.stock} in stock
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>SKU: {product.sku}</span>
-                    <span>{product.category}</span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={product.isActive ? "default" : "secondary"}
-                      className="text-xs"
-                    >
-                      {product.isActive ? 'Live' : 'Hidden'}
-                    </Badge>
-                    {product.isFeatured && (
-                      <Badge variant="outline" className="text-xs">
-                        Featured
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <Package className="h-12 w-12 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    {/* Discount Badge */}
+                    {discountPercentage > 0 && (
+                      <Badge className="absolute top-2 left-2 bg-red-500 text-white">
+                        -{discountPercentage}%
+                      </Badge>
+                    )}
+                    
+                    {/* Image Count Badge */}
+                    {product.images.length > 1 && (
+                      <Badge className="absolute top-2 right-2 bg-black/50 text-white">
+                        {product.images.length} photos
                       </Badge>
                     )}
                   </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleFeatured(product.id)}
-                    >
-                      <Star className={`h-4 w-4 ${product.isFeatured ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+
+                  {/* Product Info */}
+                  <div>
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
+                      <div className="flex items-center gap-1 ml-2">
+                        {product.isFeatured && (
+                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(product.id)}
+                        >
+                          {product.isActive ? (
+                            <Eye className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">{product.description}</p>
+                    
+                    {/* Pricing */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold text-green-600">
+                            {formatPrice(product.price)}
+                          </span>
+                          {product.compareAtPrice && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPrice(product.compareAtPrice)}
+                            </span>
+                          )}
+                        </div>
+                        <Badge variant={product.stock > 10 ? "default" : product.stock > 0 ? "secondary" : "destructive"}>
+                          {product.stock} in stock
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <span>SKU: {product.sku}</span>
+                      <span>{product.category}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={product.isActive ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {product.isActive ? 'Live' : 'Hidden'}
+                      </Badge>
+                      {product.isFeatured && (
+                        <Badge variant="outline" className="text-xs">
+                          Featured
+                        </Badge>
+                      )}
+                      {discountPercentage > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          -{discountPercentage}% OFF
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleFeatured(product.id)}
+                      >
+                        <Star className={`h-4 w-4 ${product.isFeatured ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setSelectedProduct(product)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-red-600">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {filteredProducts.length === 0 && (
