@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ReceiptSettingsProps {
@@ -64,7 +65,7 @@ export const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="showBarcode" className="text-sm">Show Barcode</Label>
+              <Label htmlFor="showBarcode" className="text-sm">Show Code</Label>
               <Switch
                 id="showBarcode"
                 checked={settings.showBarcode}
@@ -72,6 +73,24 @@ export const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({
               />
             </div>
           </div>
+          
+          {settings.showBarcode && (
+            <div>
+              <Label htmlFor="receiptCodeType" className="text-sm">Code Type</Label>
+              <Select
+                value={settings.receiptCodeType || 'qr'}
+                onValueChange={(value) => onSettingChange('receiptCodeType', value)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="qr">QR Code</SelectItem>
+                  <SelectItem value="barcode">Barcode</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardContent>
       </Card>
 

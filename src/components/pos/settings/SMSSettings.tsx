@@ -94,14 +94,14 @@ export const SMSSettings: React.FC<SMSSettingsProps> = ({
             <Label htmlFor="hirePurchaseTemplate" className="text-sm">Hire Purchase SMS Template</Label>
             <Textarea
               id="hirePurchaseTemplate"
-              value={settings.hirePurchaseTemplate || 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Thank you!'}
+              value={settings.hirePurchaseTemplate || 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}'}
               onChange={(e) => onSettingChange('hirePurchaseTemplate', e.target.value)}
               placeholder="Hi {customerName}, you have purchased..."
               className="mt-1"
-              rows={3}
+              rows={4}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Available variables: {'{customerName}'}, {'{items}'}, {'{total}'}, {'{paid}'}, {'{balance}'}
+              Available variables: {'{customerName}'}, {'{items}'}, {'{total}'}, {'{paid}'}, {'{balance}'}, {'{paymentLink}'}, {'{businessName}'}, {'{transactionId}'}
             </p>
           </div>
 
@@ -109,14 +109,14 @@ export const SMSSettings: React.FC<SMSSettingsProps> = ({
             <Label htmlFor="paymentReminderTemplate" className="text-sm">Payment Reminder Template</Label>
             <Textarea
               id="paymentReminderTemplate"
-              value={settings.paymentReminderTemplate || 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Click here to view details: {link}'}
+              value={settings.paymentReminderTemplate || 'Hi {customerName}, your payment of KES {amount} is pending at {businessName} ({businessPhone}) and is {daysLate} days late. Pay now: {paymentLink}'}
               onChange={(e) => onSettingChange('paymentReminderTemplate', e.target.value)}
               placeholder="Hi {customerName}, your payment..."
               className="mt-1"
               rows={4}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Available variables: {'{customerName}'}, {'{amount}'}, {'{businessName}'}, {'{businessPhone}'}, {'{daysLate}'}, {'{link}'}
+              Available variables: {'{customerName}'}, {'{amount}'}, {'{businessName}'}, {'{businessPhone}'}, {'{daysLate}'}, {'{paymentLink}'}
             </p>
           </div>
 
@@ -124,14 +124,14 @@ export const SMSSettings: React.FC<SMSSettingsProps> = ({
             <Label htmlFor="paymentConfirmTemplate" className="text-sm">Payment Confirmation Template</Label>
             <Textarea
               id="paymentConfirmTemplate"
-              value={settings.paymentConfirmTemplate || 'Hi {customerName}, you have paid KES {amount}. Your new balance is KES {balance}. Thank you!'}
+              value={settings.paymentConfirmTemplate || 'Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - {businessName}'}
               onChange={(e) => onSettingChange('paymentConfirmTemplate', e.target.value)}
-              placeholder="Hi {customerName}, you have paid..."
+              placeholder="Hi {customerName}, payment received..."
               className="mt-1"
               rows={3}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Available variables: {'{customerName}'}, {'{amount}'}, {'{balance}'}
+              Available variables: {'{customerName}'}, {'{amount}'}, {'{balance}'}, {'{businessName}'}
             </p>
           </div>
         </CardContent>

@@ -73,6 +73,20 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
       if (selectedCustomer && storeSettings.smsEnabled) {
         const itemsText = cartItems.map(item => `${item.name} x${item.quantity}`).join(', ');
         
+        // Generate payment link with payment options
+        const paymentOptions = [];
+        if (storeSettings.mpesaPaybill && storeSettings.mpesaAccount) {
+          paymentOptions.push(`M-Pesa Paybill: ${storeSettings.mpesaPaybill} Account: ${storeSettings.mpesaAccount}`);
+        }
+        if (storeSettings.mpesaTill) {
+          paymentOptions.push(`M-Pesa Till: ${storeSettings.mpesaTill}`);
+        }
+        if (storeSettings.bankAccount) {
+          paymentOptions.push(`Bank: ${storeSettings.bankAccount}`);
+        }
+        
+        const paymentLink = `${window.location.origin}/payment?hp=${hirePurchaseId}\n\nPayment Options:\n${paymentOptions.join('\n')}`;
+        
         const smsSuccess = await sendHirePurchaseSMS(
           {
             customerName: selectedCustomer.name,
@@ -82,16 +96,18 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
             items: itemsText,
             total: totalAmount,
             paid: downPayment,
-            balance: remainingAmount
+            balance: remainingAmount,
+            paymentLink,
+            transactionId: hirePurchaseId
           },
-          storeSettings.hirePurchaseTemplate || 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Thank you!',
+          storeSettings.hirePurchaseTemplate || 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
           storeSettings.smsProvider || 'phone'
         );
 
         if (smsSuccess) {
           toast({
             title: "Hire Purchase Created",
-            description: "SMS sent to customer successfully!",
+            description: "SMS with payment link sent to customer successfully!",
           });
         } else {
           toast({

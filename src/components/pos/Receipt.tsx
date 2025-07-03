@@ -14,6 +14,12 @@ interface ReceiptProps {
     storeAddress: string;
     storePhone: string;
     storeEmail: string;
+    kraPin?: string;
+    mpesaPaybill?: string;
+    mpesaAccount?: string;
+    mpesaTill?: string;
+    bankAccount?: string;
+    paymentInstructions?: string;
     paybill: string;
     showStoreName: boolean;
     showStoreAddress: boolean;
@@ -25,6 +31,7 @@ interface ReceiptProps {
     receiptHeader: string;
     receiptFooter: string;
     showBarcode: boolean;
+    receiptCodeType: 'qr' | 'barcode';
   };
   customer?: {
     name: string;
@@ -85,10 +92,20 @@ export const Receipt: React.FC<ReceiptProps> = ({
         )}
         
         <div className="text-xs sm:text-sm text-gray-800 space-y-1">
-          {storeSettings.showStoreAddress && <p>{storeSettings.storeAddress}</p>}
-          <p>{storeSettings.paybill}</p>
-          {storeSettings.showStorePhone && <p>{storeSettings.storePhone}</p>}
-          {storeSettings.storeEmail && <p>{storeSettings.storeEmail}</p>}
+          {storeSettings.showStoreAddress && <p className="font-medium">{storeSettings.storeAddress}</p>}
+          {storeSettings.showStorePhone && <p>Tel: {storeSettings.storePhone}</p>}
+          {storeSettings.storeEmail && <p>Email: {storeSettings.storeEmail}</p>}
+          {storeSettings.kraPin && <p>KRA PIN: {storeSettings.kraPin}</p>}
+          
+          {/* Payment Options */}
+          <div className="mt-2 space-y-1">
+            {storeSettings.mpesaPaybill && storeSettings.mpesaAccount && (
+              <p className="font-medium">Paybill: {storeSettings.mpesaPaybill} Acc: {storeSettings.mpesaAccount}</p>
+            )}
+            {storeSettings.mpesaTill && (
+              <p className="font-medium">Till: {storeSettings.mpesaTill}</p>
+            )}
+          </div>
         </div>
       </CardHeader>
       
