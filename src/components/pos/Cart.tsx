@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -86,26 +86,38 @@ export const Cart: React.FC<CartProps> = ({
   const [discount, setDiscount] = useState({ type: 'none' as 'none' | 'percentage' | 'amount', value: 0 });
   const [loyaltyPointsUsed, setLoyaltyPointsUsed] = useState(0);
 
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Memoized calculations to prevent unnecessary re-renders
+  const subtotal = useMemo(() => 
+    items.reduce((sum, item) => sum + (item.price * item.quantity), 0), 
+    [items]
+  );
   
-  // Calculate discount amount
-  let discountAmount = 0;
-  if (discount.type === 'percentage') {
-    discountAmount = (subtotal * discount.value) / 100;
-  } else if (discount.type === 'amount') {
-    discountAmount = discount.value;
-  }
+  const discountAmount = useMemo(() => {
+    if (discount.type === 'percentage') {
+      return (subtotal * discount.value) / 100;
+    } else if (discount.type === 'amount') {
+      return discount.value;
+    }
+    return 0;
+  }, [discount, subtotal]);
 
-  // Calculate loyalty points discount (10 points = 1 KES)
-  const loyaltyDiscount = loyaltyPointsUsed / 10;
+  const loyaltyDiscount = useMemo(() => loyaltyPointsUsed / 10, [loyaltyPointsUsed]);
   
-  const total = Math.max(0, subtotal - discountAmount - loyaltyDiscount);
-  const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
+  const total = useMemo(() => Math.max(0, subtotal - discountAmount - loyaltyDiscount), [subtotal, discountAmount, loyaltyDiscount]);
+  
+  const formatPrice = useCallback((price: number) => `KES ${price.toLocaleString()}`, []);
 
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-  const availableLoyaltyPoints = selectedCustomer ? ((selectedCustomer as any).loyaltyPoints || 0) : 0;
+  const selectedCustomer = useMemo(() => 
+    customers.find(c => c.id === selectedCustomerId), 
+    [customers, selectedCustomerId]
+  );
+  
+  const availableLoyaltyPoints = useMemo(() => 
+    selectedCustomer ? ((selectedCustomer as any).loyaltyPoints || 0) : 0, 
+    [selectedCustomer]
+  );
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = useCallback(() => {
     if (newCustomer.name && newCustomer.phone) {
       onAddCustomer(newCustomer);
       setNewCustomer({
@@ -119,9 +131,9 @@ export const Cart: React.FC<CartProps> = ({
       });
       setShowAddCustomer(false);
     }
-  };
+  }, [newCustomer, onAddCustomer]);
 
-  const handleQuantityChange = (id: string, newQuantity: number) => {
+  const handleQuantityChange = useCallback((id: string, newQuantity: number) => {
     if (newQuantity < 0) return;
     
     const item = items.find(i => i.id === id);
@@ -131,14 +143,14 @@ export const Cart: React.FC<CartProps> = ({
     }
     
     onUpdateItem(id, newQuantity);
-  };
+  }, [items, onUpdateItem]);
 
-  const handleDirectQuantityEdit = (item: CartItem) => {
+  const handleDirectQuantityEdit = useCallback((item: CartItem) => {
     setEditingQuantity(item.id);
     setTempQuantity(item.quantity.toString());
-  };
+  }, []);
 
-  const handleQuantityUpdate = (item: CartItem) => {
+  const handleQuantityUpdate = useCallback((item: CartItem) => {
     const newQuantity = parseInt(tempQuantity);
     if (isNaN(newQuantity) || newQuantity < 0) {
       setEditingQuantity(null);
@@ -152,14 +164,14 @@ export const Cart: React.FC<CartProps> = ({
     
     onUpdateItem(item.id, newQuantity);
     setEditingQuantity(null);
-  };
+  }, [tempQuantity, onUpdateItem]);
 
-  const handlePriceEdit = (item: CartItem) => {
+  const handlePriceEdit = useCallback((item: CartItem) => {
     setEditingPrice(item.id);
     setTempPrice(item.price.toString());
-  };
+  }, []);
 
-  const handlePriceUpdate = (item: CartItem) => {
+  const handlePriceUpdate = useCallback((item: CartItem) => {
     const newPrice = parseFloat(tempPrice);
     const wholesalePrice = item.wholesalePrice || item.price;
     
@@ -171,50 +183,72 @@ export const Cart: React.FC<CartProps> = ({
     
     onUpdateItemPrice(item.id, newPrice);
     setEditingPrice(null);
-  };
+  }, [tempPrice, onUpdateItemPrice]);
 
-  const handleCashPayment = () => {
-    const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
-    
-    // Update customer loyalty points if used
-    if (finalCustomerId && loyaltyPointsUsed > 0) {
-      onUpdateCustomerLoyaltyPoints(finalCustomerId, loyaltyPointsUsed);
-    }
-    
-    const transaction = onCompleteTransaction('cash', undefined, finalCustomerId, discountAmount, loyaltyPointsUsed);
-    setCurrentTransaction(transaction);
-    setShowReceipt(true);
-    resetDiscountAndLoyalty();
-  };
-
-  const handleMPesaPayment = (reference: string) => {
-    const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
-    
-    // Update customer loyalty points if used
-    if (finalCustomerId && loyaltyPointsUsed > 0) {
-      onUpdateCustomerLoyaltyPoints(finalCustomerId, loyaltyPointsUsed);
-    }
-    
-    const transaction = onCompleteTransaction('mpesa', reference, finalCustomerId, discountAmount, loyaltyPointsUsed);
-    setCurrentTransaction(transaction);
-    setShowMPesaPayment(false);
-    setShowReceipt(true);
-    resetDiscountAndLoyalty();
-  };
-
-  const resetDiscountAndLoyalty = () => {
+  const resetDiscountAndLoyalty = useCallback(() => {
     setDiscount({ type: 'none', value: 0 });
     setLoyaltyPointsUsed(0);
-  };
+  }, []);
+
+  const handleCashPayment = useCallback(() => {
+    try {
+      const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
+      
+      // Update customer loyalty points if used
+      if (finalCustomerId && loyaltyPointsUsed > 0) {
+        onUpdateCustomerLoyaltyPoints(finalCustomerId, loyaltyPointsUsed);
+      }
+      
+      const transaction = onCompleteTransaction('cash', undefined, finalCustomerId, discountAmount, loyaltyPointsUsed);
+      
+      // Use setTimeout to prevent blocking the UI
+      setTimeout(() => {
+        setCurrentTransaction(transaction);
+        setShowReceipt(true);
+        resetDiscountAndLoyalty();
+      }, 100);
+    } catch (error) {
+      console.error('Error processing cash payment:', error);
+      alert('An error occurred while processing the payment. Please try again.');
+    }
+  }, [selectedCustomerId, loyaltyPointsUsed, onUpdateCustomerLoyaltyPoints, onCompleteTransaction, discountAmount, resetDiscountAndLoyalty]);
+
+  const handleMPesaPayment = useCallback((reference: string) => {
+    try {
+      const finalCustomerId = selectedCustomerId === 'no-customer' ? undefined : selectedCustomerId;
+      
+      // Update customer loyalty points if used
+      if (finalCustomerId && loyaltyPointsUsed > 0) {
+        onUpdateCustomerLoyaltyPoints(finalCustomerId, loyaltyPointsUsed);
+      }
+      
+      const transaction = onCompleteTransaction('mpesa', reference, finalCustomerId, discountAmount, loyaltyPointsUsed);
+      
+      // Use setTimeout to prevent blocking the UI
+      setTimeout(() => {
+        setCurrentTransaction(transaction);
+        setShowMPesaPayment(false);
+        setShowReceipt(true);
+        resetDiscountAndLoyalty();
+      }, 100);
+    } catch (error) {
+      console.error('Error processing M-Pesa payment:', error);
+      alert('An error occurred while processing the payment. Please try again.');
+    }
+  }, [selectedCustomerId, loyaltyPointsUsed, onUpdateCustomerLoyaltyPoints, onCompleteTransaction, discountAmount, resetDiscountAndLoyalty]);
+
+  const handleReceiptClose = useCallback(() => {
+    setShowReceipt(false);
+    setCurrentTransaction(null);
+    // Clear any lingering state
+    setSelectedCustomerId('no-customer');
+  }, []);
 
   if (showReceipt && currentTransaction) {
     return (
       <Receipt
         transaction={currentTransaction}
-        onClose={() => {
-          setShowReceipt(false);
-          setCurrentTransaction(null);
-        }}
+        onClose={handleReceiptClose}
         storeSettings={storeSettings}
         customer={selectedCustomer ? {
           name: selectedCustomer.name,
