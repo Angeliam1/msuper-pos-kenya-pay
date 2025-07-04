@@ -26,8 +26,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Product, CartItem, Customer, Transaction } from '@/types';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { useQuery } from '@tanstack/react-query';
-import { getProducts, getCustomers, addTransaction, updateProduct } from '@/lib/database';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,7 +38,16 @@ import { useStore } from '@/contexts/StoreContext';
 
 export const ProductManagement: React.FC = () => {
   const { toast } = useToast();
-  const { currentStore, getStoreProducts, updateStoreProduct, addProductToStore } = useStore();
+  const { 
+    currentStore, 
+    getStoreProducts, 
+    updateStoreProduct, 
+    addProductToStore,
+    getStoreCustomers,
+    addCustomerToStore,
+    addTransactionToStore
+  } = useStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -72,13 +79,9 @@ export const ProductManagement: React.FC = () => {
     email: ''
   });
 
-  // Get store-specific products
+  // Get store-specific data
   const products = currentStore ? getStoreProducts(currentStore.id) : [];
-
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: getCustomers,
-  });
+  const customers = currentStore ? getStoreCustomers(currentStore.id) : [];
 
   // Get unique categories from products
   const categories = [...new Set(products.map(product => product.category))];
@@ -119,11 +122,10 @@ export const ProductManagement: React.FC = () => {
         )
       );
     } else {
-      // Use retail price as default display price
       const cartItem: CartItem = { 
         ...product, 
         quantity: 1,
-        price: product.retailPrice // Always start with retail price
+        price: product.retailPrice
       };
       setCart(prev => [...prev, cartItem]);
     }
@@ -226,6 +228,15 @@ export const ProductManagement: React.FC = () => {
       return;
     }
 
+    if (!currentStore) {
+      toast({
+        title: "No Store Selected",
+        description: "Please select a store first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newCustomer: Customer = {
       id: `quick-${Date.now()}`,
       name: quickCustomer.name,
@@ -238,13 +249,14 @@ export const ProductManagement: React.FC = () => {
       createdAt: new Date()
     };
 
+    addCustomerToStore(currentStore.id, newCustomer);
     setSelectedCustomer(newCustomer);
     setQuickCustomer({ name: '', phone: '', email: '' });
     setShowCustomerAdd(false);
     
     toast({
       title: "Customer Added",
-      description: `${newCustomer.name} selected as customer`,
+      description: `${newCustomer.name} added to ${currentStore.name}`,
     });
   };
 
@@ -286,13 +298,22 @@ export const ProductManagement: React.FC = () => {
   };
 
   const completeTransaction = (paymentSplits: any[]) => {
+    if (!currentStore) {
+      toast({
+        title: "No Store Selected",
+        description: "Please select a store to complete transaction",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const transaction: Transaction = {
       id: `TXN-${Date.now()}`,
       items: cart,
       total: calculateTotal(),
       timestamp: new Date(),
       customerId: selectedCustomer.id,
-      attendantId: 'current-user', // This should come from auth context
+      attendantId: 'current-user',
       paymentSplits: paymentSplits,
       status: 'completed'
     };
@@ -305,7 +326,8 @@ export const ProductManagement: React.FC = () => {
       }
     });
 
-    addTransaction(transaction);
+    // Add transaction to current store
+    addTransactionToStore(currentStore.id, transaction);
     setCurrentTransaction(transaction);
     setShowReceipt(true);
     setCart([]);
@@ -365,7 +387,7 @@ export const ProductManagement: React.FC = () => {
           <div>
             <h2 className="text-lg font-bold">{currentStore?.name || 'No Store Selected'}</h2>
             <p className="text-xs text-gray-600">{currentStore?.address || 'Please select a store'}</p>
-            <p className="text-xs text-blue-600">{products.length} products available</p>
+            <p className="text-xs text-blue-600">{products.length} products | {customers.length} customers</p>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -380,6 +402,7 @@ export const ProductManagement: React.FC = () => {
               size="sm" 
               variant="outline"
               onClick={() => setShowCustomerAdd(true)}
+              disabled={!currentStore}
             >
               <UserPlus className="h-4 w-4" />
             </Button>
@@ -616,20 +639,11 @@ export const ProductManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Quick Add Product Dialog */}
-      {showQuickAdd && (
-        <QuickAddProduct
-          onAddProduct={handleQuickAddProduct}
-          onClose={() => setShowQuickAdd(false)}
-          categories={categories}
-        />
-      )}
-
       {/* Quick Add Customer Dialog */}
       <Dialog open={showCustomerAdd} onOpenChange={setShowCustomerAdd}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Quick Add Customer</DialogTitle>
+            <DialogTitle>Quick Add Customer to {currentStore?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -660,7 +674,7 @@ export const ProductManagement: React.FC = () => {
                 placeholder="customer@email.com"
               />
             </div>
-            <Button onClick={handleQuickAddCustomer} className="w-full">
+            <Button onClick={handleQuickAddCustomer} className="w-full" disabled={!currentStore}>
               Add Customer
             </Button>
           </div>
