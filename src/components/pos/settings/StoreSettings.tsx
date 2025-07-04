@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,12 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Store, Package, Users, Truck, Receipt, Plus, Edit, Trash2, Eye, ChevronRight } from 'lucide-react';
+import { Store, Package, Users, Truck, Receipt, Plus, Edit, Trash2, Eye, ChevronRight, Save } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -51,35 +51,45 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
     manager: ''
   });
 
+  // Track if changes have been made
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   // Update local state when currentStore changes
   useEffect(() => {
     if (currentStore) {
-      setLocalStoreInfo({
+      const newStoreInfo = {
         name: currentStore.name || '',
         phone: currentStore.phone || '',
         address: currentStore.address || '',
         manager: currentStore.manager || ''
-      });
+      };
+      setLocalStoreInfo(newStoreInfo);
+      setHasUnsavedChanges(false);
     }
   }, [currentStore]);
 
-  const handleStoreInfoUpdate = (field: string, value: string) => {
+  const handleStoreInfoChange = (field: string, value: string) => {
+    setLocalStoreInfo(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveChanges = async () => {
     if (!currentStore) return;
     
-    // Update local state immediately for UI responsiveness
-    setLocalStoreInfo(prev => ({ ...prev, [field]: value }));
-    
-    // Update store context with debounced approach
-    const timeoutId = setTimeout(() => {
-      updateStore(currentStore.id, { [field]: value });
+    try {
+      await updateStore(currentStore.id, localStoreInfo);
+      setHasUnsavedChanges(false);
       toast({
         title: "Store Updated",
-        description: `${field.charAt(0).toUpperCase() + field.slice(1)} has been updated successfully`,
+        description: "Store information has been saved successfully",
       });
-    }, 500);
-
-    // Clear previous timeout to debounce
-    return () => clearTimeout(timeoutId);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save store information",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleQuickAddProduct = () => {
@@ -156,11 +166,7 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
               <Input
                 id="storeName"
                 value={localStoreInfo.name}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  setLocalStoreInfo(prev => ({ ...prev, name: newValue }));
-                  handleStoreInfoUpdate('name', newValue);
-                }}
+                onChange={(e) => handleStoreInfoChange('name', e.target.value)}
                 placeholder="Enter store name"
               />
             </div>
@@ -169,25 +175,29 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
               <Input
                 id="storePhone"
                 value={localStoreInfo.phone}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  setLocalStoreInfo(prev => ({ ...prev, phone: newValue }));
-                  handleStoreInfoUpdate('phone', newValue);
-                }}
+                onChange={(e) => handleStoreInfoChange('phone', e.target.value)}
                 placeholder="Enter phone number"
               />
             </div>
           </div>
+          
+          {/* Save Changes Button */}
+          <Button 
+            onClick={handleSaveChanges}
+            disabled={!hasUnsavedChanges}
+            className="w-full"
+            variant={hasUnsavedChanges ? "default" : "outline"}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {hasUnsavedChanges ? "Save Changes" : "All Changes Saved"}
+          </Button>
+          
           <div>
             <Label htmlFor="storeAddress">Address</Label>
             <Input
               id="storeAddress"
               value={localStoreInfo.address}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setLocalStoreInfo(prev => ({ ...prev, address: newValue }));
-                handleStoreInfoUpdate('address', newValue);
-              }}
+              onChange={(e) => handleStoreInfoChange('address', e.target.value)}
               placeholder="Enter store address"
             />
           </div>
@@ -196,11 +206,7 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
             <Input
               id="storeManager"
               value={localStoreInfo.manager}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setLocalStoreInfo(prev => ({ ...prev, manager: newValue }));
-                handleStoreInfoUpdate('manager', newValue);
-              }}
+              onChange={(e) => handleStoreInfoChange('manager', e.target.value)}
               placeholder="Enter manager name"
             />
           </div>

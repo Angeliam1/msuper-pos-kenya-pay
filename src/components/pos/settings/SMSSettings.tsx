@@ -60,7 +60,7 @@ export const SMSSettings: React.FC<SMSSettingsProps> = ({
             <Label htmlFor="businessPhone" className="text-sm">Business Phone Number</Label>
             <Input
               id="businessPhone"
-              value={settings.businessPhone || '0725333337'}
+              value={settings.businessPhone || ''}
               onChange={(e) => onSettingChange('businessPhone', e.target.value)}
               placeholder="0725333337"
               className="mt-1"
@@ -71,7 +71,7 @@ export const SMSSettings: React.FC<SMSSettingsProps> = ({
             <Label htmlFor="businessName" className="text-sm">Business Name for SMS</Label>
             <Input
               id="businessName"
-              value={settings.businessName || 'TOPTEN ELECTRONICS'}
+              value={settings.businessName || ''}
               onChange={(e) => onSettingChange('businessName', e.target.value)}
               placeholder="Your Business Name"
               className="mt-1"
