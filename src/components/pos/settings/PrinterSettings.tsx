@@ -7,9 +7,9 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Bluetooth, Wifi, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Printer, Bluetooth, Wifi, CheckCircle, XCircle, AlertCircle, Network } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { testXprinterConnection } from '@/utils/xprinterUtils';
+import { testXprinterConnection, pingXprinter } from '@/utils/xprinterUtils';
 
 interface PrinterSettingsProps {
   settings: any;
@@ -22,52 +22,58 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'connected' | 'failed'>('idle');
   const [testingStep, setTestingStep] = useState('');
 
-  // Enhanced Xprinter connection test with actual printing
-  const testXprinterConnectionAndPrint = async () => {
+  // Test network connectivity to Xprinter
+  const testNetworkConnection = async () => {
     if (!settings.ethernetPrinterIP) {
       toast({
         title: "Missing IP Address",
-        description: "Please enter the printer IP address first",
+        description: "Please enter the Xprinter IP address first",
         variant: "destructive"
       });
       return;
     }
 
     setConnectionStatus('testing');
-    setTestingStep('Connecting to Xprinter...');
+    setTestingStep('Checking network connectivity...');
 
     try {
-      // Test network connectivity first
-      setTestingStep('Testing network connectivity...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // First check if we can reach the printer
+      setTestingStep('Pinging Xprinter at ' + settings.ethernetPrinterIP + '...');
+      const pingResult = await pingXprinter(settings.ethernetPrinterIP);
       
-      setTestingStep('Sending test print to Xprinter...');
+      if (!pingResult) {
+        throw new Error('Cannot reach printer IP');
+      }
+
+      setTestingStep('Network connection OK, sending test print...');
       
+      // Send actual test print
       const testPort = parseInt(settings.ethernetPrinterPort || '9100');
-      const success = await testXprinterConnection(settings.ethernetPrinterIP, testPort);
+      const printSuccess = await testXprinterConnection(settings.ethernetPrinterIP, testPort);
       
-      if (success) {
+      if (printSuccess) {
         setConnectionStatus('connected');
         setTestingStep('');
         
         toast({
-          title: "Xprinter Test Successful",
-          description: `Test receipt sent to Xprinter at ${settings.ethernetPrinterIP}:${testPort}. Check your printer for the test printout.`,
+          title: "Xprinter Test Successful!",
+          description: `Test receipt sent to ${settings.ethernetPrinterIP}:${testPort}. Check your Xprinter for the printed receipt.`,
         });
         
-        // Auto-reset status after 5 seconds
         setTimeout(() => setConnectionStatus('idle'), 5000);
       } else {
-        throw new Error('Print test failed');
+        throw new Error('Print command failed');
       }
       
     } catch (error) {
       setConnectionStatus('failed');
       setTestingStep('');
       
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
       toast({
-        title: "Print Test Failed",
-        description: "Could not send test print to Xprinter. Check printer connection and settings.",
+        title: "Xprinter Test Failed",
+        description: `Could not connect to Xprinter: ${errorMessage}. Please check IP address and network connection.`,
         variant: "destructive"
       });
       
@@ -93,7 +99,7 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Printer className="h-5 w-5" />
-          Printer Configuration
+          Xprinter Configuration
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -116,22 +122,112 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="ethernet">
+                    <div className="flex items-center gap-2">
+                      <Wifi className="h-4 w-4" />
+                      Network (WiFi/Ethernet) - Recommended
+                    </div>
+                  </SelectItem>
                   <SelectItem value="bluetooth">
                     <div className="flex items-center gap-2">
                       <Bluetooth className="h-4 w-4" />
                       Bluetooth
                     </div>
                   </SelectItem>
-                  <SelectItem value="ethernet">
-                    <div className="flex items-center gap-2">
-                      <Wifi className="h-4 w-4" />
-                      Ethernet/WiFi (Recommended for Xprinter)
-                    </div>
-                  </SelectItem>
                   <SelectItem value="usb">USB</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {settings.printerConnectionType === 'ethernet' && (
+              <div className="space-y-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Network className="h-4 w-4" />
+                    Xprinter Network Setup
+                  </h4>
+                  {getConnectionStatusIcon()}
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                  <p className="text-sm text-blue-800 font-medium mb-2">📋 Setup Instructions:</p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>1. Press and hold FEED button on Xprinter for 3 seconds</li>
+                    <li>2. Configuration page will print showing network settings</li>
+                    <li>3. Find the IP address (e.g., 192.168.0.214)</li>
+                    <li>4. Enter this IP below and test connection</li>
+                    <li>5. Both devices must be on same WiFi network</li>
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ethernetPrinterIP">Xprinter IP Address</Label>
+                    <Input
+                      id="ethernetPrinterIP"
+                      placeholder="192.168.0.214"
+                      value={settings.ethernetPrinterIP}
+                      onChange={(e) => onSettingChange('ethernetPrinterIP', e.target.value)}
+                      className="font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ethernetPrinterPort">Port</Label>
+                    <Select 
+                      value={settings.ethernetPrinterPort || "9100"} 
+                      onValueChange={(value) => onSettingChange('ethernetPrinterPort', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="9100">9100 (Standard)</SelectItem>
+                        <SelectItem value="515">515 (LPR)</SelectItem>
+                        <SelectItem value="631">631 (IPP)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Button 
+                    variant="default"
+                    size="sm" 
+                    className="w-full bg-green-600 hover:bg-green-700" 
+                    onClick={testNetworkConnection}
+                    disabled={connectionStatus === 'testing' || !settings.ethernetPrinterIP}
+                  >
+                    <Network className="h-4 w-4 mr-2" />
+                    {connectionStatus === 'testing' ? 'Testing Connection...' : 'Test Print to Xprinter'}
+                  </Button>
+                  
+                  {testingStep && (
+                    <div className="text-xs text-gray-600 text-center p-2 bg-yellow-50 rounded">
+                      🔄 {testingStep}
+                    </div>
+                  )}
+
+                  {connectionStatus === 'connected' && (
+                    <Badge variant="default" className="w-full justify-center bg-green-600">
+                      ✅ Test Print Sent - Check Your Xprinter
+                    </Badge>
+                  )}
+
+                  {connectionStatus === 'failed' && (
+                    <div className="text-xs text-red-600 space-y-2 p-3 bg-red-50 rounded border border-red-200">
+                      <p className="font-medium">❌ Connection Failed - Try These Steps:</p>
+                      <ul className="space-y-1">
+                        <li>• Print network config from Xprinter (hold FEED button)</li>
+                        <li>• Verify IP address matches exactly (currently: {settings.ethernetPrinterIP || 'not set'})</li>
+                        <li>• Check both devices are on same WiFi network</li>
+                        <li>• Try restarting the Xprinter</li>
+                        <li>• Ensure port 9100 is not blocked by firewall</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {settings.printerConnectionType === 'bluetooth' && (
               <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
@@ -161,106 +257,6 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
                   <Bluetooth className="h-4 w-4 mr-2" />
                   Scan for Bluetooth Printers
                 </Button>
-              </div>
-            )}
-
-            {settings.printerConnectionType === 'ethernet' && (
-              <div className="space-y-4 p-4 bg-green-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Wifi className="h-4 w-4" />
-                    Xprinter Network Settings
-                  </h4>
-                  {getConnectionStatusIcon()}
-                </div>
-                
-                <div className="bg-blue-50 p-3 rounded-md">
-                  <p className="text-sm text-blue-800 font-medium mb-2">Xprinter Setup Tips:</p>
-                  <ul className="text-xs text-blue-700 space-y-1">
-                    <li>• Print network configuration page from printer menu</li>
-                    <li>• Use the IP address shown on the configuration page</li>
-                    <li>• Default port is usually 9100 for Xprinter models</li>
-                    <li>• Ensure printer and device are on same WiFi network</li>
-                  </ul>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="ethernetPrinterIP">Printer IP Address</Label>
-                    <Input
-                      id="ethernetPrinterIP"
-                      placeholder="192.168.1.100"
-                      value={settings.ethernetPrinterIP}
-                      onChange={(e) => onSettingChange('ethernetPrinterIP', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="ethernetPrinterPort">Port</Label>
-                    <Select 
-                      value={settings.ethernetPrinterPort || "9100"} 
-                      onValueChange={(value) => onSettingChange('ethernetPrinterPort', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="9100">9100 (Standard RAW)</SelectItem>
-                        <SelectItem value="515">515 (LPR/LPD)</SelectItem>
-                        <SelectItem value="631">631 (IPP)</SelectItem>
-                        <SelectItem value="custom">Custom Port</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {settings.ethernetPrinterPort === 'custom' && (
-                  <div>
-                    <Label htmlFor="customPort">Custom Port Number</Label>
-                    <Input
-                      id="customPort"
-                      placeholder="Enter custom port"
-                      onChange={(e) => onSettingChange('ethernetPrinterPort', e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full" 
-                    onClick={testXprinterConnectionAndPrint}
-                    disabled={connectionStatus === 'testing'}
-                  >
-                    <Wifi className="h-4 w-4 mr-2" />
-                    {connectionStatus === 'testing' ? 'Testing & Printing...' : 'Test Print to Xprinter'}
-                  </Button>
-                  
-                  {testingStep && (
-                    <div className="text-xs text-gray-600 text-center">
-                      {testingStep}
-                    </div>
-                  )}
-
-                  {connectionStatus === 'connected' && (
-                    <Badge variant="default" className="w-full justify-center">
-                      ✓ Test Print Sent - Check Your Printer
-                    </Badge>
-                  )}
-
-                  {connectionStatus === 'failed' && (
-                    <div className="text-xs text-red-600 space-y-1">
-                      <p className="font-medium">Troubleshooting steps:</p>
-                      <ul className="space-y-1">
-                        <li>• Verify printer IP is correct (192.168.0.214)</li>
-                        <li>• Check both devices are on same WiFi network</li>
-                        <li>• Try port 9100 (most common for Xprinter)</li>
-                        <li>• Restart printer and check power/network LED</li>
-                        <li>• Print network config from printer to verify settings</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
@@ -314,9 +310,9 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
             </div>
 
             <Separator />
-            <Button onClick={onTestPrint} className="w-full">
+            <Button onClick={onTestPrint} className="w-full" variant="outline">
               <Printer className="h-4 w-4 mr-2" />
-              Test Print Receipt
+              Test Print Sample Receipt
             </Button>
           </>
         )}

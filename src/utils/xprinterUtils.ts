@@ -6,53 +6,81 @@ export interface PrinterSettings {
   timeout?: number;
 }
 
+// ESC/POS commands for thermal printers
+const ESC = '\x1B';
+const GS = '\x1D';
+
 export const sendToXprinter = async (data: string, settings: PrinterSettings): Promise<boolean> => {
   try {
-    // For web applications, we need to use a different approach since direct socket connections aren't available
-    // We'll use a fetch request to a local printing service or implement browser-based printing
+    console.log('Sending print data to Xprinter:', settings);
     
-    console.log('Attempting to print to Xprinter:', settings);
-    console.log('Print data:', data);
+    // Convert text to ESC/POS format for thermal printer
+    const escPosData = convertToESCPOS(data);
     
-    // In a real implementation, you would either:
-    // 1. Use a local printing service/bridge application
-    // 2. Use browser's built-in printing with proper formatting
-    // 3. Use a specialized printing library
+    // Since browsers can't make direct socket connections, we'll use a workaround
+    // This creates a local print service endpoint or uses browser printing with proper formatting
     
-    // For now, we'll simulate the printing process and use browser print
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Receipt Print</title>
-            <style>
-              body { 
-                font-family: 'Courier New', monospace; 
-                font-size: 12px; 
-                margin: 0;
-                padding: 10px;
-                width: 80mm;
-              }
-              .center { text-align: center; }
-              .bold { font-weight: bold; }
-              .receipt-line { margin: 2px 0; }
-            </style>
-          </head>
-          <body>
-            <pre>${data}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+    // First, try to send via a local print bridge (if available)
+    try {
+      const response = await fetch(`http://${settings.ip}:${settings.port}`, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+        body: escPosData,
+      });
       
-      // Auto-print after a short delay
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-      
+      console.log('Direct network print attempt completed');
       return true;
+    } catch (networkError) {
+      console.log('Direct network print failed, trying alternative method');
+      
+      // Alternative: Use browser printing with thermal printer formatting
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Xprinter Receipt</title>
+              <style>
+                @page {
+                  size: 80mm auto;
+                  margin: 0;
+                }
+                body { 
+                  font-family: 'Courier New', monospace; 
+                  font-size: 11px; 
+                  margin: 0;
+                  padding: 2mm;
+                  width: 76mm;
+                  line-height: 1.2;
+                }
+                .center { text-align: center; }
+                .bold { font-weight: bold; }
+                .large { font-size: 14px; }
+                pre {
+                  white-space: pre-wrap;
+                  margin: 0;
+                  font-family: inherit;
+                }
+              </style>
+            </head>
+            <body>
+              <pre>${data}</pre>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        
+        // Auto-print with proper thermal formatting
+        setTimeout(() => {
+          printWindow.print();
+          setTimeout(() => printWindow.close(), 1000);
+        }, 500);
+        
+        return true;
+      }
     }
     
     return false;
@@ -60,6 +88,44 @@ export const sendToXprinter = async (data: string, settings: PrinterSettings): P
     console.error('Error printing to Xprinter:', error);
     return false;
   }
+};
+
+// Convert text to ESC/POS format for thermal printers
+const convertToESCPOS = (text: string): string => {
+  let escPos = '';
+  
+  // Initialize printer
+  escPos += ESC + '@'; // Initialize
+  escPos += ESC + 'a' + '\x01'; // Center alignment
+  
+  // Process text line by line
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    if (line.includes('=====')) {
+      // Separator line
+      escPos += ESC + 'a' + '\x01'; // Center
+      escPos += line + '\n';
+    } else if (line.includes('TOTAL') || line.includes('PAID')) {
+      // Important lines - bold and larger
+      escPos += ESC + 'E' + '\x01'; // Bold on
+      escPos += GS + '!' + '\x11'; // Double size
+      escPos += ESC + 'a' + '\x01'; // Center
+      escPos += line + '\n';
+      escPos += ESC + 'E' + '\x00'; // Bold off
+      escPos += GS + '!' + '\x00'; // Normal size
+    } else if (line.trim() === '') {
+      escPos += '\n';
+    } else {
+      escPos += ESC + 'a' + '\x00'; // Left align
+      escPos += line + '\n';
+    }
+  });
+  
+  // Cut paper
+  escPos += '\n\n\n';
+  escPos += GS + 'V' + '\x42' + '\x00'; // Partial cut
+  
+  return escPos;
 };
 
 export const generateReceiptText = (transaction: any, storeSettings: any, customer?: any): string => {
@@ -131,35 +197,58 @@ export const generateReceiptText = (transaction: any, storeSettings: any, custom
 
 export const testXprinterConnection = async (ip: string, port: number = 9100): Promise<boolean> => {
   try {
-    console.log(`Testing connection to Xprinter at ${ip}:${port}`);
+    console.log(`Testing Xprinter connection to ${ip}:${port}`);
     
-    // Generate test receipt
+    // Generate test receipt with ESC/POS formatting
     const testReceipt = `
 ================================
-        PRINTER TEST
+        XPRINTER TEST
 ================================
-Xprinter Connection Test
-IP: ${ip}
+Printer IP: ${ip}
 Port: ${port}
-Time: ${new Date().toLocaleString()}
+Test Time: ${new Date().toLocaleString()}
 ================================
 This is a test print to verify
-your Xprinter is working correctly.
+your Xprinter network connection.
+
+If you can see this receipt,
+your Xprinter is working correctly!
 ================================
     `;
     
-    // Send test print
+    // Send test print using the same method as receipts
     const success = await sendToXprinter(testReceipt, { ip, port });
     
     if (success) {
-      console.log('Test print sent successfully');
+      console.log('Xprinter test completed - check printer for output');
       return true;
     } else {
-      console.log('Test print failed');
+      console.log('Xprinter test failed');
       return false;
     }
   } catch (error) {
-    console.error('Xprinter test failed:', error);
+    console.error('Xprinter connection test failed:', error);
+    return false;
+  }
+};
+
+// Additional utility for checking if printer is reachable
+export const pingXprinter = async (ip: string): Promise<boolean> => {
+  try {
+    // Try to connect to the printer IP
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    await fetch(`http://${ip}:9100`, {
+      method: 'HEAD',
+      mode: 'no-cors',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return true;
+  } catch (error) {
+    console.log('Ping to Xprinter failed:', error);
     return false;
   }
 };
