@@ -130,8 +130,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           buyingCost: 150000,
           wholesalePrice: 150000,
           retailPrice: 180000,
+          price: 180000,
           stock: 15,
           barcode: '123456789012',
+          supplierId: 'supplier-1',
+          description: 'Latest iPhone model with advanced features',
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -142,8 +145,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           buyingCost: 140000,
           wholesalePrice: 140000,
           retailPrice: 170000,
+          price: 170000,
           stock: 8,
           barcode: '123456789013',
+          supplierId: 'supplier-1',
+          description: 'Premium Samsung smartphone with S Pen',
           createdAt: new Date(),
           updatedAt: new Date()
         }
@@ -312,7 +318,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setStores(prev => [...prev, newStore]);
     
-    // Initialize store data
+    // Initialize store data with complete structure
     setStoreData(prev => ({
       ...prev,
       [newStore.id]: {
@@ -330,7 +336,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }],
         transactions: [],
         attendants: [],
+        suppliers: [],
         cashBalance: 0,
+        storeSettings: {
+          currency: 'KES',
+          taxRate: 16,
+          lowStockThreshold: 10,
+          enableLoyaltyProgram: true,
+          loyaltyPointsPerShilling: 0.01,
+          autoBackup: true,
+          showProductImages: true,
+          enableBarcode: true,
+          requireCustomerInfo: false,
+          allowNegativeStock: false,
+          defaultPaymentMethod: 'cash',
+          theme: 'light',
+          fontSize: 'medium'
+        },
         printerSettings: {
           printerEnabled: false,
           printerConnectionType: 'bluetooth',
