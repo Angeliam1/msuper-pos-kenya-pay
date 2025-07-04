@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,27 +42,43 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
     description: ''
   });
 
-  // Local state for store info to ensure proper updates
+  // Initialize local state from current store
   const [localStoreInfo, setLocalStoreInfo] = useState({
-    name: currentStore?.name || '',
-    phone: currentStore?.phone || '',
-    address: currentStore?.address || '',
-    manager: currentStore?.manager || ''
+    name: '',
+    phone: '',
+    address: '',
+    manager: ''
   });
+
+  // Update local state when currentStore changes
+  useEffect(() => {
+    if (currentStore) {
+      setLocalStoreInfo({
+        name: currentStore.name || '',
+        phone: currentStore.phone || '',
+        address: currentStore.address || '',
+        manager: currentStore.manager || ''
+      });
+    }
+  }, [currentStore]);
 
   const handleStoreInfoUpdate = (field: string, value: string) => {
     if (!currentStore) return;
     
-    // Update local state immediately
+    // Update local state immediately for UI responsiveness
     setLocalStoreInfo(prev => ({ ...prev, [field]: value }));
     
-    // Update store context
-    updateStore(currentStore.id, { [field]: value });
-    
-    toast({
-      title: "Store Updated",
-      description: `${field} has been updated successfully`,
-    });
+    // Update store context with debounced approach
+    const timeoutId = setTimeout(() => {
+      updateStore(currentStore.id, { [field]: value });
+      toast({
+        title: "Store Updated",
+        description: `${field.charAt(0).toUpperCase() + field.slice(1)} has been updated successfully`,
+      });
+    }, 500);
+
+    // Clear previous timeout to debounce
+    return () => clearTimeout(timeoutId);
   };
 
   const handleQuickAddProduct = () => {
@@ -124,9 +139,9 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
   const storeTransactions = getStoreTransactions(currentStore.id);
 
   return (
-    <div className="relative z-10">
+    <div className="w-full">
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 relative z-20">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="info">Store Info</TabsTrigger>
           <TabsTrigger value="products">Products ({storeProducts.length})</TabsTrigger>
           <TabsTrigger value="customers">Customers ({storeCustomers.length})</TabsTrigger>
@@ -134,7 +149,7 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
           <TabsTrigger value="transactions">Sales ({storeTransactions.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="info" className="relative z-10">
+        <TabsContent value="info">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -150,8 +165,9 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
                     id="storeName"
                     value={localStoreInfo.name}
                     onChange={(e) => {
-                      setLocalStoreInfo(prev => ({ ...prev, name: e.target.value }));
-                      handleStoreInfoUpdate('name', e.target.value);
+                      const newValue = e.target.value;
+                      setLocalStoreInfo(prev => ({ ...prev, name: newValue }));
+                      handleStoreInfoUpdate('name', newValue);
                     }}
                     placeholder="Enter store name"
                   />
@@ -162,8 +178,9 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
                     id="storePhone"
                     value={localStoreInfo.phone}
                     onChange={(e) => {
-                      setLocalStoreInfo(prev => ({ ...prev, phone: e.target.value }));
-                      handleStoreInfoUpdate('phone', e.target.value);
+                      const newValue = e.target.value;
+                      setLocalStoreInfo(prev => ({ ...prev, phone: newValue }));
+                      handleStoreInfoUpdate('phone', newValue);
                     }}
                     placeholder="Enter phone number"
                   />
@@ -175,8 +192,9 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
                   id="storeAddress"
                   value={localStoreInfo.address}
                   onChange={(e) => {
-                    setLocalStoreInfo(prev => ({ ...prev, address: e.target.value }));
-                    handleStoreInfoUpdate('address', e.target.value);
+                    const newValue = e.target.value;
+                    setLocalStoreInfo(prev => ({ ...prev, address: newValue }));
+                    handleStoreInfoUpdate('address', newValue);
                   }}
                   placeholder="Enter store address"
                 />
@@ -187,8 +205,9 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
                   id="storeManager"
                   value={localStoreInfo.manager}
                   onChange={(e) => {
-                    setLocalStoreInfo(prev => ({ ...prev, manager: e.target.value }));
-                    handleStoreInfoUpdate('manager', e.target.value);
+                    const newValue = e.target.value;
+                    setLocalStoreInfo(prev => ({ ...prev, manager: newValue }));
+                    handleStoreInfoUpdate('manager', newValue);
                   }}
                   placeholder="Enter manager name"
                 />
