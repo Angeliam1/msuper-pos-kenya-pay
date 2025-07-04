@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Store, TestTube2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Settings as SettingsIcon, Store, Palette, Printer, Receipt, MessageSquare, TestTube2 } from 'lucide-react';
 import { StoreSettings } from './settings/StoreSettings';
 import { ThemeSettings } from './settings/ThemeSettings';
 import { PrinterSettings } from './settings/PrinterSettings';
@@ -13,6 +14,8 @@ import { DemoModeToggle } from './DemoModeToggle';
 interface SettingsProps {
   onSaveSettings: (settings: any) => void;
 }
+
+type SettingsSectionType = 'store' | 'theme' | 'printer' | 'receipt' | 'sms' | 'demo';
 
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const [settings, setSettings] = useState({
@@ -33,6 +36,9 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     fontSize: 'medium'
   });
 
+  const [activeSection, setActiveSection] = useState<SettingsSectionType>('store');
+  const [isOpen, setIsOpen] = useState(false);
+
   const handleSettingChange = (key: string, value: any) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
@@ -49,6 +55,45 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     // Add actual SMS test logic here
   };
 
+  const settingsMenuItems = [
+    { id: 'store' as SettingsSectionType, label: 'Store Settings', icon: Store },
+    { id: 'theme' as SettingsSectionType, label: 'Theme', icon: Palette },
+    { id: 'printer' as SettingsSectionType, label: 'Printer', icon: Printer },
+    { id: 'receipt' as SettingsSectionType, label: 'Receipt', icon: Receipt },
+    { id: 'sms' as SettingsSectionType, label: 'SMS', icon: MessageSquare },
+    { id: 'demo' as SettingsSectionType, label: 'Demo Mode', icon: TestTube2 },
+  ];
+
+  const renderSettingsContent = () => {
+    switch (activeSection) {
+      case 'store':
+        return <StoreSettings settings={settings} onSettingChange={handleSettingChange} />;
+      case 'theme':
+        return <ThemeSettings settings={settings} onSettingChange={handleSettingChange} />;
+      case 'printer':
+        return <PrinterSettings 
+          settings={settings} 
+          onSettingChange={handleSettingChange}
+          onTestPrint={handleTestPrint}
+        />;
+      case 'receipt':
+        return <ReceiptSettings 
+          settings={settings} 
+          onSettingChange={handleSettingChange} 
+        />;
+      case 'sms':
+        return <SMSSettings 
+          settings={settings} 
+          onSettingChange={handleSettingChange}
+          onTestSMS={handleTestSMS}
+        />;
+      case 'demo':
+        return <DemoModeToggle />;
+      default:
+        return <StoreSettings settings={settings} onSettingChange={handleSettingChange} />;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -56,51 +101,40 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         <h1 className="text-2xl font-bold">Settings</h1>
       </div>
 
-      <Tabs defaultValue="store" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="store">Store</TabsTrigger>
-          <TabsTrigger value="theme">Theme</TabsTrigger>
-          <TabsTrigger value="printer">Printer</TabsTrigger>
-          <TabsTrigger value="receipt">Receipt</TabsTrigger>
-          <TabsTrigger value="sms">SMS</TabsTrigger>
-          <TabsTrigger value="demo">Demo</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="store">
-          <StoreSettings settings={settings} onSettingChange={handleSettingChange} />
-        </TabsContent>
-
-        <TabsContent value="theme">
-          <ThemeSettings settings={settings} onSettingChange={handleSettingChange} />
-        </TabsContent>
-
-        <TabsContent value="printer">
-          <PrinterSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange}
-            onTestPrint={handleTestPrint}
-          />
-        </TabsContent>
-
-        <TabsContent value="receipt">
-          <ReceiptSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange} 
-          />
-        </TabsContent>
-
-        <TabsContent value="sms">
-          <SMSSettings 
-            settings={settings} 
-            onSettingChange={handleSettingChange}
-            onTestSMS={handleTestSMS}
-          />
-        </TabsContent>
-
-        <TabsContent value="demo">
-          <DemoModeToggle />
-        </TabsContent>
-      </Tabs>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {settingsMenuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Sheet key={item.id} open={isOpen && activeSection === item.id} 
+                   onOpenChange={(open) => {
+                     setIsOpen(open);
+                     if (open) setActiveSection(item.id);
+                   }}>
+              <SheetTrigger asChild>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Icon className="h-5 w-5" />
+                      {item.label}
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full max-w-2xl overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <Icon className="h-5 w-5" />
+                    {item.label}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  {renderSettingsContent()}
+                </div>
+              </SheetContent>
+            </Sheet>
+          );
+        })}
+      </div>
     </div>
   );
 };
