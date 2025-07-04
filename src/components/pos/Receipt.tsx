@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Transaction } from '@/types';
 import { Printer, Download, QrCode, Gift, BarChart3, X } from 'lucide-react';
+import { sendToXprinter, generateReceiptText } from '@/utils/xprinterUtils';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReceiptProps {
   transaction: Transaction;
@@ -32,6 +34,10 @@ interface ReceiptProps {
     showQRCode: boolean;
     showBarcode: boolean;
     autoPrintReceipt: boolean;
+    printerEnabled?: boolean;
+    printerConnectionType?: string;
+    ethernetPrinterIP?: string;
+    ethernetPrinterPort?: string;
   };
   customer?: {
     name: string;
@@ -51,10 +57,46 @@ export const Receipt: React.FC<ReceiptProps> = ({
   notes,
   loyaltyPointsEarned = 0
 }) => {
+  const { toast } = useToast();
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    // Check if Xprinter is configured
+    if (storeSettings.printerEnabled && 
+        storeSettings.printerConnectionType === 'ethernet' && 
+        storeSettings.ethernetPrinterIP) {
+      
+      try {
+        const receiptText = generateReceiptText(transaction, storeSettings, customer);
+        const printerSettings = {
+          ip: storeSettings.ethernetPrinterIP,
+          port: parseInt(storeSettings.ethernetPrinterPort || '9100')
+        };
+        
+        const success = await sendToXprinter(receiptText, printerSettings);
+        
+        if (success) {
+          toast({
+            title: "Receipt Sent to Xprinter",
+            description: `Receipt printed to ${storeSettings.ethernetPrinterIP}`,
+          });
+        } else {
+          throw new Error('Print failed');
+        }
+      } catch (error) {
+        console.error('Xprinter error:', error);
+        toast({
+          title: "Print Failed",
+          description: "Could not print to Xprinter. Using browser print instead.",
+          variant: "destructive"
+        });
+        // Fallback to browser print
+        window.print();
+      }
+    } else {
+      // Use browser print as fallback
+      window.print();
+    }
   };
 
   const handleDownload = () => {
@@ -65,7 +107,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
   React.useEffect(() => {
     if (storeSettings.autoPrintReceipt) {
       setTimeout(() => {
-        window.print();
+        handlePrint();
       }, 1000); // Delay to ensure receipt is fully rendered
     }
   }, [storeSettings.autoPrintReceipt]);
@@ -270,7 +312,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
           <div className="flex flex-col sm:flex-row gap-2 pt-4">
             <Button onClick={handlePrint} variant="outline" className="flex-1 text-xs sm:text-sm">
               <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-              Print
+              {storeSettings.printerEnabled && storeSettings.printerConnectionType === 'ethernet' ? 'Print to Xprinter' : 'Print'}
             </Button>
             <Button onClick={handleDownload} variant="outline" className="flex-1 text-xs sm:text-sm">
               <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
