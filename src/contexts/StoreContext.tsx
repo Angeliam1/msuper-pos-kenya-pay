@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { StoreLocation, Product, Customer, Transaction, Attendant } from '@/types';
 
@@ -21,6 +20,12 @@ interface StoreContextType {
   addAttendantToStore: (storeId: string, attendant: Omit<Attendant, 'id'>) => void;
   getStoreCashBalance: (storeId: string) => number;
   updateStoreCashBalance: (storeId: string, amount: number, type: 'add' | 'subtract') => void;
+  getStoreSettings: (storeId: string) => any;
+  updateStoreSettings: (storeId: string, settings: any) => void;
+  getStoreSuppliers: (storeId: string) => any[];
+  addSupplierToStore: (storeId: string, supplier: any) => void;
+  updateStoreSupplier: (storeId: string, supplierId: string, updates: any) => void;
+  deleteStoreSupplier: (storeId: string, supplierId: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -90,32 +95,124 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   ]);
 
-  // Store-specific data storage
+  // Store-specific data storage with enhanced structure
   const [storeData, setStoreData] = useState<Record<string, {
     products: Product[];
     customers: Customer[];
     transactions: Transaction[];
     attendants: Attendant[];
+    suppliers: any[];
     cashBalance: number;
+    storeSettings: {
+      currency: string;
+      taxRate: number;
+      lowStockThreshold: number;
+      enableLoyaltyProgram: boolean;
+      loyaltyPointsPerShilling: number;
+      autoBackup: boolean;
+      showProductImages: boolean;
+      enableBarcode: boolean;
+      requireCustomerInfo: boolean;
+      allowNegativeStock: boolean;
+      defaultPaymentMethod: string;
+      theme: string;
+      fontSize: string;
+    };
     printerSettings: any;
     smsSettings: any;
   }>>({
     'store-1': {
-      products: [],
-      customers: [{
-        id: 'walk-in',
-        name: 'Walk-in Customer',
-        email: '',
-        phone: '',
-        address: '',
-        loyaltyPoints: 0,
-        creditLimit: 0,
-        outstandingBalance: 0,
-        createdAt: new Date()
-      }],
+      products: [
+        {
+          id: 'product-1',
+          name: 'iPhone 15 Pro Max',
+          category: 'Electronics',
+          buyingCost: 150000,
+          wholesalePrice: 150000,
+          retailPrice: 180000,
+          stock: 15,
+          barcode: '123456789012',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: 'product-2',
+          name: 'Samsung Galaxy S24 Ultra',
+          category: 'Electronics',
+          buyingCost: 140000,
+          wholesalePrice: 140000,
+          retailPrice: 170000,
+          stock: 8,
+          barcode: '123456789013',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ],
+      customers: [
+        {
+          id: 'walk-in',
+          name: 'Walk-in Customer',
+          email: '',
+          phone: '',
+          address: '',
+          loyaltyPoints: 0,
+          creditLimit: 0,
+          outstandingBalance: 0,
+          createdAt: new Date()
+        },
+        {
+          id: 'customer-1',
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          phone: '+254700000000',
+          address: 'Nairobi, Kenya',
+          loyaltyPoints: 0,
+          creditLimit: 50000,
+          outstandingBalance: 0,
+          createdAt: new Date()
+        },
+        {
+          id: 'customer-2',
+          name: 'Jane Smith',
+          email: 'jane.smith@example.com',
+          phone: '+254711111111',
+          address: 'Nairobi, Kenya',
+          loyaltyPoints: 0,
+          creditLimit: 75000,
+          outstandingBalance: 0,
+          createdAt: new Date()
+        }
+      ],
       transactions: [],
       attendants: [],
+      suppliers: [
+        {
+          id: 'supplier-1',
+          name: 'Apple Kenya',
+          phone: '+254755555555',
+          email: 'apple@example.com',
+          address: 'Nairobi, Kenya',
+          bankName: '',
+          accountNumber: '',
+          createdAt: new Date()
+        }
+      ],
       cashBalance: 0,
+      storeSettings: {
+        currency: 'KES',
+        taxRate: 16,
+        lowStockThreshold: 10,
+        enableLoyaltyProgram: true,
+        loyaltyPointsPerShilling: 0.01,
+        autoBackup: true,
+        showProductImages: true,
+        enableBarcode: true,
+        requireCustomerInfo: false,
+        allowNegativeStock: false,
+        defaultPaymentMethod: 'cash',
+        theme: 'light',
+        fontSize: 'medium'
+      },
       printerSettings: {
         printerEnabled: false,
         printerConnectionType: 'bluetooth',
@@ -153,7 +250,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }],
       transactions: [],
       attendants: [],
+      suppliers: [],
       cashBalance: 0,
+      storeSettings: {
+        currency: 'KES',
+        taxRate: 16,
+        lowStockThreshold: 10,
+        enableLoyaltyProgram: true,
+        loyaltyPointsPerShilling: 0.01,
+        autoBackup: true,
+        showProductImages: true,
+        enableBarcode: true,
+        requireCustomerInfo: false,
+        allowNegativeStock: false,
+        defaultPaymentMethod: 'cash',
+        theme: 'light',
+        fontSize: 'medium'
+      },
       printerSettings: {
         printerEnabled: false,
         printerConnectionType: 'bluetooth',
@@ -374,6 +487,62 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }));
   };
 
+  const getStoreSettings = (storeId: string) => {
+    return storeData[storeId]?.storeSettings || {};
+  };
+
+  const updateStoreSettings = (storeId: string, settings: any) => {
+    setStoreData(prev => ({
+      ...prev,
+      [storeId]: {
+        ...prev[storeId],
+        storeSettings: { ...prev[storeId]?.storeSettings, ...settings }
+      }
+    }));
+  };
+
+  const getStoreSuppliers = (storeId: string) => {
+    return storeData[storeId]?.suppliers || [];
+  };
+
+  const addSupplierToStore = (storeId: string, supplier: any) => {
+    const newSupplier = {
+      ...supplier,
+      id: `supplier-${Date.now()}`,
+      createdAt: new Date()
+    };
+    
+    setStoreData(prev => ({
+      ...prev,
+      [storeId]: {
+        ...prev[storeId],
+        suppliers: [...(prev[storeId]?.suppliers || []), newSupplier]
+      }
+    }));
+  };
+
+  const updateStoreSupplier = (storeId: string, supplierId: string, updates: any) => {
+    setStoreData(prev => ({
+      ...prev,
+      [storeId]: {
+        ...prev[storeId],
+        suppliers: prev[storeId]?.suppliers.map(supplier => 
+          supplier.id === supplierId ? { ...supplier, ...updates } : supplier
+        ) || []
+      }
+    }));
+  };
+
+  const deleteStoreSupplier = (storeId: string, supplierId: string) => {
+    setStoreData(prev => ({
+      ...prev,
+      [storeId]: {
+        ...prev[storeId],
+        suppliers: prev[storeId]?.suppliers.filter(supplier => supplier.id !== supplierId) || []
+      }
+    }));
+  };
+
   // Set default store if none selected
   useEffect(() => {
     if (!currentStore && stores.length > 0) {
@@ -400,7 +569,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       getStoreAttendants,
       addAttendantToStore,
       getStoreCashBalance,
-      updateStoreCashBalance
+      updateStoreCashBalance,
+      getStoreSettings,
+      updateStoreSettings,
+      getStoreSuppliers,
+      addSupplierToStore,
+      updateStoreSupplier,
+      deleteStoreSupplier
     }}>
       {children}
     </StoreContext.Provider>

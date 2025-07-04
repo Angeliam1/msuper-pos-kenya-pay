@@ -34,6 +34,7 @@ import { Receipt } from './Receipt';
 import { SplitPayment } from './SplitPayment';
 import { MPesaPayment } from './MPesaPayment';
 import { HirePurchase } from './HirePurchase';
+import { StoreAuthManager } from './StoreAuthManager';
 import { useStore } from '@/contexts/StoreContext';
 
 export const ProductManagement: React.FC = () => {
@@ -49,6 +50,7 @@ export const ProductManagement: React.FC = () => {
   } = useStore();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>('');
@@ -70,7 +72,7 @@ export const ProductManagement: React.FC = () => {
   const [showMPesaPayment, setShowMPesaPayment] = useState(false);
   const [showHirePurchase, setShowHirePurchase] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'split' | 'hire-purchase'>('cash');
+  const [isStoreAuthenticated, setIsStoreAuthenticated] = useState(false);
 
   // Quick add customer form
   const [quickCustomer, setQuickCustomer] = useState({
@@ -83,8 +85,13 @@ export const ProductManagement: React.FC = () => {
   const products = currentStore ? getStoreProducts(currentStore.id) : [];
   const customers = currentStore ? getStoreCustomers(currentStore.id) : [];
 
-  // Get unique categories from products
-  const categories = [...new Set(products.map(product => product.category))];
+  // Filter customers based on search term
+  const filteredCustomers = customers.filter(customer => {
+    const searchLower = customerSearchTerm.toLowerCase();
+    return customer.name.toLowerCase().includes(searchLower) ||
+           customer.phone.includes(searchTerm) ||
+           customer.email.toLowerCase().includes(searchLower);
+  });
 
   const filteredProducts = products.filter(product => {
     const searchLower = searchTerm.toLowerCase();
@@ -199,6 +206,20 @@ export const ProductManagement: React.FC = () => {
   };
 
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
+
+  // Show store authentication if store is selected but not authenticated
+  if (currentStore && !isStoreAuthenticated) {
+    return (
+      <StoreAuthManager
+        store={currentStore}
+        onAuthenticated={() => setIsStoreAuthenticated(true)}
+        onRegisterStore={(storeData) => {
+          console.log('Store registration data:', storeData);
+          // In real app, this would save to backend
+        }}
+      />
+    );
+  }
 
   const handleQuickAddProduct = (productData: Omit<Product, 'id'>) => {
     if (!currentStore) {
@@ -419,27 +440,45 @@ export const ProductManagement: React.FC = () => {
           />
         </div>
 
-        {/* Customer Selection */}
+        {/* Enhanced Customer Selection with Search */}
         <div className="mt-3">
-          <Select 
-            value={selectedCustomer.id} 
-            onValueChange={(value) => {
-              const customer = customers.find(c => c.id === value) || selectedCustomer;
-              setSelectedCustomer(customer);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="walk-in">Walk-in Customer</SelectItem>
-              {customers.map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.name} - {customer.phone}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="relative">
+            <Select 
+              value={selectedCustomer.id} 
+              onValueChange={(value) => {
+                const customer = customers.find(c => c.id === value) || selectedCustomer;
+                setSelectedCustomer(customer);
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2">
+                  <Input
+                    placeholder="Search customers..."
+                    value={customerSearchTerm}
+                    onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                    className="mb-2"
+                  />
+                </div>
+                <SelectItem value="walk-in">Walk-in Customer</SelectItem>
+                {filteredCustomers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{customer.name}</span>
+                      <span className="text-xs text-gray-500">{customer.phone}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+                {filteredCustomers.length === 0 && customerSearchTerm && (
+                  <div className="p-2 text-sm text-gray-500 text-center">
+                    No customers found
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -631,7 +670,7 @@ export const ProductManagement: React.FC = () => {
               
               {filteredProducts.length === 0 && (
                 <div className="text-center text-gray-500 py-8">
-                  No products found
+                  {products.length === 0 ? 'No products in this store' : 'No products found'}
                 </div>
               )}
             </div>

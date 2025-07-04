@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Receipt, Printer, Smartphone, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, Receipt, Printer, Smartphone, Palette, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ReceiptSettings } from './settings/ReceiptSettings';
 import { PrinterSettings } from './settings/PrinterSettings';
@@ -21,27 +21,32 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   const { toast } = useToast();
-  const { currentStore, updateStore } = useStore();
+  const { currentStore, updateStore, getStoreSettings, updateStoreSettings } = useStore();
+  
+  // Get store-specific settings
+  const storeSettings = currentStore ? getStoreSettings(currentStore.id) : {};
   
   const [settings, setSettings] = useState({
-    currency: 'KES',
-    taxRate: 16,
-    lowStockThreshold: 10,
-    enableLoyaltyProgram: true,
-    loyaltyPointsPerShilling: 0.01,
-    autoBackup: true,
-    showProductImages: true,
-    enableBarcode: true,
-    requireCustomerInfo: false,
-    allowNegativeStock: false,
-    defaultPaymentMethod: 'cash',
-    theme: 'light',
-    fontSize: 'medium',
-    // Store-specific settings that will be managed per store
+    // Store-independent basic settings
+    currency: storeSettings.currency || 'KES',
+    taxRate: storeSettings.taxRate || 16,
+    lowStockThreshold: storeSettings.lowStockThreshold || 10,
+    enableLoyaltyProgram: storeSettings.enableLoyaltyProgram || true,
+    loyaltyPointsPerShilling: storeSettings.loyaltyPointsPerShilling || 0.01,
+    autoBackup: storeSettings.autoBackup || true,
+    showProductImages: storeSettings.showProductImages || true,
+    enableBarcode: storeSettings.enableBarcode || true,
+    requireCustomerInfo: storeSettings.requireCustomerInfo || false,
+    allowNegativeStock: storeSettings.allowNegativeStock || false,
+    defaultPaymentMethod: storeSettings.defaultPaymentMethod || 'cash',
+    theme: storeSettings.theme || 'light',
+    fontSize: storeSettings.fontSize || 'medium',
+    
+    // Store-specific settings from current store
     receiptHeader: currentStore?.receiptSettings?.header || 'Thank you for shopping with us!',
     receiptFooter: currentStore?.receiptSettings?.footer || 'Visit us again soon!',
-    businessName: currentStore?.name || 'DIGITAL DEN',
-    businessPhone: currentStore?.phone || '0725333337',
+    businessName: currentStore?.name || 'Store Name',
+    businessPhone: currentStore?.phone || '',
     printerEnabled: true,
     printerConnectionType: 'bluetooth',
     bluetoothPrinterName: '',
@@ -54,10 +59,26 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     autoPrint: currentStore?.receiptSettings?.autoprint || true,
     smsEnabled: false,
     smsProvider: 'phone',
-    hirePurchaseTemplate: `Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - ${currentStore?.name || 'DIGITAL DEN'}`,
-    paymentReminderTemplate: `Hi {customerName}, your payment of KES {amount} is pending at ${currentStore?.name || 'DIGITAL DEN'} (${currentStore?.phone || '0725333337'}) and is {daysLate} days late. Pay now: {paymentLink}`,
-    paymentConfirmTemplate: `Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - ${currentStore?.name || 'DIGITAL DEN'}`
+    hirePurchaseTemplate: `Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - ${currentStore?.name || 'Store'}`,
+    paymentReminderTemplate: `Hi {customerName}, your payment of KES {amount} is pending at ${currentStore?.name || 'Store'} (${currentStore?.phone || ''}) and is {daysLate} days late. Pay now: {paymentLink}`,
+    paymentConfirmTemplate: `Hi {customerName}, payment received! Amount: KES {amount}. New balance: KES {balance}. Thank you! - ${currentStore?.name || 'Store'}`
   });
+
+  // Update settings when store changes
+  useEffect(() => {
+    if (currentStore) {
+      const storeSettings = getStoreSettings(currentStore.id);
+      setSettings(prev => ({
+        ...prev,
+        ...storeSettings,
+        receiptHeader: currentStore.receiptSettings?.header || 'Thank you for shopping with us!',
+        receiptFooter: currentStore.receiptSettings?.footer || 'Visit us again soon!',
+        businessName: currentStore.name,
+        businessPhone: currentStore.phone,
+        autoPrint: currentStore.receiptSettings?.autoprint || true,
+      }));
+    }
+  }, [currentStore]);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
@@ -67,55 +88,81 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
   };
 
   const handleSaveSettings = () => {
-    // Save store-specific settings to the current store
-    if (currentStore) {
-      updateStore(currentStore.id, {
-        receiptSettings: {
-          ...currentStore.receiptSettings,
-          header: settings.receiptHeader,
-          footer: settings.receiptFooter,
-          autoprint: settings.autoPrint,
-        }
+    if (!currentStore) {
+      toast({
+        title: "No Store Selected",
+        description: "Please select a store to save settings",
+        variant: "destructive"
       });
+      return;
     }
+
+    // Save store-specific receipt settings to the current store
+    updateStore(currentStore.id, {
+      receiptSettings: {
+        ...currentStore.receiptSettings,
+        header: settings.receiptHeader,
+        footer: settings.receiptFooter,
+        autoprint: settings.autoPrint,
+      }
+    });
+
+    // Save other store-specific settings
+    updateStoreSettings(currentStore.id, {
+      currency: settings.currency,
+      taxRate: settings.taxRate,
+      lowStockThreshold: settings.lowStockThreshold,
+      enableLoyaltyProgram: settings.enableLoyaltyProgram,
+      loyaltyPointsPerShilling: settings.loyaltyPointsPerShilling,
+      autoBackup: settings.autoBackup,
+      showProductImages: settings.showProductImages,
+      enableBarcode: settings.enableBarcode,
+      requireCustomerInfo: settings.requireCustomerInfo,
+      allowNegativeStock: settings.allowNegativeStock,
+      defaultPaymentMethod: settings.defaultPaymentMethod,
+      theme: settings.theme,
+      fontSize: settings.fontSize
+    });
 
     onSaveSettings(settings);
     toast({
       title: "Settings Saved",
-      description: `Settings have been saved${currentStore ? ` for ${currentStore.name}` : ''}.`,
+      description: `Settings have been saved for ${currentStore.name}`,
     });
   };
 
   const handleTestPrint = () => {
+    if (!currentStore) return;
     toast({
       title: "Test Print",
-      description: "Sending test receipt to printer...",
+      description: `Sending test receipt to ${currentStore.name} printer...`,
     });
-    console.log('Testing printer with settings:', {
+    console.log('Testing printer for store:', currentStore.name, 'with settings:', {
       connectionType: settings.printerConnectionType,
       printerName: settings.bluetoothPrinterName || settings.usbPrinterName,
-      ip: settings.ethernetPrinterIP,
-      store: currentStore?.name
+      ip: settings.ethernetPrinterIP
     });
   };
 
   const handleTestSMS = () => {
+    if (!currentStore) return;
     toast({
       title: "Test SMS",
-      description: `Testing SMS configuration for ${currentStore?.name || 'current store'}...`,
+      description: `Testing SMS configuration for ${currentStore.name}...`,
     });
-    console.log('Testing SMS with settings:', {
+    console.log('Testing SMS for store:', currentStore.name, 'with settings:', {
       provider: settings.smsProvider,
       businessPhone: settings.businessPhone,
-      businessName: settings.businessName,
-      store: currentStore?.name
+      businessName: settings.businessName
     });
   };
 
   if (!currentStore) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Please select a store to configure settings</p>
+        <Store className="mx-auto h-12 w-12 mb-4 text-gray-300" />
+        <p className="text-gray-500">Please select a store to configure its independent settings</p>
+        <p className="text-xs text-gray-400 mt-2">Each store has its own separate configuration</p>
       </div>
     );
   }
@@ -124,11 +171,22 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">POS Settings</h2>
-          <p className="text-gray-600">Settings for {currentStore.name}</p>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Store className="h-6 w-6 text-blue-600" />
+            {currentStore.name} Settings
+          </h2>
+          <p className="text-gray-600">Independent store configuration</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              Store ID: {currentStore.id}
+            </span>
+            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+              Independent Settings
+            </span>
+          </div>
         </div>
         <Button onClick={handleSaveSettings}>
-          Save Settings
+          Save Store Settings
         </Button>
       </div>
 
@@ -152,7 +210,7 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
           </TabsTrigger>
           <TabsTrigger value="advanced" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
-            Advanced
+            Store
           </TabsTrigger>
         </TabsList>
 
@@ -183,9 +241,22 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         <TabsContent value="advanced">
           <Card>
             <CardHeader>
-              <CardTitle>Advanced POS Settings</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Store className="h-5 w-5" />
+                {currentStore.name} Configuration
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">Store Independence</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• This store operates independently from MSUPER-POS</li>
+                  <li>• Settings apply only to this store location</li>
+                  <li>• Products, customers, and transactions are separate</li>
+                  <li>• Each store has its own receipt and printer configuration</li>
+                </ul>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
