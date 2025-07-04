@@ -28,13 +28,25 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
     mpesaAccount: '',
     mpesaTill: '',
     bankAccount: '',
-    paymentInstructions: ''
+    paymentInstructions: '',
+    theme: 'light',
+    fontSize: 'medium'
   });
 
   const handleSettingChange = (key: string, value: any) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     onSaveSettings(newSettings);
+  };
+
+  const handleTestPrint = () => {
+    console.log('Testing printer connection...');
+    // Add actual print test logic here
+  };
+
+  const handleTestSMS = () => {
+    console.log('Testing SMS configuration...');
+    // Add actual SMS test logic here
   };
 
   return (
@@ -59,13 +71,14 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         </TabsContent>
 
         <TabsContent value="theme">
-          <ThemeSettings />
+          <ThemeSettings settings={settings} onSettingChange={handleSettingChange} />
         </TabsContent>
 
         <TabsContent value="printer">
           <PrinterSettings 
             settings={settings} 
-            onSettingChange={handleSettingChange} 
+            onSettingChange={handleSettingChange}
+            onTestPrint={handleTestPrint}
           />
         </TabsContent>
 
@@ -79,7 +92,8 @@ export const Settings: React.FC<SettingsProps> = ({ onSaveSettings }) => {
         <TabsContent value="sms">
           <SMSSettings 
             settings={settings} 
-            onSettingChange={handleSettingChange} 
+            onSettingChange={handleSettingChange}
+            onTestSMS={handleTestSMS}
           />
         </TabsContent>
 

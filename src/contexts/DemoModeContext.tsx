@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Customer, Transaction, Attendant } from '@/types';
+import { Product, Customer, Transaction, Attendant, CartItem } from '@/types';
 
 interface DemoModeContextType {
   isDemoMode: boolean;
@@ -70,6 +70,7 @@ const sampleCustomers: Customer[] = [
     phone: '+254712345678',
     email: 'john@demo.com',
     loyaltyPoints: 150,
+    creditLimit: 1000,
     outstandingBalance: 0,
     createdAt: new Date()
   },
@@ -79,6 +80,7 @@ const sampleCustomers: Customer[] = [
     phone: '+254723456789',
     email: 'jane@demo.com',
     loyaltyPoints: 75,
+    creditLimit: 500,
     outstandingBalance: 250,
     createdAt: new Date()
   }
@@ -88,6 +90,8 @@ const sampleAttendants: Attendant[] = [
   {
     id: 'att1',
     name: 'Demo Cashier',
+    email: 'cashier@demo.com',
+    phone: '+254700000001',
     role: 'cashier',
     pin: '1234',
     isActive: true,
@@ -97,6 +101,8 @@ const sampleAttendants: Attendant[] = [
   {
     id: 'att2',
     name: 'Demo Manager',
+    email: 'manager@demo.com',
+    phone: '+254700000002',
     role: 'manager',
     pin: '5678',
     isActive: true,
@@ -128,35 +134,36 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         {
           id: 'demo-trans-1',
           items: [
-            { productId: '1', quantity: 2, price: 50, name: 'Coca Cola 500ml' },
-            { productId: '2', quantity: 1, price: 60, name: 'Bread White 400g' }
+            {
+              ...sampleProducts[0],
+              quantity: 2
+            } as CartItem,
+            {
+              ...sampleProducts[1],
+              quantity: 1
+            } as CartItem
           ],
           total: 160,
-          subtotal: 160,
-          tax: 0,
-          discount: 0,
-          paymentMethod: 'cash',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
           customerId: 'cust1',
           attendantId: 'att1',
-          status: 'completed',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-          receiptNumber: 'REC-001'
+          paymentSplits: [{ method: 'cash', amount: 160 }],
+          status: 'completed'
         },
         {
           id: 'demo-trans-2',
           items: [
-            { productId: '3', quantity: 1, price: 80, name: 'Milk 1L' }
+            {
+              ...sampleProducts[2],
+              quantity: 1
+            } as CartItem
           ],
           total: 80,
-          subtotal: 80,
-          tax: 0,
-          discount: 0,
-          paymentMethod: 'mpesa',
+          timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
           customerId: 'walk-in',
           attendantId: 'att1',
-          status: 'completed',
-          timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-          receiptNumber: 'REC-002'
+          paymentSplits: [{ method: 'mpesa', amount: 80 }],
+          status: 'completed'
         }
       ];
       setDemoTransactions(sampleTransactions);
