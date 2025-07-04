@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,9 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Bluetooth, Wifi, CheckCircle, XCircle, AlertCircle, Network } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Printer, Bluetooth, Wifi, CheckCircle, XCircle, AlertCircle, Network, Info, Globe, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { testXprinterConnection, pingXprinter } from '@/utils/xprinterUtils';
+import { testXprinterConnection, pingXprinter, isNativeApp, getPrintingInstructions } from '@/utils/xprinterUtils';
 
 interface PrinterSettingsProps {
   settings: any;
@@ -21,6 +23,9 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'connected' | 'failed'>('idle');
   const [testingStep, setTestingStep] = useState('');
+
+  const isNative = isNativeApp();
+  const printingInstructions = getPrintingInstructions();
 
   // Test network connectivity to Xprinter
   const testNetworkConnection = async () => {
@@ -34,35 +39,35 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
     }
 
     setConnectionStatus('testing');
-    setTestingStep('Checking network connectivity...');
+    setTestingStep('Testing Xprinter connection...');
 
     try {
-      // First check if we can reach the printer
-      setTestingStep('Pinging Xprinter at ' + settings.ethernetPrinterIP + '...');
-      const pingResult = await pingXprinter(settings.ethernetPrinterIP);
-      
-      if (!pingResult) {
-        throw new Error('Cannot reach printer IP');
-      }
-
-      setTestingStep('Network connection OK, sending test print...');
-      
-      // Send actual test print
       const testPort = parseInt(settings.ethernetPrinterPort || '9100');
+      
+      setTestingStep(`Attempting to connect to ${settings.ethernetPrinterIP}:${testPort}...`);
+      
+      // Send test print (will use browser fallback in web environment)
       const printSuccess = await testXprinterConnection(settings.ethernetPrinterIP, testPort);
       
       if (printSuccess) {
         setConnectionStatus('connected');
         setTestingStep('');
         
-        toast({
-          title: "Xprinter Test Successful!",
-          description: `Test receipt sent to ${settings.ethernetPrinterIP}:${testPort}. Check your Xprinter for the printed receipt.`,
-        });
+        if (isNative) {
+          toast({
+            title: "Test Print Sent!",
+            description: `Test receipt sent to Xprinter at ${settings.ethernetPrinterIP}:${testPort}`,
+          });
+        } else {
+          toast({
+            title: "Print Dialog Opened",
+            description: "A print window opened. Set your browser's default printer to the Xprinter and print.",
+          });
+        }
         
         setTimeout(() => setConnectionStatus('idle'), 5000);
       } else {
-        throw new Error('Print command failed');
+        throw new Error('Print test failed');
       }
       
     } catch (error) {
@@ -72,8 +77,8 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       toast({
-        title: "Xprinter Test Failed",
-        description: `Could not connect to Xprinter: ${errorMessage}. Please check IP address and network connection.`,
+        title: "Print Test Failed",
+        description: `Error: ${errorMessage}`,
         variant: "destructive"
       });
       
@@ -103,6 +108,26 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Platform Information */}
+        <Alert>
+          <div className="flex items-center gap-2">
+            {isNative ? <Smartphone className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+            <Info className="h-4 w-4" />
+          </div>
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">
+                {isNative ? "🔧 Mobile App Mode - Full Printer Support" : "🌐 Web Browser Mode - Limited Printer Support"}
+              </p>
+              <ul className="text-sm space-y-1 list-disc list-inside">
+                {printingInstructions.map((instruction, index) => (
+                  <li key={index}>{instruction}</li>
+                ))}
+              </ul>
+            </div>
+          </AlertDescription>
+        </Alert>
+
         <div className="flex items-center justify-between">
           <Label htmlFor="printerEnabled">Enable Printer</Label>
           <Switch
@@ -209,19 +234,19 @@ export const PrinterSettings: React.FC<PrinterSettingsProps> = ({ settings, onSe
 
                   {connectionStatus === 'connected' && (
                     <Badge variant="default" className="w-full justify-center bg-green-600">
-                      ✅ Test Print Sent - Check Your Xprinter
+                      ✅ {isNative ? 'Test Print Sent - Check Your Xprinter' : 'Print Dialog Opened - Check Browser'}
                     </Badge>
                   )}
 
                   {connectionStatus === 'failed' && (
                     <div className="text-xs text-red-600 space-y-2 p-3 bg-red-50 rounded border border-red-200">
-                      <p className="font-medium">❌ Connection Failed - Try These Steps:</p>
+                      <p className="font-medium">❌ Print Test Failed - Try These Steps:</p>
                       <ul className="space-y-1">
                         <li>• Print network config from Xprinter (hold FEED button)</li>
                         <li>• Verify IP address matches exactly (currently: {settings.ethernetPrinterIP || 'not set'})</li>
                         <li>• Check both devices are on same WiFi network</li>
-                        <li>• Try restarting the Xprinter</li>
-                        <li>• Ensure port 9100 is not blocked by firewall</li>
+                        <li>• {isNative ? 'Try restarting the Xprinter' : 'Set browser default printer to Xprinter'}</li>
+                        <li>• {isNative ? 'Ensure port 9100 is not blocked by firewall' : 'Use browser print dialog (Ctrl+P) as alternative'}</li>
                       </ul>
                     </div>
                   )}

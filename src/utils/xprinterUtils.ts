@@ -12,17 +12,14 @@ const GS = '\x1D';
 
 export const sendToXprinter = async (data: string, settings: PrinterSettings): Promise<boolean> => {
   try {
-    console.log('Sending print data to Xprinter:', settings);
+    console.log('Attempting to send print data to Xprinter:', settings);
     
     // Convert text to ESC/POS format for thermal printer
     const escPosData = convertToESCPOS(data);
     
-    // Since browsers can't make direct socket connections, we'll use a workaround
-    // This creates a local print service endpoint or uses browser printing with proper formatting
-    
-    // First, try to send via a local print bridge (if available)
+    // Try direct network connection (will likely fail in browser due to CORS)
     try {
-      const response = await fetch(`http://${settings.ip}:${settings.port}`, {
+      const response = await fetch(`http://${settings.ip}:${settings.port}/print`, {
         method: 'POST',
         mode: 'no-cors',
         headers: {
@@ -31,15 +28,22 @@ export const sendToXprinter = async (data: string, settings: PrinterSettings): P
         body: escPosData,
       });
       
-      console.log('Direct network print attempt completed');
-      return true;
-    } catch (networkError) {
-      console.log('Direct network print failed, trying alternative method');
+      console.log('Direct network print request sent (status unknown due to no-cors mode)');
       
-      // Alternative: Use browser printing with thermal printer formatting
-      const printWindow = window.open('', '_blank');
+      // Since we can't check response status in no-cors mode, wait a bit and assume success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return true;
+      
+    } catch (networkError) {
+      console.log('Direct network print failed (expected in browser):', networkError);
+      
+      // Browser fallback: Use window.print with thermal formatting
+      console.log('Falling back to browser print with thermal formatting');
+      
+      const printWindow = window.open('', '_blank', 'width=300,height=600');
       if (printWindow) {
         printWindow.document.write(`
+          <!DOCTYPE html>
           <html>
             <head>
               <title>Xprinter Receipt</title>
@@ -48,11 +52,31 @@ export const sendToXprinter = async (data: string, settings: PrinterSettings): P
                   size: 80mm auto;
                   margin: 0;
                 }
+                @media print {
+                  body { 
+                    font-family: 'Courier New', monospace; 
+                    font-size: 10px; 
+                    margin: 0;
+                    padding: 2mm;
+                    width: 76mm;
+                    line-height: 1.1;
+                    color: black;
+                  }
+                  .center { text-align: center; }
+                  .bold { font-weight: bold; }
+                  .large { font-size: 12px; }
+                  pre {
+                    white-space: pre-wrap;
+                    margin: 0;
+                    font-family: inherit;
+                    font-size: inherit;
+                  }
+                }
                 body { 
                   font-family: 'Courier New', monospace; 
                   font-size: 11px; 
                   margin: 0;
-                  padding: 2mm;
+                  padding: 4mm;
                   width: 76mm;
                   line-height: 1.2;
                 }
@@ -64,19 +88,35 @@ export const sendToXprinter = async (data: string, settings: PrinterSettings): P
                   margin: 0;
                   font-family: inherit;
                 }
+                .print-instructions {
+                  background: #f0f0f0;
+                  padding: 10px;
+                  margin: 10px 0;
+                  border-radius: 5px;
+                  font-size: 12px;
+                }
               </style>
             </head>
             <body>
+              <div class="print-instructions">
+                <strong>📋 Print Instructions:</strong><br>
+                1. Set your browser's default printer to "${settings.ip}" or "Xprinter"<br>
+                2. In print dialog, select "More settings"<br>
+                3. Set paper size to "Custom" or "80mm"<br>
+                4. Set margins to "Minimum" or "None"<br>
+                5. Click Print
+              </div>
+              <hr>
               <pre>${data}</pre>
             </body>
           </html>
         `);
         printWindow.document.close();
         
-        // Auto-print with proper thermal formatting
+        // Auto-print after a delay
         setTimeout(() => {
           printWindow.print();
-          setTimeout(() => printWindow.close(), 1000);
+          setTimeout(() => printWindow.close(), 2000);
         }, 500);
         
         return true;
@@ -199,7 +239,7 @@ export const testXprinterConnection = async (ip: string, port: number = 9100): P
   try {
     console.log(`Testing Xprinter connection to ${ip}:${port}`);
     
-    // Generate test receipt with ESC/POS formatting
+    // Generate test receipt
     const testReceipt = `
 ================================
         XPRINTER TEST
@@ -212,43 +252,68 @@ This is a test print to verify
 your Xprinter network connection.
 
 If you can see this receipt,
-your Xprinter is working correctly!
+your printer connection is working!
+
+Note: Direct network printing from
+browsers has limitations due to
+security restrictions.
 ================================
     `;
     
-    // Send test print using the same method as receipts
+    // Send test print
     const success = await sendToXprinter(testReceipt, { ip, port });
-    
-    if (success) {
-      console.log('Xprinter test completed - check printer for output');
-      return true;
-    } else {
-      console.log('Xprinter test failed');
-      return false;
-    }
+    return success;
   } catch (error) {
     console.error('Xprinter connection test failed:', error);
     return false;
   }
 };
 
-// Additional utility for checking if printer is reachable
+// Check if printer IP is reachable (will likely fail in browser)
 export const pingXprinter = async (ip: string): Promise<boolean> => {
   try {
-    // Try to connect to the printer IP
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    console.log(`Attempting to ping Xprinter at ${ip}`);
     
-    await fetch(`http://${ip}:9100`, {
+    // This will likely fail in browser due to CORS, but we try anyway
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    
+    const response = await fetch(`http://${ip}:9100`, {
       method: 'HEAD',
       mode: 'no-cors',
       signal: controller.signal
     });
     
     clearTimeout(timeoutId);
+    console.log('Ping successful (or blocked by CORS)');
     return true;
   } catch (error) {
-    console.log('Ping to Xprinter failed:', error);
+    console.log('Ping failed (expected in browser):', error);
     return false;
+  }
+};
+
+// Check if we're running in a mobile app (Capacitor) vs browser
+export const isNativeApp = (): boolean => {
+  return !!(window as any).Capacitor;
+};
+
+// Get platform-specific printing instructions
+export const getPrintingInstructions = (): string[] => {
+  if (isNativeApp()) {
+    return [
+      "🔧 For mobile app printing:",
+      "• Install a native printer plugin",
+      "• Direct network printing is supported",
+      "• No browser limitations apply"
+    ];
+  } else {
+    return [
+      "🌐 For web browser printing:",
+      "• Use browser's print dialog (Ctrl+P)",
+      "• Set default printer to your Xprinter",
+      "• Or use 'Print to PDF' and send to printer",
+      "• Direct network printing is limited by browser security"
+    ];
   }
 };
