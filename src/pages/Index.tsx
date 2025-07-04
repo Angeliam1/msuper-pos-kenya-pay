@@ -3,22 +3,10 @@ import React, { useState } from 'react';
 import { Sidebar } from '@/components/pos/Sidebar';
 import { Dashboard } from '@/components/pos/Dashboard';
 import { ProductManagement } from '@/components/pos/ProductManagement';
-import { CustomerManagement } from '@/components/pos/CustomerManagement';
-import { TransactionHistory } from '@/components/pos/TransactionHistory';
 import { Reports } from '@/components/pos/Reports';
 import { Settings } from '@/components/pos/Settings';
-import { LowStockAlerts } from '@/components/pos/LowStockAlerts';
-import { RoleManagement } from '@/components/pos/RoleManagement';
-import { SupplierManagement } from '@/components/pos/SupplierManagement';
-import { LoyaltyManagement } from '@/components/pos/LoyaltyManagement';
-import { MultiStoreManagement } from '@/components/pos/MultiStoreManagement';
-import { ReturnsManagement } from '@/components/pos/ReturnsManagement';
-import { ExpenseManagement } from '@/components/pos/ExpenseManagement';
-import { PurchaseManagement } from '@/components/pos/PurchaseManagement';
-import { HirePurchase } from '@/components/pos/HirePurchase';
 import { OnlineStoreManager } from '@/components/online-store/OnlineStoreManager';
-import { ProductCatalog } from '@/components/pos/ProductCatalog';
-import { StockTake } from '@/components/pos/StockTake';
+import { SuperAdminStoreManager } from '@/components/pos/SuperAdminStoreManager';
 import { ThemeProvider } from '@/components/pos/ThemeProvider';
 import { StoreProvider } from '@/contexts/StoreContext';
 import { Button } from '@/components/ui/button';
@@ -68,72 +56,8 @@ const Index = () => {
     .reduce((sum, t) => sum + t.total, 0);
   const transactionCount = transactions.length;
 
-  // Mock current attendant for components that need it
-  const currentAttendant = attendants.length > 0 ? attendants[0] : {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@store.com',
-    phone: '0712345678',
-    role: 'admin' as const,
-    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
-    isActive: true,
-    pin: '1234',
-    createdAt: new Date()
-  };
-
   const handleSaveSettings = (settings: any) => {
     console.log('Settings saved:', settings);
-  };
-
-  const handleAddAttendant = (attendant: any) => {
-    console.log('Add attendant:', attendant);
-  };
-
-  const handleUpdateAttendant = (id: string, updates: any) => {
-    console.log('Update attendant:', id, updates);
-  };
-
-  const handleAddSupplier = (supplier: any) => {
-    console.log('Add supplier:', supplier);
-  };
-
-  const handleUpdateSupplier = (id: string, updates: any) => {
-    console.log('Update supplier:', id, updates);
-  };
-
-  const handleDeleteSupplier = (id: string) => {
-    console.log('Delete supplier:', id);
-  };
-
-  const handleUpdateCustomer = (id: string, updates: any) => {
-    console.log('Update customer:', id, updates);
-  };
-
-  const handleRefundTransaction = (id: string, reason: string) => {
-    console.log('Refund transaction:', id, reason);
-  };
-
-  const handleAddExpense = (expense: any) => {
-    console.log('Add expense:', expense);
-  };
-
-  const handleCreateHirePurchase = (hirePurchase: any) => {
-    console.log('Create hire purchase:', hirePurchase);
-    return `hp-${Date.now()}`;
-  };
-
-  const handleCancelHirePurchase = () => {
-    console.log('Cancel hire purchase');
-  };
-
-  const storeSettings = {
-    smsEnabled: true,
-    businessName: 'DIGITAL DEN',
-    businessPhone: '0725333337',
-    mpesaPaybill: '174379',
-    mpesaAccount: '9951109',
-    hirePurchaseTemplate: 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
-    smsProvider: 'phone'
   };
 
   const renderContent = () => {
@@ -150,14 +74,6 @@ const Index = () => {
             products={products}
           />
         );
-      case 'products':
-        return <ProductCatalog />;
-      case 'stock-take':
-        return <StockTake />;
-      case 'customers':
-        return <CustomerManagement />;
-      case 'history':
-        return <TransactionHistory transactions={transactions} />;
       case 'reports':
         return (
           <Reports
@@ -168,67 +84,10 @@ const Index = () => {
         );
       case 'settings':
         return <Settings onSaveSettings={handleSaveSettings} />;
-      case 'alerts':
-        return <LowStockAlerts products={products} />;
-      case 'staff':
-        return (
-          <RoleManagement
-            attendants={attendants}
-            currentAttendant={currentAttendant}
-            onAddAttendant={handleAddAttendant}
-            onUpdateAttendant={handleUpdateAttendant}
-          />
-        );
-      case 'suppliers':
-        return (
-          <SupplierManagement
-            suppliers={suppliers}
-            onAddSupplier={handleAddSupplier}
-            onUpdateSupplier={handleUpdateSupplier}
-            onDeleteSupplier={handleDeleteSupplier}
-          />
-        );
-      case 'loyalty':
-        return (
-          <LoyaltyManagement
-            customers={customers}
-            onUpdateCustomer={handleUpdateCustomer}
-          />
-        );
-      case 'stores':
-        return <MultiStoreManagement />;
-      case 'returns':
-        return (
-          <ReturnsManagement
-            transactions={transactions}
-            onRefundTransaction={handleRefundTransaction}
-          />
-        );
-      case 'expenses':
-        return (
-          <ExpenseManagement
-            expenses={expenses}
-            attendants={attendants}
-            currentAttendant={currentAttendant}
-            onAddExpense={handleAddExpense}
-          />
-        );
-      case 'purchases':
-        return <PurchaseManagement />;
-      case 'hire-purchase':
-        return (
-          <HirePurchase
-            totalAmount={1000}
-            customers={customers}
-            hirePurchases={[]}
-            cartItems={[]}
-            storeSettings={storeSettings}
-            onCreateHirePurchase={handleCreateHirePurchase}
-            onCancel={handleCancelHirePurchase}
-          />
-        );
       case 'online-store':
         return <OnlineStoreManager />;
+      case 'stores':
+        return <SuperAdminStoreManager />;
       default:
         return <ProductManagement />;
     }

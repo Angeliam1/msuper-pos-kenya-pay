@@ -5,25 +5,12 @@ import { cn } from '@/lib/utils';
 import { 
   ShoppingCart, 
   BarChart3, 
-  History, 
-  Package, 
-  Users, 
-  CreditCard, 
-  Shield, 
-  AlertTriangle, 
+  FileText, 
   Settings as SettingsIcon, 
-  FileText,
   Menu,
   X,
-  Gift,
-  Store,
-  Receipt,
-  DollarSign,
-  ShoppingBag,
-  TrendingUp,
-  MessageSquare,
-  Truck,
-  Globe
+  Globe,
+  Store
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,20 +25,7 @@ const navigationItems = [
   { id: 'online-store', label: 'Online Store', icon: Globe },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'reports', label: 'Reports', icon: FileText },
-  { id: 'history', label: 'History', icon: History },
-  { id: 'products', label: 'Products', icon: Package },
-  { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'suppliers', label: 'Suppliers', icon: Truck },
-  { id: 'loyalty', label: 'Loyalty Points', icon: Gift },
   { id: 'stores', label: 'Multi Store', icon: Store },
-  { id: 'returns', label: 'Returns', icon: Receipt },
-  { id: 'expenses', label: 'Expenses', icon: DollarSign },
-  { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
-  { id: 'stock-take', label: 'Stock Take', icon: TrendingUp },
-  { id: 'sms', label: 'SMS Center', icon: MessageSquare },
-  { id: 'hire-purchase', label: 'Hire Purchase', icon: CreditCard },
-  { id: 'staff', label: 'Staff', icon: Shield },
-  { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
