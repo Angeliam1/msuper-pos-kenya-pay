@@ -400,6 +400,86 @@ export const ProductManagement: React.FC = () => {
     autoPrintReceipt: false
   };
 
+  // Show receipt as a full-screen component when needed
+  if (showReceipt && currentTransaction) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+        <Receipt
+          transaction={currentTransaction}
+          onClose={() => {
+            setShowReceipt(false);
+            setCurrentTransaction(null);
+            setSelectedCustomer({
+              id: 'walk-in',
+              name: 'Walk-in Customer',
+              email: '',
+              phone: '',
+              address: '',
+              loyaltyPoints: 0,
+              creditLimit: 0,
+              outstandingBalance: 0,
+              createdAt: new Date()
+            });
+          }}
+          storeSettings={storeSettings}
+          customer={selectedCustomer.id !== 'walk-in' ? {
+            name: selectedCustomer.name,
+            phone: selectedCustomer.phone,
+            address: selectedCustomer.address || '',
+            loyaltyPoints: selectedCustomer.loyaltyPoints
+          } : undefined}
+        />
+      </div>
+    );
+  }
+
+  // Show payment method screens as full-screen overlays
+  if (showMPesaPayment) {
+    return (
+      <div className="fixed inset-0 bg-white z-50">
+        <MPesaPayment
+          amount={calculateTotal()}
+          onSuccess={(reference: string) => {
+            completeTransaction([{ method: 'mpesa', amount: calculateTotal(), reference }]);
+            setShowMPesaPayment(false);
+          }}
+          onCancel={() => setShowMPesaPayment(false)}
+        />
+      </div>
+    );
+  }
+
+  if (showSplitPayment) {
+    return (
+      <div className="fixed inset-0 bg-white z-50">
+        <SplitPayment
+          totalAmount={calculateTotal()}
+          customers={customers}
+          onConfirmPayment={completeTransaction}
+          onCancel={() => setShowSplitPayment(false)}
+        />
+      </div>
+    );
+  }
+
+  if (showHirePurchase) {
+    return (
+      <div className="fixed inset-0 bg-white z-50">
+        <HirePurchase
+          totalAmount={calculateTotal()}
+          customers={customers}
+          cartItems={cart}
+          onCreateHirePurchase={(hirePurchaseData) => {
+            completeTransaction([{ method: 'credit', amount: hirePurchaseData.downPayment }]);
+            setShowHirePurchase(false);
+            return `HP-${Date.now()}`;
+          }}
+          onCancel={() => setShowHirePurchase(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       {/* Header */}
@@ -719,60 +799,6 @@ export const ProductManagement: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Payment Method Dialogs */}
-      {showSplitPayment && (
-        <SplitPayment
-          totalAmount={calculateTotal()}
-          customers={customers}
-          onConfirmPayment={completeTransaction}
-          onCancel={() => setShowSplitPayment(false)}
-        />
-      )}
-
-      {showMPesaPayment && (
-        <MPesaPayment
-          amount={calculateTotal()}
-          onSuccess={(reference: string) => {
-            completeTransaction([{ method: 'mpesa', amount: calculateTotal(), reference }]);
-            setShowMPesaPayment(false);
-          }}
-          onCancel={() => setShowMPesaPayment(false)}
-        />
-      )}
-
-      {showHirePurchase && (
-        <HirePurchase
-          totalAmount={calculateTotal()}
-          customers={customers}
-          cartItems={cart}
-          onCreateHirePurchase={(hirePurchaseData) => {
-            completeTransaction([{ method: 'credit', amount: hirePurchaseData.downPayment }]);
-            setShowHirePurchase(false);
-            return `HP-${Date.now()}`;
-          }}
-          onCancel={() => setShowHirePurchase(false)}
-        />
-      )}
-
-      {/* Receipt Dialog */}
-      {showReceipt && currentTransaction && (
-        <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
-          <DialogContent className="max-w-md">
-            <Receipt
-              transaction={currentTransaction}
-              onClose={() => setShowReceipt(false)}
-              storeSettings={storeSettings}
-              customer={selectedCustomer.id !== 'walk-in' ? {
-                name: selectedCustomer.name,
-                phone: selectedCustomer.phone,
-                address: selectedCustomer.address || '',
-                loyaltyPoints: selectedCustomer.loyaltyPoints
-              } : undefined}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 };
