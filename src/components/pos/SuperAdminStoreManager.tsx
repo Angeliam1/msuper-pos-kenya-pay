@@ -51,8 +51,9 @@ export const SuperAdminStoreManager: React.FC = () => {
   const handleAddStore = () => {
     if (newStore.name && newStore.address) {
       const regCode = generateRegistrationCode();
+      const storeId = `store-${Date.now()}`;
       
-      const newStoreData = addStore({
+      addStore({
         name: newStore.name,
         address: newStore.address,
         phone: newStore.phone,
@@ -63,9 +64,6 @@ export const SuperAdminStoreManager: React.FC = () => {
         isActive: false,
         createdAt: new Date()
       });
-
-      // Get the ID from the newly created store
-      const storeId = newStoreData.id;
 
       setRegistrationCodes(prev => ({
         ...prev,
