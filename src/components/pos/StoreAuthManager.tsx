@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Store, UserPlus, Key, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useSupabaseAuth';
 import { StoreLocation } from '@/types';
 
 interface StoreAuthManagerProps {
@@ -22,37 +23,50 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
   onRegisterStore
 }) => {
   const { toast } = useToast();
+  const { signIn, signUp, user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
     storeName: store.name,
     ownerName: '',
     email: '',
     phone: store.phone,
     address: store.address,
-    username: '',
     password: '',
     confirmPassword: ''
   });
 
-  const handleLogin = () => {
-    // Simple demo authentication - in real app, this would be server-side
-    if (loginData.username === 'admin' && loginData.password === 'admin') {
+  const handleLogin = async () => {
+    if (!loginData.email || !loginData.password) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signIn(loginData.email, loginData.password);
+    
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: error,
+        variant: "destructive"
+      });
+    } else {
       onAuthenticated();
       toast({
         title: "Login Successful",
         description: `Welcome to ${store.name}`,
       });
-    } else {
-      toast({
-        title: "Login Failed",
-        description: "Invalid credentials. Use admin/admin for demo",
-        variant: "destructive"
-      });
     }
+    setLoading(false);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (registerData.password !== registerData.confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -62,7 +76,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
       return;
     }
 
-    if (!registerData.ownerName || !registerData.email || !registerData.username || !registerData.password) {
+    if (!registerData.ownerName || !registerData.email || !registerData.password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -71,19 +85,42 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
       return;
     }
 
-    onRegisterStore({
-      ...registerData,
-      storeId: store.id,
-      registeredAt: new Date()
+    setLoading(true);
+    const { error } = await signUp(registerData.email, registerData.password, {
+      storeName: registerData.storeName,
+      ownerName: registerData.ownerName,
+      phone: registerData.phone,
+      address: registerData.address
     });
 
-    toast({
-      title: "Store Registered",
-      description: `${store.name} has been registered successfully`,
-    });
+    if (error) {
+      toast({
+        title: "Registration Failed",
+        description: error,
+        variant: "destructive"
+      });
+    } else {
+      onRegisterStore({
+        ...registerData,
+        storeId: store.id,
+        registeredAt: new Date()
+      });
 
-    onAuthenticated();
+      toast({
+        title: "Store Registered",
+        description: `${store.name} has been registered successfully. Please check your email to verify your account.`,
+      });
+
+      onAuthenticated();
+    }
+    setLoading(false);
   };
+
+  // If user is already authenticated, show authenticated state
+  if (user) {
+    onAuthenticated();
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -97,7 +134,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
           <CardTitle className="text-xl">{store.name}</CardTitle>
           <p className="text-sm text-gray-600">{store.address}</p>
           <Badge variant="outline" className="w-fit mx-auto mt-2">
-            Independent Store Access
+            Secure Store Access
           </Badge>
         </CardHeader>
         
@@ -109,6 +146,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                 size="sm"
                 onClick={() => setIsLogin(true)}
                 className="flex items-center gap-2"
+                disabled={loading}
               >
                 <Key className="h-4 w-4" />
                 Login
@@ -118,6 +156,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                 size="sm"
                 onClick={() => setIsLogin(false)}
                 className="flex items-center gap-2"
+                disabled={loading}
               >
                 <UserPlus className="h-4 w-4" />
                 Register
@@ -128,12 +167,14 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
           {isLogin ? (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  value={loginData.username}
-                  onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="Enter username"
+                  id="email"
+                  type="email"
+                  value={loginData.email}
+                  onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter your email"
+                  disabled={loading}
                 />
               </div>
               <div>
@@ -143,15 +184,13 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                   type="password"
                   value={loginData.password}
                   onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Enter password"
+                  placeholder="Enter your password"
+                  disabled={loading}
                 />
               </div>
-              <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                Demo credentials: admin / admin
-              </div>
-              <Button onClick={handleLogin} className="w-full">
+              <Button onClick={handleLogin} className="w-full" disabled={loading}>
                 <Shield className="h-4 w-4 mr-2" />
-                Access Store
+                {loading ? 'Signing In...' : 'Access Store'}
               </Button>
             </div>
           ) : (
@@ -164,6 +203,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                     value={registerData.storeName}
                     onChange={(e) => setRegisterData(prev => ({ ...prev, storeName: e.target.value }))}
                     placeholder="Store name"
+                    disabled={loading}
                   />
                 </div>
                 <div>
@@ -173,6 +213,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                     value={registerData.ownerName}
                     onChange={(e) => setRegisterData(prev => ({ ...prev, ownerName: e.target.value }))}
                     placeholder="Your name"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -184,27 +225,18 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                   value={registerData.email}
                   onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="your@email.com"
+                  disabled={loading}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="regUsername">Username</Label>
-                  <Input
-                    id="regUsername"
-                    value={registerData.username}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, username: e.target.value }))}
-                    placeholder="Choose username"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={registerData.phone}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="+254..."
-                  />
-                </div>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={registerData.phone}
+                  onChange={(e) => setRegisterData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+254..."
+                  disabled={loading}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -215,6 +247,7 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                     value={registerData.password}
                     onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="Password"
+                    disabled={loading}
                   />
                 </div>
                 <div>
@@ -225,18 +258,19 @@ export const StoreAuthManager: React.FC<StoreAuthManagerProps> = ({
                     value={registerData.confirmPassword}
                     onChange={(e) => setRegisterData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     placeholder="Confirm password"
+                    disabled={loading}
                   />
                 </div>
               </div>
-              <Button onClick={handleRegister} className="w-full">
+              <Button onClick={handleRegister} className="w-full" disabled={loading}>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Register Independent Store
+                {loading ? 'Creating Account...' : 'Register Secure Store'}
               </Button>
             </div>
           )}
           
           <div className="text-xs text-center text-gray-500 pt-4 border-t">
-            This store operates independently with its own settings, products, and data
+            This store uses secure authentication with encrypted data storage
           </div>
         </CardContent>
       </Card>

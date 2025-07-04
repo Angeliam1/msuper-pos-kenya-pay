@@ -1,80 +1,40 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Registration } from './Registration';
 import { PinLogin } from './PinLogin';
 import { StaffLogin } from './StaffLogin';
+import { SecureLogin } from './SecureLogin';
+import { SecureRegistration } from './SecureRegistration';
+import { useAuth } from '@/hooks/useSupabaseAuth';
 import { Attendant } from '@/types';
 
-interface User {
-  id: string;
-  storeName: string;
-  adminEmail: string;
-  password: string;
-  pin: string;
-  phone: string;
-  currency: string;
-  theme: string;
-  createdAt: Date;
-}
-
 interface AuthManagerProps {
-  onLogin: (user: User, attendant?: Attendant) => void;
+  onLogin: (attendant?: Attendant) => void;
   attendants?: Attendant[];
 }
 
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
+  const { user } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loginError, setLoginError] = useState<string>('');
 
-  useEffect(() => {
-    // Load users from localStorage
-    const savedUsers = localStorage.getItem('pos_users');
-    if (savedUsers) {
-      const parsedUsers = JSON.parse(savedUsers);
-      setUsers(parsedUsers);
-      if (parsedUsers.length > 0) {
-        setCurrentScreen('login');
-        setSelectedUser(parsedUsers[0]); // For demo, use first user
-      }
+  // If user is already authenticated, handle login
+  React.useEffect(() => {
+    if (user) {
+      onLogin();
     }
-  }, []);
+  }, [user, onLogin]);
 
-  const handleRegistration = (userData: any) => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      storeName: userData.storeName,
-      adminEmail: userData.adminEmail,
-      password: userData.password,
-      pin: userData.pin,
-      phone: userData.phone,
-      currency: userData.currency,
-      theme: 'light',
-      createdAt: new Date()
-    };
-
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    localStorage.setItem('pos_users', JSON.stringify(updatedUsers));
-    
-    setSelectedUser(newUser);
-    setCurrentScreen('login');
-  };
-
-  const handlePinLogin = (enteredPin: string) => {
-    if (selectedUser && selectedUser.pin === enteredPin) {
-      setLoginError('');
-      onLogin(selectedUser);
-    } else {
-      setLoginError('Invalid PIN. Please try again.');
-    }
+  const handleRegistrationComplete = () => {
+    setCurrentScreen('welcome');
   };
 
   const handleStaffLogin = (attendant: Attendant) => {
-    if (selectedUser) {
+    if (user) {
       setLoginError('');
-      onLogin(selectedUser, attendant);
+      onLogin(attendant);
+    } else {
+      setLoginError('System authentication required first');
     }
   };
 
@@ -83,7 +43,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
       <div className="min-h-screen bg-primary flex items-center justify-center p-4">
         <div className="text-center space-y-6">
           <h1 className="text-4xl font-bold text-primary-foreground">MSUPER POS</h1>
-          <p className="text-primary-foreground/80">Point of Sale System - Kenya</p>
+          <p className="text-primary-foreground/80">Secure Point of Sale System - Kenya</p>
           <div className="space-y-4">
             <button
               onClick={() => setCurrentScreen('register')}
@@ -91,27 +51,19 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
             >
               Register New Store
             </button>
-            {users.length > 0 && (
-              <>
-                <button
-                  onClick={() => {
-                    setSelectedUser(users[0]);
-                    setCurrentScreen('login');
-                  }}
-                  className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
-                >
-                  Owner Login
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedUser(users[0]);
-                    setCurrentScreen('staff-login');
-                  }}
-                  className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
-                >
-                  Staff Login
-                </button>
-              </>
+            <button
+              onClick={() => setCurrentScreen('login')}
+              className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+            >
+              Secure Login
+            </button>
+            {user && (
+              <button
+                onClick={() => setCurrentScreen('staff-login')}
+                className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+              >
+                Staff Login
+              </button>
             )}
           </div>
         </div>
@@ -121,25 +73,22 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
 
   if (currentScreen === 'register') {
     return (
-      <Registration
-        onComplete={handleRegistration}
+      <SecureRegistration
+        onComplete={handleRegistrationComplete}
         onBack={() => setCurrentScreen('welcome')}
       />
     );
   }
 
-  if (currentScreen === 'login' && selectedUser) {
+  if (currentScreen === 'login') {
     return (
-      <PinLogin
-        onLogin={handlePinLogin}
+      <SecureLogin
         onBack={() => setCurrentScreen('welcome')}
-        storeName={selectedUser.storeName}
-        error={loginError}
       />
     );
   }
 
-  if (currentScreen === 'staff-login' && selectedUser) {
+  if (currentScreen === 'staff-login') {
     return (
       <StaffLogin
         onLogin={handleStaffLogin}

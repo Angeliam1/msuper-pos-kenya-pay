@@ -1,6 +1,6 @@
 
 -- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
+ALTER DATABASE postgres SET "app.jwt_secret" TO 'secure-jwt-secret-key-replace-with-strong-random-value-in-production';
 
 -- Create profiles table for user metadata
 CREATE TABLE IF NOT EXISTS profiles (
@@ -24,8 +24,12 @@ CREATE TABLE IF NOT EXISTS attendants (
   is_active BOOLEAN DEFAULT true,
   assigned_store_id UUID,
   pin TEXT,
+  password_hash TEXT,
   work_schedule JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_login TIMESTAMP WITH TIME ZONE,
+  failed_login_attempts INTEGER DEFAULT 0,
+  locked_until TIMESTAMP WITH TIME ZONE
 );
 
 -- Create customers table
@@ -117,6 +121,19 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create security audit log table
+CREATE TABLE IF NOT EXISTS security_audit_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  action TEXT NOT NULL,
+  resource_type TEXT,
+  resource_id TEXT,
+  ip_address INET,
+  user_agent TEXT,
+  details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable RLS on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendants ENABLE ROW LEVEL SECURITY;
@@ -126,6 +143,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE security_audit_log ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Profiles policies
@@ -166,10 +184,15 @@ CREATE POLICY "Users can view own expenses" ON expenses FOR SELECT USING (auth.u
 CREATE POLICY "Users can insert own expenses" ON expenses FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own expenses" ON expenses FOR UPDATE USING (auth.uid() = user_id);
 
--- Attendants policies
+-- Attendants policies (now includes DELETE)
 CREATE POLICY "Users can view own attendants" ON attendants FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own attendants" ON attendants FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own attendants" ON attendants FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own attendants" ON attendants FOR DELETE USING (auth.uid() = user_id);
+
+-- Security audit log policies
+CREATE POLICY "Users can view own audit logs" ON security_audit_log FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "System can insert audit logs" ON security_audit_log FOR INSERT WITH CHECK (true);
 
 -- Create functions for automatic profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -186,7 +209,51 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Create function for security logging
+CREATE OR REPLACE FUNCTION public.log_security_event(
+  p_action TEXT,
+  p_resource_type TEXT DEFAULT NULL,
+  p_resource_id TEXT DEFAULT NULL,
+  p_details JSONB DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+  INSERT INTO public.security_audit_log (
+    user_id,
+    action,
+    resource_type,
+    resource_id,
+    details
+  ) VALUES (
+    auth.uid(),
+    p_action,
+    p_resource_type,
+    p_resource_id,
+    p_details
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create function for password hashing
+CREATE OR REPLACE FUNCTION public.hash_password(password TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  -- In production, use proper bcrypt or argon2 hashing
+  RETURN encode(digest(password || gen_random_uuid()::text, 'sha256'), 'hex');
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create trigger for new user profile creation
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_attendants_user_id ON attendants(user_id);
+CREATE INDEX IF NOT EXISTS idx_attendants_email ON attendants(email);
+CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_products_user_id ON products(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_audit_log_user_id ON security_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_audit_log_created_at ON security_audit_log(created_at);
