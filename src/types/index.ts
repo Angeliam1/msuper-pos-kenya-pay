@@ -168,7 +168,7 @@ export interface StoreLocation {
   phone: string;
   managerId: string;
   manager: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending' | 'suspended';
   totalSales: number;
   isActive: boolean;
   createdAt: Date;

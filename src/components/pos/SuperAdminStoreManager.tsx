@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,6 +59,8 @@ export const SuperAdminStoreManager: React.FC = () => {
         address: newStore.address,
         phone: newStore.phone,
         manager: newStore.manager,
+        managerId: '',
+        totalSales: 0,
         status: 'pending',
         isActive: false,
         createdAt: new Date()
@@ -83,7 +84,8 @@ export const SuperAdminStoreManager: React.FC = () => {
   const handleToggleStoreStatus = (storeId: string) => {
     const store = stores.find(s => s.id === storeId);
     if (store) {
-      updateStore(storeId, { isActive: !store.isActive, status: !store.isActive ? 'active' : 'suspended' });
+      const newStatus = !store.isActive ? 'active' : 'suspended';
+      updateStore(storeId, { isActive: !store.isActive, status: newStatus });
       toast({
         title: store.isActive ? "Store Suspended" : "Store Activated",
         description: `${store.name} has been ${store.isActive ? 'suspended' : 'activated'}`,
