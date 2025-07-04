@@ -28,17 +28,17 @@ export const WhatsAppChat: React.FC = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Now with bounce animation */}
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className="rounded-full w-14 h-14 bg-green-500 hover:bg-green-600 shadow-lg"
+          className="rounded-full w-14 h-14 bg-green-500 hover:bg-green-600 shadow-lg animate-bounce hover:animate-none transition-all duration-300"
           size="icon"
         >
           {isOpen ? (
             <X className="h-6 w-6 text-white" />
           ) : (
-            <MessageCircle className="h-6 w-6 text-white" />
+            <MessageCircle className="h-6 w-6 text-white animate-pulse" />
           )}
         </Button>
         
@@ -53,7 +53,7 @@ export const WhatsAppChat: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-80 max-w-[90vw] z-50 shadow-xl">
+        <Card className="fixed bottom-24 right-6 w-80 max-w-[90vw] z-50 shadow-xl animate-scale-in">
           <div className="bg-green-500 text-white p-4 rounded-t-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -85,7 +85,7 @@ export const WhatsAppChat: React.FC = () => {
                   key={index}
                   variant="outline"
                   size="sm"
-                  className="w-full text-left justify-start h-auto p-2 text-xs"
+                  className="w-full text-left justify-start h-auto p-2 text-xs hover:bg-green-50 transition-colors"
                   onClick={() => openWhatsApp(msg)}
                 >
                   {msg}

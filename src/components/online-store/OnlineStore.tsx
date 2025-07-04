@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ShoppingCart, User, Store, Phone, Mail, Play, Search, Menu, MapPin, Star, Filter, ChevronDown, X } from 'lucide-react';
+import { ShoppingCart, User, Store, Phone, Mail, Play, Search, Menu, MapPin, Star, Filter, ChevronDown, X, Map } from 'lucide-react';
 import { ProductCatalog } from './ProductCatalog';
 import { ShoppingCartComponent } from './ShoppingCartComponent';
 import { CheckoutProcess } from './CheckoutProcess';
@@ -36,8 +35,10 @@ export const OnlineStore: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('Relevance');
   const [showFilters, setShowFilters] = useState(false);
+  const [showLocationMap, setShowLocationMap] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState('Nairobi, Kenya');
 
-  // Mock online store products - separate from POS products
+  // Mock online store products with proper image structure
   const onlineProducts: OnlineProduct[] = [
     {
       id: 'online-1',
@@ -48,14 +49,17 @@ export const OnlineStore: React.FC = () => {
       buyingCost: 120000,
       wholesalePrice: 130000,
       retailPrice: 150000,
-      price: 135000, // Sales price
-      originalPrice: 150000,
-      salesPrice: 135000,
+      price: 125000, // Now price
+      originalPrice: 150000, // Was price
+      salesPrice: 125000,
       offerPrice: 125000,
       stock: 25,
       supplierId: 'supplier-1',
       barcode: '123456789',
-      images: ['iphone1.jpg', 'iphone2.jpg', 'iphone3.jpg'],
+      images: [
+        'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop'
+      ],
       tags: ['Apple', 'Premium', 'Latest', '5G'],
       isFeatured: true,
       createdAt: new Date(),
@@ -70,13 +74,16 @@ export const OnlineStore: React.FC = () => {
       buyingCost: 140000,
       wholesalePrice: 150000,
       retailPrice: 180000,
-      price: 165000,
-      originalPrice: 180000,
-      salesPrice: 165000,
+      price: 155000, // Now price
+      originalPrice: 180000, // Was price
+      salesPrice: 155000,
       stock: 15,
       supplierId: 'supplier-1',
       barcode: '123456790',
-      images: ['macbook1.jpg', 'macbook2.jpg'],
+      images: [
+        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop'
+      ],
       tags: ['Apple', 'MacBook', 'M3', 'Laptop'],
       isFeatured: true,
       createdAt: new Date(),
@@ -136,6 +143,11 @@ export const OnlineStore: React.FC = () => {
 
   const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
 
+  const handleLocationSelect = () => {
+    // This would integrate with a map service in a real app
+    setShowLocationMap(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
       {/* Mobile Header - Digital Den Style */}
@@ -167,9 +179,13 @@ export const OnlineStore: React.FC = () => {
             <div className="flex items-center flex-1">
               <MapPin className="h-4 w-4 text-gray-500 mr-1" />
               <span className="text-sm text-gray-700">Deliver to</span>
-              <span className="text-sm font-semibold text-naivas-teal ml-1">Nairobi, Kenya</span>
+              <span className="text-sm font-semibold text-naivas-teal ml-1">{deliveryLocation}</span>
             </div>
-            <button className="bg-naivas-orange text-white px-3 py-1 rounded text-sm">
+            <button 
+              onClick={handleLocationSelect}
+              className="bg-naivas-orange text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+            >
+              <Map className="h-3 w-3" />
               Change
             </button>
           </div>
@@ -178,7 +194,7 @@ export const OnlineStore: React.FC = () => {
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
-              placeholder="Search for electronics"
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-12 h-12 rounded-lg border-gray-200 bg-gray-50"
@@ -236,34 +252,49 @@ export const OnlineStore: React.FC = () => {
               {onlineProducts.length} Products
             </div>
 
-            {/* Products Grid - Digital Den Style */}
+            {/* Products Grid - with proper images and Was/Now pricing */}
             <div className="grid grid-cols-2 gap-3">
               {onlineProducts.map(product => {
-                const discount = Math.round(((product.originalPrice - (product.offerPrice || product.salesPrice)) / product.originalPrice) * 100);
-                const currentPrice = product.offerPrice || product.salesPrice;
+                const wasPrice = product.originalPrice;
+                const nowPrice = product.offerPrice || product.salesPrice || product.price;
+                const discount = Math.round(((wasPrice - nowPrice) / wasPrice) * 100);
                 
                 return (
                   <Card key={product.id} className="relative overflow-hidden shadow-sm">
                     <CardContent className="p-3">
                       {/* Discount Badge */}
                       {discount > 0 && (
-                        <div className="absolute top-2 left-2 bg-naivas-orange text-white px-2 py-1 rounded text-xs font-bold">
+                        <div className="absolute top-2 left-2 bg-naivas-orange text-white px-2 py-1 rounded text-xs font-bold z-10">
                           {discount}% off
                         </div>
                       )}
                       
                       {/* Feature Deal Badge */}
                       {product.isFeatured && (
-                        <div className="absolute top-8 left-0 bg-green-700 text-white px-2 py-1 rounded-r text-xs font-bold flex items-center">
+                        <div className="absolute top-8 left-0 bg-green-700 text-white px-2 py-1 rounded-r text-xs font-bold flex items-center z-10">
                           <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
                           Featured Deals
                         </div>
                       )}
 
-                      {/* Product Image Placeholder */}
-                      <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                        <div className="text-2xl font-bold text-gray-400">
-                          {product.name.substring(0, 2).toUpperCase()}
+                      {/* Product Image */}
+                      <div className="aspect-square bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                        {product.images && product.images.length > 0 ? (
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to placeholder if image fails
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center hidden">
+                          <div className="text-2xl font-bold text-gray-400">
+                            {product.name.substring(0, 2).toUpperCase()}
+                          </div>
                         </div>
                       </div>
 
@@ -273,18 +304,21 @@ export const OnlineStore: React.FC = () => {
                           {product.name}
                         </h3>
                         
+                        {/* Was/Now Pricing */}
                         <div className="space-y-1">
-                          <div className="text-lg font-bold text-naivas-teal">
-                            {formatPrice(currentPrice)}
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold text-naivas-teal">
+                              KES {nowPrice.toLocaleString()}
+                            </span>
+                            {wasPrice > nowPrice && (
+                              <span className="text-sm text-gray-500 line-through">
+                                KES {wasPrice.toLocaleString()}
+                              </span>
+                            )}
                           </div>
-                          {product.originalPrice !== currentPrice && (
-                            <div className="text-sm text-gray-500 line-through">
-                              {formatPrice(product.originalPrice)}
-                            </div>
-                          )}
                           {discount > 0 && (
                             <div className="text-sm text-green-600">
-                              Save KES {(product.originalPrice - currentPrice).toLocaleString()}
+                              Save KES {(wasPrice - nowPrice).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -423,8 +457,43 @@ export const OnlineStore: React.FC = () => {
         </div>
       </div>
 
-      {/* WhatsApp Chat Component */}
+      {/* WhatsApp Chat Component - Now with animation */}
       <WhatsAppChat />
+
+      {/* Location Map Modal */}
+      {showLocationMap && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                Select Delivery Location
+                <Button variant="ghost" size="sm" onClick={() => setShowLocationMap(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                <div className="text-gray-500 text-center">
+                  <Map className="h-8 w-8 mx-auto mb-2" />
+                  <p>Map integration would go here</p>
+                </div>
+              </div>
+              <Input
+                placeholder="Enter your address"
+                value={deliveryLocation}
+                onChange={(e) => setDeliveryLocation(e.target.value)}
+              />
+              <Button 
+                className="w-full"
+                onClick={() => setShowLocationMap(false)}
+              >
+                Confirm Location
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
