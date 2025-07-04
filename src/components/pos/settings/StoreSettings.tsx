@@ -74,6 +74,8 @@ export const StoreSettings: React.FC<StoreSettingsProps> = ({ settings, onSettin
       supplierId: '',
       description: quickProduct.description,
       barcode: `${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
     setQuickProduct({
