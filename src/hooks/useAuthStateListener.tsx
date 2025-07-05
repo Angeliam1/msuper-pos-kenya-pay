@@ -12,16 +12,18 @@ export const useAuthStateListener = (
 ) => {
   useEffect(() => {
     if (!isEnvironmentValid) {
-      console.error('Environment validation failed');
+      console.log('Environment validation failed, skipping auth setup');
       setLoading(false);
       return;
     }
 
     if (!supabase) {
-      console.error('Supabase not configured properly');
+      console.error('Supabase client not available');
       setLoading(false);
       return;
     }
+
+    console.log('Setting up authentication listener...');
 
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -33,6 +35,7 @@ export const useAuthStateListener = (
         });
       }
       
+      console.log('Session check result:', session ? 'Active session found' : 'No active session');
       setUser(session?.user ?? null);
       setLoading(false);
 
@@ -45,6 +48,7 @@ export const useAuthStateListener = (
     // Listen for auth changes with enhanced logging
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session ? 'with session' : 'without session');
         setUser(session?.user ?? null);
         setLoading(false);
         
@@ -76,6 +80,9 @@ export const useAuthStateListener = (
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, [user?.id, isEnvironmentValid, setUser, setLoading, setAttendant]);
 };

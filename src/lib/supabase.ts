@@ -1,19 +1,45 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Dynamic environment variable access
+const getSupabaseUrl = () => import.meta.env.VITE_SUPABASE_URL || '';
+const getSupabaseAnonKey = () => import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Validate environment variables
+let supabaseUrl = getSupabaseUrl();
+let supabaseAnonKey = getSupabaseAnonKey();
+
+// Enhanced validation with detailed logging
+const logEnvironmentStatus = () => {
+  console.log('=== Supabase Environment Status ===');
+  console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
+  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING');
+  console.log('URL length:', supabaseUrl.length);
+  console.log('Key length:', supabaseAnonKey.length);
+  console.log('====================================');
+};
+
+// Initial logging
+logEnvironmentStatus();
+
+// Validate environment variables with detailed feedback
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables');
   console.error('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Supabase project settings');
   console.error('You can find these values in your Supabase Dashboard > Settings > API');
 }
 
-// Create Supabase client with security configurations
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+// Create Supabase client with enhanced error handling
+const createSupabaseClient = () => {
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
+  
+  if (!url || !key) {
+    console.warn('Cannot create Supabase client: missing environment variables');
+    return null;
+  }
+
+  try {
+    return createClient(url, key, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -28,8 +54,25 @@ export const supabase = supabaseUrl && supabaseAnonKey
           'X-Client-Info': 'msuper-pos@1.0.0'
         }
       }
-    })
-  : null;
+    });
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error);
+    return null;
+  }
+};
+
+// Initialize client
+export let supabase = createSupabaseClient();
+
+// Function to refresh Supabase client (useful after environment variables are set)
+export const refreshSupabaseClient = () => {
+  console.log('Refreshing Supabase client...');
+  supabaseUrl = getSupabaseUrl();
+  supabaseAnonKey = getSupabaseAnonKey();
+  logEnvironmentStatus();
+  supabase = createSupabaseClient();
+  return supabase;
+};
 
 // Security utility functions
 export const logSecurityEvent = async (
@@ -113,20 +156,29 @@ export const checkRateLimit = (identifier: string, maxRequests: number = 10, win
   return true;
 };
 
-// Environment validation utility
+// Dynamic environment validation utility
 export const validateEnvironment = () => {
+  const currentUrl = getSupabaseUrl();
+  const currentKey = getSupabaseAnonKey();
   const issues = [];
   
-  if (!supabaseUrl) {
+  console.log('Validating environment variables...');
+  console.log('Current URL exists:', !!currentUrl);
+  console.log('Current Key exists:', !!currentKey);
+  
+  if (!currentUrl) {
     issues.push('VITE_SUPABASE_URL is not set');
   }
   
-  if (!supabaseAnonKey) {
+  if (!currentKey) {
     issues.push('VITE_SUPABASE_ANON_KEY is not set');
   }
   
+  const isValid = issues.length === 0;
+  console.log('Environment validation result:', isValid);
+  
   return {
-    isValid: issues.length === 0,
+    isValid,
     issues
   };
 };

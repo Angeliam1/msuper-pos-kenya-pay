@@ -1,14 +1,39 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Shield, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react';
-import { validateEnvironment } from '@/lib/supabase';
+import { Shield, AlertTriangle, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { validateEnvironment, refreshSupabaseClient } from '@/lib/supabase';
 
 export const SecurityConfigChecker: React.FC = () => {
-  const envValidation = validateEnvironment();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+  const [envValidation, setEnvValidation] = useState(() => validateEnvironment());
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    console.log('Manual refresh triggered...');
+    
+    // Wait a moment to show loading state
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Refresh the Supabase client and validate environment
+    refreshSupabaseClient();
+    const newValidation = validateEnvironment();
+    setEnvValidation(newValidation);
+    setLastCheck(new Date());
+    
+    console.log('Manual refresh completed, validation result:', newValidation);
+    
+    if (newValidation.isValid) {
+      // If valid now, reload the page to reinitialize the app
+      window.location.reload();
+    }
+    
+    setIsRefreshing(false);
+  };
 
   if (envValidation.isValid) {
     return (
@@ -30,6 +55,11 @@ export const SecurityConfigChecker: React.FC = () => {
             <Badge variant="destructive">Configuration Required</Badge>
           </div>
           <CardTitle className="text-xl text-red-800">Security Setup Required</CardTitle>
+          {lastCheck && (
+            <p className="text-xs text-gray-500 mt-2">
+              Last checked: {lastCheck.toLocaleTimeString()}
+            </p>
+          )}
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -58,24 +88,27 @@ export const SecurityConfigChecker: React.FC = () => {
               <li>1. Click the green Supabase button in the top right of Lovable</li>
               <li>2. Connect to your Supabase project or create a new one</li>
               <li>3. The environment variables will be automatically configured</li>
-              <li>4. Return here to continue with your secure POS system</li>
+              <li>4. Click "Check Configuration" below to verify the setup</li>
             </ol>
           </div>
 
           <div className="space-y-2">
             <Button 
               className="w-full" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Checking Configuration...' : 'Check Configuration Again'}
+            </Button>
+            
+            <Button 
+              className="w-full" 
               onClick={() => window.open('https://docs.lovable.dev/integrations/supabase/', '_blank')}
+              variant="outline"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               View Supabase Integration Guide
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => window.location.reload()}
-            >
-              Check Configuration Again
             </Button>
           </div>
 
@@ -83,6 +116,7 @@ export const SecurityConfigChecker: React.FC = () => {
             <p>• Environment variables are securely managed by Lovable</p>
             <p>• No sensitive data is stored in your codebase</p>
             <p>• All authentication is handled securely by Supabase</p>
+            <p>• Configuration is checked automatically every 2 seconds initially</p>
           </div>
         </CardContent>
       </Card>
