@@ -12,7 +12,7 @@ import { StoreProvider, useStore } from '@/contexts/StoreContext';
 import { DemoModeProvider, useDemoMode } from '@/contexts/DemoModeContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Menu, Store, User } from 'lucide-react';
+import { Menu, Store } from 'lucide-react';
 import { Attendant } from '@/types';
 
 const IndexContent = () => {
@@ -68,7 +68,7 @@ const IndexContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex theme-transition">
+    <div className="min-h-screen bg-background text-foreground flex">
       <Sidebar 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
@@ -91,8 +91,8 @@ const IndexContent = () => {
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-blue-600" />
               <div className="text-center">
-                <h3 className="font-semibold text-sm">{currentStore?.name || 'Demo Store'}</h3>
-                <p className="text-xs text-gray-600">Demo Mode</p>
+                <h3 className="font-semibold text-sm">{currentStore?.name || 'MSUPER POS'}</h3>
+                <p className="text-xs text-gray-600">Ready to Use</p>
               </div>
             </div>
             
@@ -106,8 +106,8 @@ const IndexContent = () => {
             <div className="flex items-center gap-3">
               <Store className="h-6 w-6 text-blue-600" />
               <div>
-                <h2 className="font-bold text-lg">{currentStore?.name || 'Demo Store'}</h2>
-                <Badge variant="outline">Demo Mode - No Authentication Required</Badge>
+                <h2 className="font-bold text-lg">{currentStore?.name || 'MSUPER POS'}</h2>
+                <Badge variant="outline" className="bg-green-100 text-green-800">System Ready</Badge>
               </div>
             </div>
           </div>
