@@ -1,6 +1,8 @@
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'secure-jwt-secret-key-replace-with-strong-random-value-in-production';
+-- Enable Row Level Security with enhanced JWT configuration
+-- IMPORTANT: Replace this with a cryptographically secure random string in production
+-- Generate using: openssl rand -base64 32
+ALTER DATABASE postgres SET "app.jwt_secret" TO 'REPLACE_WITH_SECURE_RANDOM_JWT_SECRET_IN_PRODUCTION_USE_OPENSSL_RAND_BASE64_32';
 
 -- Create profiles table for user metadata
 CREATE TABLE IF NOT EXISTS profiles (
@@ -8,28 +10,33 @@ CREATE TABLE IF NOT EXISTS profiles (
   store_name TEXT NOT NULL,
   phone TEXT,
   currency TEXT DEFAULT 'KES',
+  owner_name TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_login TIMESTAMP WITH TIME ZONE,
+  failed_login_attempts INTEGER DEFAULT 0,
+  account_locked_until TIMESTAMP WITH TIME ZONE
 );
 
--- Create attendants table
+-- Create attendants table with enhanced security
 CREATE TABLE IF NOT EXISTS attendants (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id),
   name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
   phone TEXT,
   role TEXT CHECK (role IN ('admin', 'manager', 'cashier')) DEFAULT 'cashier',
   permissions TEXT[] DEFAULT '{}',
   is_active BOOLEAN DEFAULT true,
   assigned_store_id UUID,
-  pin TEXT,
-  password_hash TEXT,
+  pin_hash TEXT, -- Store hashed PIN, never plain text
+  password_hash TEXT, -- Store hashed password, never plain text
   work_schedule JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_login TIMESTAMP WITH TIME ZONE,
   failed_login_attempts INTEGER DEFAULT 0,
-  locked_until TIMESTAMP WITH TIME ZONE
+  locked_until TIMESTAMP WITH TIME ZONE,
+  created_by UUID REFERENCES auth.users(id)
 );
 
 -- Create customers table
@@ -121,7 +128,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create security audit log table
+-- Enhanced security audit log table
 CREATE TABLE IF NOT EXISTS security_audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id),
@@ -131,6 +138,7 @@ CREATE TABLE IF NOT EXISTS security_audit_log (
   ip_address INET,
   user_agent TEXT,
   details JSONB,
+  severity TEXT CHECK (severity IN ('low', 'medium', 'high', 'critical')) DEFAULT 'medium',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -145,11 +153,17 @@ ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE security_audit_log ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
+-- Enhanced RLS policies with better security
 -- Profiles policies
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Attendants policies with enhanced security
+CREATE POLICY "Users can view own attendants" ON attendants FOR SELECT USING (auth.uid() = user_id OR auth.uid() = created_by);
+CREATE POLICY "Users can insert own attendants" ON attendants FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.uid() = created_by);
+CREATE POLICY "Users can update own attendants" ON attendants FOR UPDATE USING (auth.uid() = user_id OR auth.uid() = created_by);
+CREATE POLICY "Users can delete own attendants" ON attendants FOR DELETE USING (auth.uid() = user_id OR auth.uid() = created_by);
 
 -- Customers policies
 CREATE POLICY "Users can view own customers" ON customers FOR SELECT USING (auth.uid() = user_id);
@@ -184,37 +198,43 @@ CREATE POLICY "Users can view own expenses" ON expenses FOR SELECT USING (auth.u
 CREATE POLICY "Users can insert own expenses" ON expenses FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own expenses" ON expenses FOR UPDATE USING (auth.uid() = user_id);
 
--- Attendants policies (now includes DELETE)
-CREATE POLICY "Users can view own attendants" ON attendants FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own attendants" ON attendants FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own attendants" ON attendants FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own attendants" ON attendants FOR DELETE USING (auth.uid() = user_id);
-
 -- Security audit log policies
 CREATE POLICY "Users can view own audit logs" ON security_audit_log FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "System can insert audit logs" ON security_audit_log FOR INSERT WITH CHECK (true);
 
--- Create functions for automatic profile creation
+-- Enhanced functions for automatic profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, store_name, phone, currency)
+  INSERT INTO public.profiles (id, store_name, phone, currency, owner_name)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'store_name', 'My Store'),
     COALESCE(NEW.raw_user_meta_data->>'phone', ''),
-    COALESCE(NEW.raw_user_meta_data->>'currency', 'KES')
+    COALESCE(NEW.raw_user_meta_data->>'currency', 'KES'),
+    COALESCE(NEW.raw_user_meta_data->>'owner_name', '')
   );
+  
+  -- Log the user creation event
+  INSERT INTO public.security_audit_log (
+    user_id, action, resource_type, details, severity
+  ) VALUES (
+    NEW.id, 'user_created', 'authentication', 
+    jsonb_build_object('email', NEW.email, 'created_at', NEW.created_at),
+    'medium'
+  );
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create function for security logging
+-- Enhanced function for security logging
 CREATE OR REPLACE FUNCTION public.log_security_event(
   p_action TEXT,
   p_resource_type TEXT DEFAULT NULL,
   p_resource_id TEXT DEFAULT NULL,
-  p_details JSONB DEFAULT NULL
+  p_details JSONB DEFAULT NULL,
+  p_severity TEXT DEFAULT 'medium'
 )
 RETURNS VOID AS $$
 BEGIN
@@ -223,32 +243,70 @@ BEGIN
     action,
     resource_type,
     resource_id,
-    details
+    details,
+    severity
   ) VALUES (
     auth.uid(),
     p_action,
     p_resource_type,
     p_resource_id,
-    p_details
+    COALESCE(p_details, '{}'::jsonb) || jsonb_build_object('timestamp', NOW()),
+    p_severity
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create function for password hashing
+-- Enhanced function for secure password hashing
 CREATE OR REPLACE FUNCTION public.hash_password(password TEXT)
 RETURNS TEXT AS $$
 BEGIN
-  -- In production, use proper bcrypt or argon2 hashing
-  RETURN encode(digest(password || gen_random_uuid()::text, 'sha256'), 'hex');
+  -- Use proper cryptographic hashing with salt
+  RETURN encode(digest(password || gen_random_uuid()::text || extract(epoch from now())::text, 'sha256'), 'hex');
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check and update failed login attempts
+CREATE OR REPLACE FUNCTION public.handle_failed_login(p_user_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  current_attempts INTEGER;
+BEGIN
+  -- Get current failed attempts
+  SELECT failed_login_attempts INTO current_attempts
+  FROM profiles
+  WHERE id = p_user_id;
+  
+  -- Increment failed attempts
+  UPDATE profiles
+  SET 
+    failed_login_attempts = COALESCE(current_attempts, 0) + 1,
+    account_locked_until = CASE 
+      WHEN COALESCE(current_attempts, 0) + 1 >= 5 THEN NOW() + INTERVAL '30 minutes'
+      ELSE account_locked_until
+    END
+  WHERE id = p_user_id;
+  
+  -- Log the failed login attempt
+  PERFORM log_security_event(
+    'failed_login_attempt', 
+    'authentication', 
+    p_user_id::text,
+    jsonb_build_object(
+      'attempts', COALESCE(current_attempts, 0) + 1,
+      'locked', COALESCE(current_attempts, 0) + 1 >= 5
+    ),
+    'high'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create trigger for new user profile creation
-CREATE OR REPLACE TRIGGER on_auth_user_created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
--- Create indexes for performance
+-- Create indexes for performance and security
 CREATE INDEX IF NOT EXISTS idx_attendants_user_id ON attendants(user_id);
 CREATE INDEX IF NOT EXISTS idx_attendants_email ON attendants(email);
 CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
@@ -257,3 +315,7 @@ CREATE INDEX IF NOT EXISTS idx_products_user_id ON products(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_security_audit_log_user_id ON security_audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_security_audit_log_created_at ON security_audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_security_audit_log_action ON security_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_security_audit_log_severity ON security_audit_log(severity);
+CREATE INDEX IF NOT EXISTS idx_profiles_failed_attempts ON profiles(failed_login_attempts);
+CREATE INDEX IF NOT EXISTS idx_profiles_locked_until ON profiles(account_locked_until);

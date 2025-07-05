@@ -5,6 +5,7 @@ import { PinLogin } from './PinLogin';
 import { StaffLogin } from './StaffLogin';
 import { SecureLogin } from './SecureLogin';
 import { SecureRegistration } from './SecureRegistration';
+import { SecurityConfigChecker } from './SecurityConfigChecker';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 import { Attendant } from '@/types';
 
@@ -14,9 +15,14 @@ interface AuthManagerProps {
 }
 
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
-  const { user } = useAuth();
+  const { user, isEnvironmentValid } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
   const [loginError, setLoginError] = useState<string>('');
+
+  // Show security configuration checker if environment is not valid
+  if (!isEnvironmentValid) {
+    return <SecurityConfigChecker />;
+  }
 
   // If user is already authenticated, handle login
   React.useEffect(() => {
