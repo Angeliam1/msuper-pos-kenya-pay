@@ -12,7 +12,12 @@ interface StoreContextType {
   getStoreProducts: (storeId: string) => Product[];
   getStoreCustomers: (storeId: string) => Customer[];
   getStoreTransactions: (storeId: string) => Transaction[];
+  getStoreSuppliers: (storeId: string) => Supplier[];
   getStoreCashBalance: (storeId: string) => number;
+  updateStoreProduct: (storeId: string, productId: string, updates: Partial<Product>) => void;
+  addProductToStore: (storeId: string, product: Omit<Product, 'id'>) => void;
+  addCustomerToStore: (storeId: string, customer: Customer) => void;
+  addTransactionToStore: (storeId: string, transaction: Transaction) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -29,6 +34,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user } = useAuth();
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [currentStore, setCurrentStore] = useState<StoreLocation | null>(null);
+  
+  // Store-specific data storage
+  const [storeProducts, setStoreProducts] = useState<Record<string, Product[]>>({});
+  const [storeCustomers, setStoreCustomers] = useState<Record<string, Customer[]>>({});
+  const [storeTransactions, setStoreTransactions] = useState<Record<string, Transaction[]>>({});
+  const [storeSuppliers, setStoreSuppliers] = useState<Record<string, Supplier[]>>({});
 
   // Initialize user's store from their profile when authenticated
   useEffect(() => {
@@ -78,25 +89,61 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Mock data functions - in a real app, these would fetch from database
+  // Store-specific data functions
   const getStoreProducts = (storeId: string): Product[] => {
-    // Return empty array for now - would fetch store-specific products
-    return [];
+    return storeProducts[storeId] || [];
   };
 
   const getStoreCustomers = (storeId: string): Customer[] => {
-    // Return empty array for now - would fetch store-specific customers
-    return [];
+    return storeCustomers[storeId] || [];
   };
 
   const getStoreTransactions = (storeId: string): Transaction[] => {
-    // Return empty array for now - would fetch store-specific transactions
-    return [];
+    return storeTransactions[storeId] || [];
+  };
+
+  const getStoreSuppliers = (storeId: string): Supplier[] => {
+    return storeSuppliers[storeId] || [];
   };
 
   const getStoreCashBalance = (storeId: string): number => {
-    // Return 0 for now - would calculate from store-specific transactions
-    return 0;
+    const transactions = getStoreTransactions(storeId);
+    return transactions.reduce((sum, t) => sum + t.total, 0);
+  };
+
+  const updateStoreProduct = (storeId: string, productId: string, updates: Partial<Product>) => {
+    setStoreProducts(prev => ({
+      ...prev,
+      [storeId]: (prev[storeId] || []).map(product =>
+        product.id === productId ? { ...product, ...updates } : product
+      )
+    }));
+  };
+
+  const addProductToStore = (storeId: string, productData: Omit<Product, 'id'>) => {
+    const newProduct: Product = {
+      ...productData,
+      id: `product-${Date.now()}`,
+    };
+    
+    setStoreProducts(prev => ({
+      ...prev,
+      [storeId]: [...(prev[storeId] || []), newProduct]
+    }));
+  };
+
+  const addCustomerToStore = (storeId: string, customer: Customer) => {
+    setStoreCustomers(prev => ({
+      ...prev,
+      [storeId]: [...(prev[storeId] || []), customer]
+    }));
+  };
+
+  const addTransactionToStore = (storeId: string, transaction: Transaction) => {
+    setStoreTransactions(prev => ({
+      ...prev,
+      [storeId]: [...(prev[storeId] || []), transaction]
+    }));
   };
 
   const value: StoreContextType = {
@@ -108,7 +155,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getStoreProducts,
     getStoreCustomers,
     getStoreTransactions,
+    getStoreSuppliers,
     getStoreCashBalance,
+    updateStoreProduct,
+    addProductToStore,
+    addCustomerToStore,
+    addTransactionToStore,
   };
 
   return (
