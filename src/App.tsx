@@ -4,8 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useSupabaseAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SecurityConfigChecker } from "@/components/auth/SecurityConfigChecker";
 import Index from "./pages/Index";
 import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
@@ -24,10 +24,33 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+// Check if Supabase is configured
+const isSupabaseConfigured = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return !!(supabaseUrl && supabaseKey);
+};
+
+const App = () => {
+  // If Supabase is not configured, show the configuration screen
+  if (!isSupabaseConfigured()) {
+    return (
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <SecurityConfigChecker />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    );
+  }
+
+  // If Supabase is configured, load the full app with authentication
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -40,9 +63,9 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

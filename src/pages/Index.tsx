@@ -11,6 +11,7 @@ import { AuthManager } from '@/components/auth/AuthManager';
 import { ThemeProvider } from '@/components/pos/ThemeProvider';
 import { StoreProvider, useStore } from '@/contexts/StoreContext';
 import { DemoModeProvider, useDemoMode } from '@/contexts/DemoModeContext';
+import { AuthProvider } from '@/hooks/useSupabaseAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -214,9 +215,11 @@ const Index = () => {
   return (
     <DemoModeProvider>
       <StoreProvider>
-        <ThemeProvider>
-          <IndexContent />
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <IndexContent />
+          </ThemeProvider>
+        </AuthProvider>
       </StoreProvider>
     </DemoModeProvider>
   );
