@@ -120,12 +120,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         // Log failed signin with severity based on error type
-        const severity = error.message.includes('Invalid login credentials') ? 'high' : 'medium';
         logSecurityEvent('signin_failed', 'authentication', null, { 
           email: email.toLowerCase(),
           error: error.message,
-          timestamp: new Date().toISOString()
-        }, severity);
+          timestamp: new Date().toISOString(),
+          severity: error.message.includes('Invalid login credentials') ? 'high' : 'medium'
+        });
         
         return handleSupabaseError(error, 'signIn');
       }
@@ -141,8 +141,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logSecurityEvent('signin_error', 'authentication', null, {
         email: email.toLowerCase(),
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      }, 'critical');
+        timestamp: new Date().toISOString(),
+        severity: 'critical'
+      });
       
       return handleSupabaseError(error, 'signIn');
     }
@@ -182,8 +183,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logSecurityEvent('signup_failed', 'authentication', null, { 
           email: email.toLowerCase(),
           error: error.message,
-          timestamp: new Date().toISOString()
-        }, 'medium');
+          timestamp: new Date().toISOString(),
+          severity: 'medium'
+        });
         
         return handleSupabaseError(error, 'signUp');
       }
@@ -200,8 +202,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logSecurityEvent('signup_error', 'authentication', null, {
         email: email.toLowerCase(),
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      }, 'critical');
+        timestamp: new Date().toISOString(),
+        severity: 'critical'
+      });
       
       return handleSupabaseError(error, 'signUp');
     }
@@ -226,8 +229,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Sign out error:', error);
       logSecurityEvent('signout_error', 'authentication', user?.id, { 
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      }, 'medium');
+        timestamp: new Date().toISOString(),
+        severity: 'medium'
+      });
     }
   };
 
@@ -244,8 +248,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         logSecurityEvent('profile_update_failed', 'user_profile', user?.id, { 
           error: error.message,
-          timestamp: new Date().toISOString()
-        }, 'medium');
+          timestamp: new Date().toISOString(),
+          severity: 'medium'
+        });
         
         return handleSupabaseError(error, 'updateProfile');
       }
@@ -259,8 +264,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       logSecurityEvent('profile_update_error', 'user_profile', user?.id, {
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      }, 'medium');
+        timestamp: new Date().toISOString(),
+        severity: 'medium'
+      });
       
       return handleSupabaseError(error, 'updateProfile');
     }
