@@ -5,7 +5,6 @@ import { PinLogin } from './PinLogin';
 import { StaffLogin } from './StaffLogin';
 import { SecureLogin } from './SecureLogin';
 import { SecureRegistration } from './SecureRegistration';
-import { SecurityConfigChecker } from './SecurityConfigChecker';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 import { Attendant } from '@/types';
 
@@ -15,11 +14,11 @@ interface AuthManagerProps {
 }
 
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
-  const { user, isEnvironmentValid, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
   const [loginError, setLoginError] = useState<string>('');
 
-  // Show loading while checking environment
+  // Show loading while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
@@ -29,11 +28,6 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
         </div>
       </div>
     );
-  }
-
-  // Show security configuration checker if environment is not valid
-  if (!isEnvironmentValid) {
-    return <SecurityConfigChecker />;
   }
 
   // If user is already authenticated, handle login
@@ -63,7 +57,6 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
           <h1 className="text-4xl font-bold text-primary-foreground">MSUPER POS</h1>
           <p className="text-primary-foreground/80">Secure Point of Sale System</p>
           
-          {/* Show different options based on authentication state */}
           {!user ? (
             <div className="space-y-4">
               <button
