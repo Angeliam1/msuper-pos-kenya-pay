@@ -15,9 +15,21 @@ interface AuthManagerProps {
 }
 
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
-  const { user, isEnvironmentValid } = useAuth();
+  const { user, isEnvironmentValid, loading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
   const [loginError, setLoginError] = useState<string>('');
+
+  // Show loading while checking environment
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="text-center text-primary-foreground">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading MSUPER POS...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show security configuration checker if environment is not valid
   if (!isEnvironmentValid) {

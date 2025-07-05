@@ -1,45 +1,36 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// Dynamic environment variable access
-const getSupabaseUrl = () => import.meta.env.VITE_SUPABASE_URL || '';
-const getSupabaseAnonKey = () => import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-let supabaseUrl = getSupabaseUrl();
-let supabaseAnonKey = getSupabaseAnonKey();
-
-// Enhanced validation with detailed logging
-const logEnvironmentStatus = () => {
-  console.log('=== Supabase Environment Status ===');
-  console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
-  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING');
-  console.log('URL length:', supabaseUrl.length);
-  console.log('Key length:', supabaseAnonKey.length);
-  console.log('====================================');
+// Get environment variables with fallbacks
+const getSupabaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return (window as any).__SUPABASE_URL__ || import.meta.env.VITE_SUPABASE_URL || '';
+  }
+  return import.meta.env.VITE_SUPABASE_URL || '';
 };
 
-// Initial logging
-logEnvironmentStatus();
+const getSupabaseAnonKey = () => {
+  if (typeof window !== 'undefined') {
+    return (window as any).__SUPABASE_ANON_KEY__ || import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  }
+  return import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+};
 
-// Validate environment variables with detailed feedback
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
-  console.error('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Supabase project settings');
-  console.error('You can find these values in your Supabase Dashboard > Settings > API');
-}
-
-// Create Supabase client with enhanced error handling
+// Create Supabase client
 const createSupabaseClient = () => {
   const url = getSupabaseUrl();
   const key = getSupabaseAnonKey();
   
+  console.log('Creating Supabase client...');
+  console.log('URL available:', !!url);
+  console.log('Key available:', !!key);
+  
   if (!url || !key) {
-    console.warn('Cannot create Supabase client: missing environment variables');
+    console.warn('Supabase credentials not available');
     return null;
   }
 
   try {
-    return createClient(url, key, {
+    const client = createClient(url, key, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -55,6 +46,9 @@ const createSupabaseClient = () => {
         }
       }
     });
+    
+    console.log('Supabase client created successfully');
+    return client;
   } catch (error) {
     console.error('Failed to create Supabase client:', error);
     return null;
@@ -62,16 +56,17 @@ const createSupabaseClient = () => {
 };
 
 // Initialize client
-export let supabase = createSupabaseClient();
+export const supabase = createSupabaseClient();
 
-// Function to refresh Supabase client (useful after environment variables are set)
+// Function to refresh Supabase client
 export const refreshSupabaseClient = () => {
   console.log('Refreshing Supabase client...');
-  supabaseUrl = getSupabaseUrl();
-  supabaseAnonKey = getSupabaseAnonKey();
-  logEnvironmentStatus();
-  supabase = createSupabaseClient();
-  return supabase;
+  const newClient = createSupabaseClient();
+  if (newClient) {
+    // Update the exported supabase instance
+    (global as any).supabase = newClient;
+  }
+  return newClient;
 };
 
 // Security utility functions

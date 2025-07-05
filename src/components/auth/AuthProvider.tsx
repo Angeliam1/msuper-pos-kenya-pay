@@ -6,7 +6,7 @@ import { AuthContext } from '@/contexts/AuthContext';
 import { AuthContextType } from '@/types/auth';
 import { useAuthOperations } from '@/hooks/useAuthOperations';
 import { useAuthStateListener } from '@/hooks/useAuthStateListener';
-import { validateEnvironment, refreshSupabaseClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -14,37 +14,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isEnvironmentValid, setIsEnvironmentValid] = useState(false);
 
-  // Check environment validity on mount and periodically
+  // Simple environment check - if supabase client exists, we're good
   useEffect(() => {
-    const checkEnvironment = () => {
-      const validation = validateEnvironment();
-      console.log('Environment check result:', validation);
+    const checkSupabaseConnection = () => {
+      const isValid = !!supabase;
+      console.log('Supabase connection check:', isValid ? 'Connected' : 'Not connected');
+      setIsEnvironmentValid(isValid);
       
-      if (validation.isValid && !isEnvironmentValid) {
-        // Environment became valid, refresh Supabase client
-        console.log('Environment became valid, refreshing Supabase client...');
-        refreshSupabaseClient();
+      if (isValid) {
+        // Initialize auth state when Supabase is available
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          console.log('Initial session check:', session ? 'Session found' : 'No session');
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }).catch((error) => {
+          console.error('Session check error:', error);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
-      
-      setIsEnvironmentValid(validation.isValid);
-      return validation.isValid;
     };
 
     // Initial check
-    checkEnvironment();
+    checkSupabaseConnection();
 
-    // Periodic check every 2 seconds for the first 30 seconds
-    let checkCount = 0;
-    const maxChecks = 15; // 30 seconds total
+    // Recheck every 2 seconds for the first 30 seconds if not connected
+    let attempts = 0;
+    const maxAttempts = 15;
     
     const intervalId = setInterval(() => {
-      checkCount++;
-      const isValid = checkEnvironment();
-      
-      // Stop checking if environment is valid or we've reached max checks
-      if (isValid || checkCount >= maxChecks) {
+      attempts++;
+      if (!isEnvironmentValid && attempts < maxAttempts) {
+        checkSupabaseConnection();
+      } else {
         clearInterval(intervalId);
-        console.log('Stopped environment validation checks');
       }
     }, 2000);
 
