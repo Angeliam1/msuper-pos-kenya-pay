@@ -49,29 +49,40 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
       <div className="min-h-screen bg-primary flex items-center justify-center p-4">
         <div className="text-center space-y-6">
           <h1 className="text-4xl font-bold text-primary-foreground">MSUPER POS</h1>
-          <p className="text-primary-foreground/80">Secure Point of Sale System - Kenya</p>
-          <div className="space-y-4">
-            <button
-              onClick={() => setCurrentScreen('register')}
-              className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
-            >
-              Register New Store
-            </button>
-            <button
-              onClick={() => setCurrentScreen('login')}
-              className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
-            >
-              Secure Login
-            </button>
-            {user && (
+          <p className="text-primary-foreground/80">Secure Point of Sale System</p>
+          
+          {/* Show different options based on authentication state */}
+          {!user ? (
+            <div className="space-y-4">
+              <button
+                onClick={() => setCurrentScreen('register')}
+                className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
+              >
+                Create New Store
+              </button>
+              <button
+                onClick={() => setCurrentScreen('login')}
+                className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+              >
+                Store Owner Login
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <button
+                onClick={() => onLogin()}
+                className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
+              >
+                Continue to POS System
+              </button>
               <button
                 onClick={() => setCurrentScreen('staff-login')}
                 className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
               >
-                Staff Login
+                Staff/Cashier Login
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
