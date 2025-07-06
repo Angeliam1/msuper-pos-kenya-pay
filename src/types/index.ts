@@ -68,6 +68,7 @@ export interface Attendant {
   pin: string;
   workSchedule?: WorkSchedule;
   createdAt: Date;
+  isDemoMode?: boolean;
 }
 
 export interface Supplier {
