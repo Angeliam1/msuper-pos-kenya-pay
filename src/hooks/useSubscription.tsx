@@ -57,18 +57,23 @@ export const useSubscription = () => {
         return;
       }
 
-      if (tenantUserData) {
+      if (tenantUserData && tenantUserData.tenants) {
+        // Access the first tenant data (since tenants is an array)
+        const tenantData = Array.isArray(tenantUserData.tenants) 
+          ? tenantUserData.tenants[0] 
+          : tenantUserData.tenants;
+
         setSubscriptionData({
-          subscriptionStatus: tenantUserData.tenants.subscription_status,
-          subscriptionPlan: tenantUserData.tenants.subscription_plan,
+          subscriptionStatus: tenantData.subscription_status,
+          subscriptionPlan: tenantData.subscription_plan,
           tenantId: tenantUserData.tenant_id,
           userRole: tenantUserData.role,
-          subscriptionEnd: tenantUserData.tenants.next_billing_date 
-            ? new Date(tenantUserData.tenants.next_billing_date) 
+          subscriptionEnd: tenantData.next_billing_date 
+            ? new Date(tenantData.next_billing_date) 
             : null,
-          daysOverdue: tenantUserData.tenants.days_overdue || 0,
-          gracePeriodEnds: tenantUserData.tenants.grace_period_ends 
-            ? new Date(tenantUserData.tenants.grace_period_ends) 
+          daysOverdue: tenantData.days_overdue || 0,
+          gracePeriodEnds: tenantData.grace_period_ends 
+            ? new Date(tenantData.grace_period_ends) 
             : null,
         });
       }
