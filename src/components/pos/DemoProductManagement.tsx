@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -129,7 +128,7 @@ export const DemoProductManagement: React.FC = () => {
 
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}.00`;
 
-  const processCheckout = (paymentMethod: 'cash' | 'mpesa' | 'split' | 'card' = 'cash') => {
+  const processCheckout = (paymentMethod: 'cash' | 'mpesa' | 'card' | 'credit' = 'cash') => {
     if (cart.length === 0) {
       toast({
         title: "Empty Cart",
@@ -139,7 +138,7 @@ export const DemoProductManagement: React.FC = () => {
       return;
     }
 
-    // Create transaction
+    // Create transaction with proper payment method
     const transaction: Transaction = {
       id: `DEMO-TXN-${Date.now()}`,
       items: cart,
@@ -168,6 +167,67 @@ export const DemoProductManagement: React.FC = () => {
     toast({
       title: "Sale Completed!",
       description: `Transaction ${transaction.id} processed successfully. Total: ${formatPrice(transaction.total)}`,
+    });
+
+    // Reset customer selection
+    setSelectedCustomer({
+      id: 'walk-in',
+      name: 'Walk-in Customer',
+      email: '',
+      phone: '',
+      address: '',
+      loyaltyPoints: 0,
+      creditLimit: 0,
+      outstandingBalance: 0,
+      createdAt: new Date()
+    });
+  };
+
+  const processSplitPayment = () => {
+    if (cart.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to cart before checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const total = calculateTotal();
+    const halfAmount = total / 2;
+
+    // Create transaction with split payment
+    const transaction: Transaction = {
+      id: `DEMO-TXN-${Date.now()}`,
+      items: cart,
+      total: total,
+      timestamp: new Date(),
+      customerId: selectedCustomer.id,
+      attendantId: 'demo-admin-001',
+      paymentSplits: [
+        { method: 'cash', amount: halfAmount },
+        { method: 'mpesa', amount: halfAmount }
+      ],
+      status: 'completed'
+    };
+
+    // Update stock for each item
+    cart.forEach(item => {
+      const product = demoProducts.find(p => p.id === item.id);
+      if (product) {
+        updateDemoProductStock(item.id, product.stock - item.quantity);
+      }
+    });
+
+    // Add transaction to demo data
+    addDemoTransaction(transaction);
+
+    // Clear cart
+    setCart([]);
+
+    toast({
+      title: "Split Payment Completed!",
+      description: `Transaction ${transaction.id} processed successfully. Total: ${formatPrice(transaction.total)} (Cash: ${formatPrice(halfAmount)}, M-Pesa: ${formatPrice(halfAmount)})`,
     });
 
     // Reset customer selection
@@ -316,7 +376,7 @@ export const DemoProductManagement: React.FC = () => {
               <Button 
                 className="bg-purple-600 hover:bg-purple-700" 
                 size="sm"
-                onClick={() => processCheckout('split')}
+                onClick={processSplitPayment}
               >
                 <Calculator className="h-4 w-4 mr-1" />
                 Split
