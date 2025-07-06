@@ -7,27 +7,93 @@ import { Reports } from '@/components/pos/Reports';
 import { Settings } from '@/components/pos/Settings';
 import { OnlineStoreManager } from '@/components/online-store/OnlineStoreManager';
 import { SuperAdminStoreManager } from '@/components/pos/SuperAdminStoreManager';
-import { ThemeProvider } from '@/components/pos/ThemeProvider';
-import { StoreProvider, useStore } from '@/contexts/StoreContext';
-import { DemoModeProvider, useDemoMode } from '@/contexts/DemoModeContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Menu, Store } from 'lucide-react';
-import { Attendant } from '@/types';
 
-const IndexContent = () => {
+// Standalone demo data - no external providers needed
+const demoProducts = [
+  {
+    id: '1',
+    name: 'Coca Cola 500ml',
+    category: 'Beverages',
+    price: 50,
+    buyingCost: 35,
+    wholesalePrice: 45,
+    retailPrice: 50,
+    stock: 100,
+    barcode: '12345',
+    description: 'Refreshing soft drink',
+    supplierId: 'sup1',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'Bread White 400g',
+    category: 'Bakery',
+    price: 60,
+    buyingCost: 40,
+    wholesalePrice: 55,
+    retailPrice: 60,
+    stock: 50,
+    barcode: '12346',
+    description: 'Fresh white bread',
+    supplierId: 'sup1',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+const demoTransactions = [
+  {
+    id: 'demo-trans-1',
+    items: [{ ...demoProducts[0], quantity: 2 }],
+    total: 100,
+    timestamp: new Date(),
+    customerId: 'walk-in',
+    attendantId: 'demo',
+    paymentSplits: [{ method: 'cash', amount: 100 }],
+    status: 'completed'
+  }
+];
+
+const demoAttendants = [
+  {
+    id: 'demo',
+    name: 'Demo User',
+    email: 'demo@example.com',
+    phone: '+254700000000',
+    role: 'manager',
+    pin: '1234',
+    isActive: true,
+    permissions: ['pos', 'reports', 'settings'],
+    createdAt: new Date()
+  }
+];
+
+const Index = () => {
+  console.log('Index component rendering...');
+  
   const [activeTab, setActiveTab] = useState('pos');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentAttendant, setCurrentAttendant] = useState<Attendant | null>(null);
   
-  const { currentStore } = useStore();
-  const { demoProducts, demoCustomers, demoTransactions, demoAttendants } = useDemoMode();
+  const currentStore = {
+    id: '1',
+    name: 'MSUPER POS',
+    address: 'Demo Store',
+    phone: '+254700000000',
+    managerId: 'demo',
+    manager: 'Demo Manager',
+    status: 'active' as const,
+    totalSales: 0,
+    isActive: true,
+    createdAt: new Date()
+  };
 
-  // Calculate dashboard metrics using demo data
+  // Calculate dashboard metrics
   const totalSales = demoTransactions.reduce((sum, t) => sum + t.total, 0);
-  const todaySales = demoTransactions
-    .filter(t => new Date(t.timestamp).toDateString() === new Date().toDateString())
-    .reduce((sum, t) => sum + t.total, 0);
+  const todaySales = totalSales;
   const transactionCount = demoTransactions.length;
 
   const handleSaveSettings = (settings: any) => {
@@ -35,35 +101,47 @@ const IndexContent = () => {
   };
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'pos':
-        return <ProductManagement />;
-      case 'dashboard':
-        return (
-          <Dashboard
-            totalSales={totalSales}
-            todaySales={todaySales}
-            transactionCount={transactionCount}
-            transactions={demoTransactions}
-            products={demoProducts}
-          />
-        );
-      case 'reports':
-        return (
-          <Reports
-            transactions={demoTransactions}
-            products={demoProducts}
-            attendants={demoAttendants}
-          />
-        );
-      case 'settings':
-        return <Settings onSaveSettings={handleSaveSettings} />;
-      case 'online-store':
-        return <OnlineStoreManager />;
-      case 'stores':
-        return <SuperAdminStoreManager />;
-      default:
-        return <ProductManagement />;
+    console.log('Rendering content for tab:', activeTab);
+    
+    try {
+      switch (activeTab) {
+        case 'pos':
+          return <ProductManagement />;
+        case 'dashboard':
+          return (
+            <Dashboard
+              totalSales={totalSales}
+              todaySales={todaySales}
+              transactionCount={transactionCount}
+              transactions={demoTransactions}
+              products={demoProducts}
+            />
+          );
+        case 'reports':
+          return (
+            <Reports
+              transactions={demoTransactions}
+              products={demoProducts}
+              attendants={demoAttendants}
+            />
+          );
+        case 'settings':
+          return <Settings onSaveSettings={handleSaveSettings} />;
+        case 'online-store':
+          return <OnlineStoreManager />;
+        case 'stores':
+          return <SuperAdminStoreManager />;
+        default:
+          return <ProductManagement />;
+      }
+    } catch (error) {
+      console.error('Error rendering content:', error);
+      return (
+        <div className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Welcome to MSUPER POS</h2>
+          <p className="text-gray-600">Point of Sale System</p>
+        </div>
+      );
     }
   };
 
@@ -91,7 +169,7 @@ const IndexContent = () => {
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-blue-600" />
               <div className="text-center">
-                <h3 className="font-semibold text-sm">{currentStore?.name || 'MSUPER POS'}</h3>
+                <h3 className="font-semibold text-sm">{currentStore.name}</h3>
                 <p className="text-xs text-gray-600">Ready to Use</p>
               </div>
             </div>
@@ -106,7 +184,7 @@ const IndexContent = () => {
             <div className="flex items-center gap-3">
               <Store className="h-6 w-6 text-blue-600" />
               <div>
-                <h2 className="font-bold text-lg">{currentStore?.name || 'MSUPER POS'}</h2>
+                <h2 className="font-bold text-lg">{currentStore.name}</h2>
                 <Badge variant="outline" className="bg-green-100 text-green-800">System Ready</Badge>
               </div>
             </div>
@@ -118,18 +196,6 @@ const IndexContent = () => {
         </main>
       </div>
     </div>
-  );
-};
-
-const Index = () => {
-  return (
-    <DemoModeProvider>
-      <StoreProvider>
-        <ThemeProvider>
-          <IndexContent />
-        </ThemeProvider>
-      </StoreProvider>
-    </DemoModeProvider>
   );
 };
 
