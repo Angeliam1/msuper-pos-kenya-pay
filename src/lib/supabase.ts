@@ -1,49 +1,96 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Simple, direct Supabase connection
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-console.log('Supabase URL:', supabaseUrl ? 'Available' : 'Missing');
-console.log('Supabase Key:', supabaseAnonKey ? 'Available' : 'Missing');
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables');
+  console.error('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Supabase project settings');
+  console.error('You can find these values in your Supabase Dashboard > Settings > API');
+}
 
-// Create the client directly - no complex validation
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false
+// Create Supabase client with security configurations
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+        flowType: 'pkce'
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'msuper-pos@1.0.0'
+        }
+      }
+    })
+  : null;
+
+// Security utility functions
+export const logSecurityEvent = async (
+  action: string,
+  resourceType?: string,
+  resourceId?: string,
+  details?: any
+) => {
+  if (!supabase) {
+    console.warn('Cannot log security event: Supabase not configured');
+    return;
   }
-});
-
-// Environment validation function
-export const validateEnvironment = () => {
-  return {
-    isValid: true,
-    errors: []
-  };
+  
+  try {
+    await supabase.rpc('log_security_event', {
+      p_action: action,
+      p_resource_type: resourceType,
+      p_resource_id: resourceId,
+      p_details: details
+    });
+  } catch (error) {
+    console.error('Failed to log security event:', error);
+  }
 };
 
-// Simple error handler
+// Enhanced error handling that doesn't expose sensitive information
 export const handleSupabaseError = (error: any, context: string) => {
+  // Log the full error details for debugging (server-side only in production)
   console.error(`Supabase error in ${context}:`, error);
   
-  if (error?.message?.includes('Invalid login credentials')) {
-    return { error: 'Invalid email or password' };
-  } else if (error?.message?.includes('Email not confirmed')) {
-    return { error: 'Please check your email and verify your account' };
-  } else if (error?.message?.includes('User already registered')) {
-    return { error: 'An account with this email already exists' };
+  // Log security events for authentication errors
+  if (error?.message?.includes('Invalid login credentials') || 
+      error?.message?.includes('Email not confirmed')) {
+    logSecurityEvent('auth_failed', 'authentication', null, {
+      context,
+      timestamp: new Date().toISOString()
+    });
   }
   
-  return { error: 'An unexpected error occurred' };
+  // Return sanitized error messages for users
+  let userMessage = 'An unexpected error occurred';
+  
+  if (error?.message?.includes('Invalid login credentials')) {
+    userMessage = 'Invalid email or password';
+  } else if (error?.message?.includes('Email not confirmed')) {
+    userMessage = 'Please check your email and verify your account';
+  } else if (error?.message?.includes('User already registered')) {
+    userMessage = 'An account with this email already exists';
+  } else if (error?.message?.includes('Password should be at least')) {
+    userMessage = 'Password must be at least 6 characters long';
+  } else if (error?.message?.includes('Unable to validate email address')) {
+    userMessage = 'Please enter a valid email address';
+  }
+  
+  return { error: userMessage };
 };
 
-// Simple rate limiting
+// Rate limiting utility with enhanced security
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
-export const checkRateLimit = (identifier: string, maxRequests: number = 5, windowMs: number = 300000): boolean => {
+export const checkRateLimit = (identifier: string, maxRequests: number = 10, windowMs: number = 60000): boolean => {
   const now = Date.now();
   const userRequests = requestCounts.get(identifier);
   
@@ -53,6 +100,12 @@ export const checkRateLimit = (identifier: string, maxRequests: number = 5, wind
   }
   
   if (userRequests.count >= maxRequests) {
+    // Log rate limit exceeded events
+    logSecurityEvent('rate_limit_exceeded', 'security', identifier, {
+      attempts: userRequests.count,
+      windowMs,
+      timestamp: new Date().toISOString()
+    });
     return false;
   }
   
@@ -60,15 +113,44 @@ export const checkRateLimit = (identifier: string, maxRequests: number = 5, wind
   return true;
 };
 
-// Simple session clear
-export const clearSecureSession = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.clear();
-    sessionStorage.clear();
+// Environment validation utility
+export const validateEnvironment = () => {
+  const issues = [];
+  
+  if (!supabaseUrl) {
+    issues.push('VITE_SUPABASE_URL is not set');
   }
+  
+  if (!supabaseAnonKey) {
+    issues.push('VITE_SUPABASE_ANON_KEY is not set');
+  }
+  
+  return {
+    isValid: issues.length === 0,
+    issues
+  };
 };
 
-// Dummy security logging (simplified)
-export const logSecurityEvent = async (action: string, resourceType?: string, resourceId?: string, details?: any) => {
-  console.log('Security Event:', { action, resourceType, resourceId, details });
+// Secure session management
+export const clearSecureSession = () => {
+  if (typeof window !== 'undefined') {
+    // Clear sensitive localStorage data
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.includes('pos_') || 
+        key.includes('auth_') || 
+        key.includes('session_') ||
+        key.includes('supabase.')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear sessionStorage as well
+    sessionStorage.clear();
+  }
 };

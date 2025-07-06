@@ -1,29 +1,15 @@
 
-import React, { createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import { AuthContextType } from '@/types/auth';
 
-// Simple standalone auth context for demo
-export interface SimpleAuthContextType {
-  user: { id: string; email: string } | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error?: string }>;
-  signOut: () => Promise<void>;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuthContext = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // Return a default implementation for standalone mode
-    return {
-      user: { id: 'demo', email: 'demo@example.com' },
-      loading: false,
-      signIn: async () => ({ error: undefined }),
-      signUp: async () => ({ error: undefined }),
-      signOut: async () => {},
-    };
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
+
+export { AuthContext };

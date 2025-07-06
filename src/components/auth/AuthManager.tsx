@@ -5,6 +5,7 @@ import { PinLogin } from './PinLogin';
 import { StaffLogin } from './StaffLogin';
 import { SecureLogin } from './SecureLogin';
 import { SecureRegistration } from './SecureRegistration';
+import { SecurityConfigChecker } from './SecurityConfigChecker';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 import { Attendant } from '@/types';
 
@@ -14,20 +15,13 @@ interface AuthManagerProps {
 }
 
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
-  const { user, loading } = useAuth();
+  const { user, isEnvironmentValid } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
   const [loginError, setLoginError] = useState<string>('');
 
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="text-center text-primary-foreground">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading MSUPER POS...</p>
-        </div>
-      </div>
-    );
+  // Show security configuration checker if environment is not valid
+  if (!isEnvironmentValid) {
+    return <SecurityConfigChecker />;
   }
 
   // If user is already authenticated, handle login
@@ -55,39 +49,29 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
       <div className="min-h-screen bg-primary flex items-center justify-center p-4">
         <div className="text-center space-y-6">
           <h1 className="text-4xl font-bold text-primary-foreground">MSUPER POS</h1>
-          <p className="text-primary-foreground/80">Secure Point of Sale System</p>
-          
-          {!user ? (
-            <div className="space-y-4">
-              <button
-                onClick={() => setCurrentScreen('register')}
-                className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
-              >
-                Create New Store
-              </button>
-              <button
-                onClick={() => setCurrentScreen('login')}
-                className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
-              >
-                Store Owner Login
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <button
-                onClick={() => onLogin()}
-                className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
-              >
-                Continue to POS System
-              </button>
+          <p className="text-primary-foreground/80">Secure Point of Sale System - Kenya</p>
+          <div className="space-y-4">
+            <button
+              onClick={() => setCurrentScreen('register')}
+              className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
+            >
+              Register New Store
+            </button>
+            <button
+              onClick={() => setCurrentScreen('login')}
+              className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+            >
+              Secure Login
+            </button>
+            {user && (
               <button
                 onClick={() => setCurrentScreen('staff-login')}
                 className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
               >
-                Staff/Cashier Login
+                Staff Login
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );
