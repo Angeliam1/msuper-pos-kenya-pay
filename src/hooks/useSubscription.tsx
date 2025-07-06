@@ -33,7 +33,13 @@ export const useSubscription = () => {
     try {
       setLoading(true);
       
-      // Get user's tenant and role information
+      // First check subscription status via Stripe
+      const { error: stripeError } = await supabase.functions.invoke('check-subscription');
+      if (stripeError) {
+        console.error('Stripe check error:', stripeError);
+      }
+
+      // Then get updated data from database
       const { data: tenantUserData, error: tenantError } = await supabase
         .from('tenant_users')
         .select(`
@@ -58,7 +64,6 @@ export const useSubscription = () => {
       }
 
       if (tenantUserData && tenantUserData.tenants) {
-        // Access the first tenant data (since tenants is an array)
         const tenantData = Array.isArray(tenantUserData.tenants) 
           ? tenantUserData.tenants[0] 
           : tenantUserData.tenants;
