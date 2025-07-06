@@ -50,18 +50,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...store,
       id: `store-${Date.now()}`,
       receiptSettings: {
-        size: '80mm',
         showLogo: true,
-        showAddress: true,
-        showPhone: true,
-        header: 'Thank you for shopping with us!',
-        footer: 'Visit us again soon!',
-        autoprint: false
+        businessName: store.name,
+        businessAddress: store.address,
+        businessPhone: store.phone || '',
+        footerMessage: 'Thank you for shopping with us!',
+        showQr: false,
+        qrType: 'website'
       },
       pricingSettings: {
-        allowPriceBelowWholesale: false,
-        defaultPriceType: 'retail',
-        taxRate: 16
+        allowNegativePricing: false,
+        roundPrices: true,
+        defaultMarkup: 20,
+        bulkPricingEnabled: false
       }
     };
     

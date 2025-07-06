@@ -118,6 +118,7 @@ export interface HirePurchase {
   installmentPeriod: 'weekly' | 'monthly';
   startDate: Date;
   endDate: Date;
+  nextPaymentDate?: Date;
   status: 'active' | 'completed' | 'defaulted';
   payments: HirePurchasePayment[];
 }
@@ -146,6 +147,12 @@ export interface ReceiptSettings {
   showQr: boolean;
   qrType: 'payment' | 'website' | 'custom';
   qrValue?: string;
+  size?: string;
+  showAddress?: boolean;
+  showPhone?: boolean;
+  header?: string;
+  footer?: string;
+  autoprint?: boolean;
 }
 
 export interface PricingSettings {
@@ -153,6 +160,9 @@ export interface PricingSettings {
   roundPrices: boolean;
   defaultMarkup: number;
   bulkPricingEnabled: boolean;
+  allowPriceBelowWholesale?: boolean;
+  defaultPriceType?: string;
+  taxRate?: number;
 }
 
 export interface StoreLocation {
@@ -170,9 +180,11 @@ export interface StoreLocation {
 
 export interface PurchaseItem {
   productId: string;
+  productName?: string;
   quantity: number;
   unitCost: number;
   total: number;
+  totalCost?: number;
 }
 
 export interface Purchase {
@@ -180,7 +192,9 @@ export interface Purchase {
   supplierId: string;
   items: PurchaseItem[];
   total: number;
+  totalAmount?: number;
   date: Date;
+  purchaseDate?: Date;
   status: 'pending' | 'received' | 'cancelled';
   invoiceNumber?: string;
   notes?: string;
@@ -197,6 +211,17 @@ export interface Supplier {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  products?: any;
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  };
+  mpesaDetails?: {
+    businessNumber: string;
+    accountName: string;
+    phoneNumber: string;
+  };
 }
 
 // Online store types
@@ -207,4 +232,38 @@ export interface OnlineProduct extends Product {
   inStock: boolean;
   tags: string[];
   isOnline: boolean;
+}
+
+// Additional types for database compatibility
+export interface Staff extends Attendant {}
+
+export interface LoyaltyProgram {
+  id: string;
+  name: string;
+  pointsPerDollar: number;
+  rewardThreshold: number;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface PurchaseOrder extends Purchase {}
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  type: 'in' | 'out' | 'adjustment';
+  quantity: number;
+  reason: string;
+  date: Date;
+  attendantId: string;
+}
+
+export interface Settings {
+  id: string;
+  storeId: string;
+  currency: string;
+  taxRate: number;
+  timezone: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
