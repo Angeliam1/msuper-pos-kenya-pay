@@ -18,6 +18,7 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
     username: '',
     password: ''
   });
+  const [loading, setLoading] = useState(false);
 
   // Demo admin credentials
   const DEMO_ADMIN = {
@@ -25,23 +26,28 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
     password: 'demo123'
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    
+    // Simulate a brief loading period for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     if (credentials.username === DEMO_ADMIN.username && 
         credentials.password === DEMO_ADMIN.password) {
       toast({
-        title: "Admin Login Successful",
-        description: "Welcome to the admin panel!",
+        title: "Demo Admin Login Successful",
+        description: "Welcome to the admin panel! You're now in demo mode.",
       });
       onAdminLogin();
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid admin credentials. Use: admin / demo123",
+        description: "Invalid demo credentials. Use: admin / demo123",
         variant: "destructive"
       });
     }
+    setLoading(false);
   };
 
   return (
@@ -54,21 +60,31 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
               size="sm"
               onClick={onBack}
               className="text-white hover:bg-red-600 p-1"
+              disabled={loading}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <Shield className="h-6 w-6" />
             <div>
-              <CardTitle className="text-lg">Demo Admin Login</CardTitle>
-              <p className="text-sm opacity-90">System Administrator</p>
+              <CardTitle className="text-lg">Demo Admin Access</CardTitle>
+              <p className="text-sm opacity-90">No Configuration Required</p>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
             <p className="text-blue-800 text-sm font-medium">Demo Credentials:</p>
-            <p className="text-blue-700 text-sm">Username: <code>admin</code></p>
-            <p className="text-blue-700 text-sm">Password: <code>demo123</code></p>
+            <p className="text-blue-700 text-sm">Username: <code className="bg-blue-100 px-1 rounded">admin</code></p>
+            <p className="text-blue-700 text-sm">Password: <code className="bg-blue-100 px-1 rounded">demo123</code></p>
+          </div>
+
+          <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
+            <p className="text-green-800 text-sm font-medium">✅ Demo Mode Benefits:</p>
+            <ul className="text-green-700 text-sm mt-1 space-y-1">
+              <li>• No Supabase setup required</li>
+              <li>• Full POS functionality with sample data</li>
+              <li>• Perfect for testing and demonstration</li>
+            </ul>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -78,7 +94,8 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
                 id="username"
                 value={credentials.username}
                 onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
-                placeholder="Enter admin username"
+                placeholder="Enter demo username"
+                disabled={loading}
               />
             </div>
 
@@ -89,13 +106,18 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
                 type="password"
                 value={credentials.password}
                 onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Enter admin password"
+                placeholder="Enter demo password"
+                disabled={loading}
               />
             </div>
 
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white">
+            <Button 
+              type="submit" 
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              disabled={loading}
+            >
               <Shield className="h-4 w-4 mr-2" />
-              Login as Admin
+              {loading ? 'Logging in...' : 'Access Demo Admin'}
             </Button>
           </form>
 

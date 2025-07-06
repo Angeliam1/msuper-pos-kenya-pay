@@ -25,14 +25,14 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
   const [selectedUserType, setSelectedUserType] = useState<UserRole | null>(null);
   const [loginError, setLoginError] = useState<string>('');
 
-  // Show security configuration checker if environment is not valid - but allow demo admin
+  // Show security configuration checker if environment is not valid - but allow demo admin and welcome
   if (!isEnvironmentValid && currentScreen !== 'demo-admin' && currentScreen !== 'welcome') {
     return <SecurityConfigChecker />;
   }
 
   // If user is already authenticated, handle based on their role
   React.useEffect(() => {
-    if (user) {
+    if (user && currentScreen !== 'demo-admin') {
       const userRole = user.user_metadata?.role || 'store_owner';
       if (userRole === 'super_admin') {
         setCurrentScreen('store-selector');
@@ -41,7 +41,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
         onLogin();
       }
     }
-  }, [user, onLogin]);
+  }, [user, onLogin, currentScreen]);
 
   const handleUserTypeSelection = (userType: UserRole) => {
     setSelectedUserType(userType);
@@ -76,6 +76,25 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
     setCurrentScreen('staff-login');
   };
 
+  const handleDemoAdminLogin = () => {
+    // Create a mock demo admin user for the session
+    const demoAdmin: Attendant = {
+      id: 'demo-admin-001',
+      name: 'Demo Administrator',
+      email: 'admin@demo.com',
+      phone: '+1234567890',
+      role: 'admin',
+      isActive: true,
+      createdAt: new Date(),
+      // Demo mode specific properties
+      isDemoMode: true,
+      permissions: ['all'] // Demo admin has all permissions
+    };
+    
+    console.log('Demo admin login successful, proceeding to main app');
+    onLogin(demoAdmin);
+  };
+
   if (currentScreen === 'welcome') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
@@ -96,7 +115,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
               className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-lg font-semibold transition-colors duration-200 shadow-lg"
             >
               🚀 Demo Admin (No Setup Required)
-              <div className="text-sm text-orange-100 mt-1">Quick access for testing</div>
+              <div className="text-sm text-orange-100 mt-1">Quick access for testing - Works offline!</div>
             </button>
             
             <button
@@ -135,7 +154,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
   if (currentScreen === 'demo-admin') {
     return (
       <DemoAdminLogin
-        onAdminLogin={() => onLogin()}
+        onAdminLogin={handleDemoAdminLogin}
         onBack={() => setCurrentScreen('welcome')}
       />
     );
