@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext } from 'react';
+import { AuthContextType } from '@/types/auth';
 
 // Simple standalone auth context for demo
-export interface AuthContextType {
+export interface SimpleAuthContextType {
   user: { id: string; email: string } | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;

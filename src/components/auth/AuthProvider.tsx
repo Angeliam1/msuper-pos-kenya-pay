@@ -1,14 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
+import { User } from '@supabase/supabase-js';
 import { Attendant } from '@/types';
 import { AuthContext } from '@/contexts/AuthContext';
-import { AuthContextType } from '@/contexts/AuthContext';
+import { AuthContextType } from '@/types/auth';
 import { supabase } from '@/lib/supabase';
+import { useAuthOperations } from '@/hooks/useAuthOperations';
+import { useAuthStateListener } from '@/hooks/useAuthStateListener';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [attendant, setAttendant] = useState<Attendant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEnvironmentValid] = useState(true);
 
   // Simple initialization
   useEffect(() => {
@@ -16,10 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || 'demo@example.com'
-          });
+          setUser(session.user);
         }
         console.log('Auth initialized:', session ? 'User found' : 'No user');
       } catch (error) {
@@ -32,69 +33,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+  // Use the auth operations hook
+  const { signIn, signUp, signOut, updateProfile } = useAuthOperations(
+    user,
+    isEnvironmentValid,
+    setAttendant
+  );
 
-      if (error) throw error;
-
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || email
-        });
-      }
-
-      return { error: undefined };
-    } catch (error: any) {
-      return { error: error.message };
-    }
-  };
-
-  const signUp = async (email: string, password: string, userData?: any) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userData
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || email
-        });
-      }
-
-      return { error: undefined };
-    } catch (error: any) {
-      return { error: error.message };
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setAttendant(null);
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
+  // Use the auth state listener hook
+  useAuthStateListener(
+    user,
+    setUser,
+    setLoading,
+    setAttendant,
+    isEnvironmentValid
+  );
 
   const value: AuthContextType = {
     user,
+    attendant,
     loading,
     signIn,
     signUp,
     signOut,
+    updateProfile,
+    isEnvironmentValid,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

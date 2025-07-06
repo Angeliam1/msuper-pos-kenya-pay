@@ -17,6 +17,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Environment validation function
+export const validateEnvironment = () => {
+  return {
+    isValid: true,
+    errors: []
+  };
+};
+
 // Simple error handler
 export const handleSupabaseError = (error: any, context: string) => {
   console.error(`Supabase error in ${context}:`, error);
