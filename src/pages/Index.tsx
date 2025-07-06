@@ -74,6 +74,12 @@ const IndexContent = () => {
     console.log('Settings saved:', settings);
   };
 
+  // Log current state for debugging
+  console.log('Demo Mode Status:', isDemoMode);
+  console.log('Current Products:', currentProducts.length);
+  console.log('Current Customers:', currentCustomers.length);
+  console.log('Current Transactions:', currentTransactions.length);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'pos':
