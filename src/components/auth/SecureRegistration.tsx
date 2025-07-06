@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -126,9 +125,7 @@ export const SecureRegistration: React.FC<SecureRegistrationProps> = ({ onComple
         totalSales: 0,
         status: 'active',
         isActive: true,
-        createdAt: new Date(),
-        ownerEmail: formData.adminEmail,
-        currency: formData.currency
+        createdAt: new Date()
       });
 
       toast({
