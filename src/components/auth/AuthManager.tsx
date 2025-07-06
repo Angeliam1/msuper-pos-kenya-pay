@@ -26,12 +26,12 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
   const [selectedUserType, setSelectedUserType] = useState<UserRole | null>(null);
   const [loginError, setLoginError] = useState<string>('');
 
-  // Show security configuration checker if environment is not valid - but allow demo admin and welcome
+  // Show security configuration checker if environment is not valid - but ALWAYS allow demo admin and welcome
   if (!isEnvironmentValid && currentScreen !== 'demo-admin' && currentScreen !== 'welcome') {
     return <SecurityConfigChecker />;
   }
 
-  // If user is already authenticated, handle based on their role
+  // If user is already authenticated, handle based on their role - but skip for demo admin
   React.useEffect(() => {
     if (user && currentScreen !== 'demo-admin') {
       const userRole = user.user_metadata?.role || 'store_owner';
@@ -78,7 +78,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
   };
 
   const handleDemoAdminLogin = () => {
-    // Create a mock demo admin user for the session
+    // Create a mock demo admin user for the session - completely offline
     const demoAdmin: Attendant = {
       id: 'demo-admin-001',
       name: 'Demo Administrator',

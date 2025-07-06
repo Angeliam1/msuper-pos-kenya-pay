@@ -50,16 +50,28 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
     setLoading(false);
   };
 
+  const handleQuickLogin = () => {
+    setCredentials({ username: 'admin', password: 'demo123' });
+    // Auto-submit after setting credentials
+    setTimeout(() => {
+      onAdminLogin();
+      toast({
+        title: "Demo Admin Login Successful",
+        description: "Welcome to the admin panel! You're now in demo mode.",
+      });
+    }, 100);
+  };
+
   return (
-    <div className="min-h-screen bg-red-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-orange-500 flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="bg-red-500 text-white rounded-t-lg">
+        <CardHeader className="bg-orange-500 text-white rounded-t-lg">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBack}
-              className="text-white hover:bg-red-600 p-1"
+              className="text-white hover:bg-orange-600 p-1"
               disabled={loading}
             >
               <ArrowLeft className="h-5 w-5" />
@@ -72,19 +84,33 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
           </div>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-            <p className="text-blue-800 text-sm font-medium">Demo Credentials:</p>
-            <p className="text-blue-700 text-sm">Username: <code className="bg-blue-100 px-1 rounded">admin</code></p>
-            <p className="text-blue-700 text-sm">Password: <code className="bg-blue-100 px-1 rounded">demo123</code></p>
-          </div>
-
           <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
             <p className="text-green-800 text-sm font-medium">✅ Demo Mode Benefits:</p>
             <ul className="text-green-700 text-sm mt-1 space-y-1">
               <li>• No Supabase setup required</li>
+              <li>• Works completely offline</li>
               <li>• Full POS functionality with sample data</li>
               <li>• Perfect for testing and demonstration</li>
             </ul>
+          </div>
+
+          <Button 
+            onClick={handleQuickLogin}
+            className="w-full bg-green-600 hover:bg-green-700 text-white mb-4"
+            disabled={loading}
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            {loading ? 'Logging in...' : 'Quick Demo Login'}
+          </Button>
+
+          <div className="text-center text-gray-500 text-sm">
+            <span>Or enter credentials manually:</span>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+            <p className="text-blue-800 text-sm font-medium">Demo Credentials:</p>
+            <p className="text-blue-700 text-sm">Username: <code className="bg-blue-100 px-1 rounded">admin</code></p>
+            <p className="text-blue-700 text-sm">Password: <code className="bg-blue-100 px-1 rounded">demo123</code></p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -113,7 +139,7 @@ export const DemoAdminLogin: React.FC<DemoAdminLoginProps> = ({ onAdminLogin, on
 
             <Button 
               type="submit" 
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
               disabled={loading}
             >
               <Shield className="h-4 w-4 mr-2" />
