@@ -22,10 +22,12 @@ import {
   Package,
   Receipt,
   DollarSign,
-  Settings
+  Settings,
+  CreditCard
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useToast } from '@/hooks/use-toast';
+import { SubscriptionManager } from './SubscriptionManager';
 
 export const SuperAdminStoreManager: React.FC = () => {
   const { stores, addStore, updateStore, getStoreProducts, getStoreCustomers, getStoreTransactions, getStoreCashBalance } = useStore();
@@ -94,7 +96,6 @@ export const SuperAdminStoreManager: React.FC = () => {
 
   const handleDeleteStore = (storeId: string) => {
     if (window.confirm('Are you sure you want to delete this store? This action cannot be undone.')) {
-      // In a real implementation, you would have a delete function in the store context
       toast({
         title: "Store Deleted",
         description: "Store has been permanently deleted",
@@ -123,7 +124,7 @@ export const SuperAdminStoreManager: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Super Admin - Store Management</h2>
-          <p className="text-gray-600">Manage all stores, generate registration codes, and control access</p>
+          <p className="text-gray-600">Manage all stores, subscriptions, and generate registration codes</p>
         </div>
         <Dialog open={showAddStoreDialog} onOpenChange={setShowAddStoreDialog}>
           <DialogTrigger asChild>
@@ -188,6 +189,10 @@ export const SuperAdminStoreManager: React.FC = () => {
       <Tabs defaultValue="stores" className="w-full">
         <TabsList>
           <TabsTrigger value="stores">All Stores</TabsTrigger>
+          <TabsTrigger value="subscriptions">
+            <CreditCard className="h-4 w-4 mr-2" />
+            Subscriptions
+          </TabsTrigger>
           <TabsTrigger value="codes">Registration Codes</TabsTrigger>
           <TabsTrigger value="overview">System Overview</TabsTrigger>
         </TabsList>
@@ -257,6 +262,10 @@ export const SuperAdminStoreManager: React.FC = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="subscriptions">
+          <SubscriptionManager />
         </TabsContent>
 
         <TabsContent value="codes">
@@ -339,7 +348,6 @@ export const SuperAdminStoreManager: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Store Details Dialog */}
       <Dialog open={showStoreDetails} onOpenChange={setShowStoreDetails}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
