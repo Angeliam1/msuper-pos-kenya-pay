@@ -11,6 +11,14 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: any) => Promise<{ error?: string }>;
   isEnvironmentValid: boolean;
+  // Enhanced RBAC and subscription properties
+  userRole: 'super_admin' | 'owner' | 'admin' | 'manager' | 'staff' | null;
+  tenantId: string | null;
+  subscriptionStatus: 'active' | 'past_due' | 'cancelled' | 'suspended' | 'trial' | null;
+  subscriptionPlan: 'basic' | 'premium' | 'enterprise' | null;
+  hasPermission: (permission: string) => boolean;
+  canAccessFeature: (feature: string) => boolean;
+  isSubscriptionActive: boolean;
 }
 
 export interface SignUpUserData {
@@ -18,4 +26,25 @@ export interface SignUpUserData {
   ownerName?: string;
   phone?: string;
   currency?: string;
+}
+
+export interface UserPermissions {
+  canManageUsers: boolean;
+  canManageStores: boolean;
+  canViewReports: boolean;
+  canManageProducts: boolean;
+  canProcessTransactions: boolean;
+  canManageSettings: boolean;
+  canAccessAnalytics: boolean;
+  canManageSubscription: boolean;
+}
+
+export interface SubscriptionFeatures {
+  multiStore: boolean;
+  advancedReports: boolean;
+  analytics: boolean;
+  api: boolean;
+  whiteLabel: boolean;
+  prioritySupport: boolean;
+  customIntegrations: boolean;
 }
