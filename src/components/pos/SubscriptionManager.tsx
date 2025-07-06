@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -132,7 +131,7 @@ export const SubscriptionManager: React.FC = () => {
           });
           break;
         case 'terminate':
-          updateStore(store.id, { isActive: false, status: 'cancelled' });
+          updateStore(store.id, { isActive: false, status: 'inactive' });
           setSubscriptions(prev => prev.map(sub => 
             sub.subscriptionId === subscriptionId 
               ? { ...sub, status: 'cancelled' }
