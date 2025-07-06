@@ -2,10 +2,11 @@
 -- Core database schema for POS system
 -- Basic tables and structure without tenant-specific configurations
 
--- Enable Row Level Security with enhanced JWT configuration
--- IMPORTANT: Replace this with a cryptographically secure random string in production
+-- Enable Row Level Security with secure JWT configuration
+-- JWT secret should be set via environment variable in production
+-- This is a placeholder that should be replaced with a secure random string
 -- Generate using: openssl rand -base64 32
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'REPLACE_WITH_SECURE_RANDOM_JWT_SECRET_IN_PRODUCTION_USE_OPENSSL_RAND_BASE64_32';
+-- ALTER DATABASE postgres SET "app.jwt_secret" TO 'your_secure_jwt_secret_here';
 
 -- Core profiles table (extends auth.users)
 CREATE TABLE IF NOT EXISTS profiles (
@@ -26,6 +27,9 @@ CREATE TABLE IF NOT EXISTS attendants (
   email TEXT,
   phone TEXT,
   role TEXT DEFAULT 'staff',
+  password_hash TEXT, -- Replace PIN with proper password
+  failed_attempts INTEGER DEFAULT 0,
+  locked_until TIMESTAMP WITH TIME ZONE,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -119,6 +123,20 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Security audit log table
+CREATE TABLE IF NOT EXISTS security_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  resource_type TEXT,
+  resource_id TEXT,
+  user_id UUID REFERENCES auth.users(id),
+  details JSONB DEFAULT '{}',
+  severity TEXT CHECK (severity IN ('info', 'medium', 'high', 'critical')) DEFAULT 'info',
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable RLS on all core tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendants ENABLE ROW LEVEL SECURITY;
@@ -128,6 +146,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE security_events ENABLE ROW LEVEL SECURITY;
 
 -- Create basic indexes for performance
 CREATE INDEX IF NOT EXISTS idx_profiles_tenant_id ON profiles(tenant_id);
@@ -138,3 +157,5 @@ CREATE INDEX IF NOT EXISTS idx_transactions_tenant_id ON transactions(tenant_id)
 CREATE INDEX IF NOT EXISTS idx_suppliers_tenant_id ON suppliers(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_purchases_tenant_id ON purchases(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_tenant_id ON expenses(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_security_events_user_id ON security_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_events_created_at ON security_events(created_at);
