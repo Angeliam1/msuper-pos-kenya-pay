@@ -46,6 +46,8 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
       address: formData.address,
       contactPerson: formData.name, // Use name as contact person if not specified
       products: editingSupplier?.products || [],
+      isActive: true,
+      updatedAt: new Date(),
       bankDetails: formData.bankName || formData.accountNumber || formData.accountName ? {
         bankName: formData.bankName,
         accountNumber: formData.accountNumber,
@@ -53,6 +55,7 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
       } : undefined,
       mpesaDetails: formData.mpesaPhone ? {
         phoneNumber: formData.mpesaPhone,
+        accountName: formData.name, // Use supplier name as account name
         businessNumber: formData.mpesaBusiness || undefined
       } : undefined
     };
@@ -120,7 +123,7 @@ export const SupplierManagement: React.FC<SupplierManagementProps> = ({
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
                       <h3 className="font-semibold">{supplier.name}</h3>
-                      <Badge>{supplier.products.length} products</Badge>
+                      <Badge>{supplier.products?.length || 0} products</Badge>
                     </div>
                     <div className="space-y-2 text-sm text-gray-600">
                       <div className="flex items-center gap-2">

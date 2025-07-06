@@ -128,9 +128,9 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({ onStoreSelect, onB
                     </div>
                   </div>
 
-                  {store.manager && (
+                  {store.managerId && (
                     <div className="text-sm text-gray-600">
-                      <strong>Manager:</strong> {store.manager}
+                      <strong>Manager ID:</strong> {store.managerId}
                     </div>
                   )}
 
