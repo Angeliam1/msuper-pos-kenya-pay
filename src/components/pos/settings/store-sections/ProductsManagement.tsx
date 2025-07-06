@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,7 @@ export const ProductsManagement: React.FC = () => {
     buyingCost: 0,
     retailPrice: 0,
     stock: 0,
+    minStock: 5,
     description: ''
   });
 
@@ -45,6 +45,7 @@ export const ProductsManagement: React.FC = () => {
       retailPrice: quickProduct.retailPrice,
       price: quickProduct.retailPrice,
       stock: quickProduct.stock,
+      minStock: quickProduct.minStock,
       supplierId: '',
       description: quickProduct.description,
       barcode: `${Date.now()}`,
@@ -58,6 +59,7 @@ export const ProductsManagement: React.FC = () => {
       buyingCost: 0,
       retailPrice: 0,
       stock: 0,
+      minStock: 5,
       description: ''
     });
     setShowQuickAddProduct(false);
@@ -134,7 +136,7 @@ export const ProductsManagement: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label>Buying Cost</Label>
                       <Input
@@ -149,6 +151,14 @@ export const ProductsManagement: React.FC = () => {
                         type="number"
                         value={quickProduct.retailPrice}
                         onChange={(e) => setQuickProduct(prev => ({ ...prev, retailPrice: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Min Stock</Label>
+                      <Input
+                        type="number"
+                        value={quickProduct.minStock}
+                        onChange={(e) => setQuickProduct(prev => ({ ...prev, minStock: parseInt(e.target.value) || 5 }))}
                       />
                     </div>
                   </div>

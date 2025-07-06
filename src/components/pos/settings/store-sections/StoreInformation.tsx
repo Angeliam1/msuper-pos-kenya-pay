@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,7 +25,7 @@ export const StoreInformation: React.FC<StoreInformationProps> = ({ settings, on
     name: '',
     phone: '',
     address: '',
-    manager: ''
+    managerId: ''
   });
 
   // Track if changes have been made
@@ -39,7 +38,7 @@ export const StoreInformation: React.FC<StoreInformationProps> = ({ settings, on
         name: currentStore.name || '',
         phone: currentStore.phone || '',
         address: currentStore.address || '',
-        manager: currentStore.manager || ''
+        managerId: currentStore.managerId || ''
       };
       setLocalStoreInfo(newStoreInfo);
       setHasUnsavedChanges(false);
@@ -132,12 +131,12 @@ export const StoreInformation: React.FC<StoreInformationProps> = ({ settings, on
           />
         </div>
         <div>
-          <Label htmlFor="storeManager">Manager</Label>
+          <Label htmlFor="storeManager">Manager ID</Label>
           <Input
             id="storeManager"
-            value={localStoreInfo.manager}
-            onChange={(e) => handleStoreInfoChange('manager', e.target.value)}
-            placeholder="Enter manager name"
+            value={localStoreInfo.managerId}
+            onChange={(e) => handleStoreInfoChange('managerId', e.target.value)}
+            placeholder="Enter manager ID"
           />
         </div>
         

@@ -1,3 +1,4 @@
+
 import { Product, Customer, CartItem, Transaction, Staff, LoyaltyProgram, Store, Supplier, PurchaseOrder, Expense, StockMovement, Settings, Purchase, Attendant } from '@/types';
 
 // Mock data for products
@@ -203,16 +204,17 @@ export const mockCustomers: Customer[] = [
 // Mock data for transactions
 export const mockTransactions: Transaction[] = [];
 
-// Mock data for staff
+// Mock data for staff (fixed - removed firstName/lastName, added name)
 export const mockStaff: Staff[] = [
   {
     id: '1',
-    firstName: 'Admin',
-    lastName: 'User',
+    name: 'Admin User',
     email: 'admin@example.com',
     phone: '+254722222222',
     role: 'admin',
-    permissions: []
+    permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'],
+    isActive: true,
+    createdAt: new Date()
   }
 ];
 
@@ -231,7 +233,7 @@ export const mockAttendants: Attendant[] = [
   }
 ];
 
-// Mock data for suppliers
+// Mock data for suppliers (fixed - added isActive and updatedAt)
 export const mockSuppliers: Supplier[] = [
   {
     id: '1',
@@ -241,14 +243,16 @@ export const mockSuppliers: Supplier[] = [
     email: 'apple@example.com',
     address: 'Nairobi, Kenya',
     products: [],
-    createdAt: new Date()
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
 
 // Mock data for purchases
 export const mockPurchases: Purchase[] = [];
 
-// Mock data for expenses
+// Mock data for expenses (fixed - removed createdAt from the literal)
 export const mockExpenses: Expense[] = [
   {
     id: '1',
@@ -256,8 +260,7 @@ export const mockExpenses: Expense[] = [
     category: 'Rent',
     amount: 50000,
     description: 'Monthly rent for Nairobi store',
-    attendantId: '1',
-    createdAt: new Date()
+    attendantId: '1'
   }
 ];
 

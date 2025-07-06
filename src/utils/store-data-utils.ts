@@ -64,14 +64,19 @@ export const createMockStores = (tenantId: string, tenantName: string): StoreLoc
     address: '123 Main Street, Nairobi',
     phone: '+254 700 000 001',
     managerId: 'manager-1',
-    manager: 'John Doe',
     status: 'active',
-    totalSales: 250000,
     isActive: true,
     createdAt: new Date(),
     receiptSettings: {
-      size: '80mm',
       showLogo: true,
+      logoUrl: '',
+      businessName: `${tenantName} - Main Branch`,
+      businessAddress: '123 Main Street, Nairobi',
+      businessPhone: '+254 700 000 001',
+      footerMessage: 'Thank you for shopping with us!',
+      showQr: false,
+      qrType: 'website',
+      size: '80mm',
       showAddress: true,
       showPhone: true,
       header: 'Thank you for shopping with us!',
@@ -79,6 +84,10 @@ export const createMockStores = (tenantId: string, tenantName: string): StoreLoc
       autoprint: false
     },
     pricingSettings: {
+      allowNegativePricing: false,
+      roundPrices: true,
+      defaultMarkup: 20,
+      bulkPricingEnabled: false,
       allowPriceBelowWholesale: false,
       defaultPriceType: 'retail',
       taxRate: 16
@@ -90,8 +99,15 @@ export const createStoreDefaults = (store: Omit<StoreLocation, 'id'>, tenantId: 
   ...store,
   id: `store-${tenantId}-${Date.now()}`,
   receiptSettings: {
-    size: '80mm',
     showLogo: true,
+    logoUrl: '',
+    businessName: store.name,
+    businessAddress: store.address,
+    businessPhone: store.phone || '',
+    footerMessage: 'Thank you for shopping with us!',
+    showQr: false,
+    qrType: 'website',
+    size: '80mm',
     showAddress: true,
     showPhone: true,
     header: 'Thank you for shopping with us!',
@@ -99,6 +115,10 @@ export const createStoreDefaults = (store: Omit<StoreLocation, 'id'>, tenantId: 
     autoprint: false
   },
   pricingSettings: {
+    allowNegativePricing: false,
+    roundPrices: true,
+    defaultMarkup: 20,
+    bulkPricingEnabled: false,
     allowPriceBelowWholesale: false,
     defaultPriceType: 'retail',
     taxRate: 16
