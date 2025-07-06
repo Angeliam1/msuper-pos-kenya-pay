@@ -198,6 +198,7 @@ export interface Purchase {
   status: 'pending' | 'received' | 'cancelled';
   invoiceNumber?: string;
   notes?: string;
+  attendantId?: string;
 }
 
 export interface Supplier {
@@ -218,7 +219,7 @@ export interface Supplier {
     accountName: string;
   };
   mpesaDetails?: {
-    businessNumber: string;
+    businessNumber?: string;
     accountName: string;
     phoneNumber: string;
   };
