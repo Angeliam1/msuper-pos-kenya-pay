@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthManager } from '@/components/auth/AuthManager';
 import { DemoProductManagement } from '@/components/pos/DemoProductManagement';
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
@@ -24,6 +23,45 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Simple login component for demo
+const SimpleLogin = ({ onLogin }: { onLogin: (attendant: Attendant) => void }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold text-center mb-6">M-Super POS</h2>
+        <div className="space-y-4">
+          <button
+            onClick={() => onLogin({
+              id: 'demo-admin-001',
+              name: 'Demo Admin',
+              role: 'admin',
+              isActive: true,
+              isDemoMode: true,
+              createdAt: new Date()
+            })}
+            className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
+          >
+            Enter Demo Mode
+          </button>
+          <button
+            onClick={() => onLogin({
+              id: 'regular-admin-001',
+              name: 'Store Manager',
+              role: 'admin',
+              isActive: true,
+              isDemoMode: false,
+              createdAt: new Date()
+            })}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          >
+            Regular Login
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Component to handle demo mode routing
 const AppContent = () => {
@@ -46,7 +84,7 @@ const AppContent = () => {
     setIsLoading(false);
   }, []);
 
-  const handleLogin = (attendant?: Attendant) => {
+  const handleLogin = (attendant: Attendant) => {
     if (attendant && attendant.isDemoMode) {
       // Save demo user to localStorage
       localStorage.setItem('demo_user', JSON.stringify(attendant));
@@ -98,12 +136,7 @@ const AppContent = () => {
   }
 
   // Show login screen
-  return (
-    <AuthManager 
-      onLogin={handleLogin}
-      attendants={[]} 
-    />
-  );
+  return <SimpleLogin onLogin={handleLogin} />;
 };
 
 function App() {

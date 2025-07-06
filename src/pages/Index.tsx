@@ -1,156 +1,172 @@
 
-import React, { useState } from 'react';
-import { Sidebar } from '@/components/pos/Sidebar';
-import { Dashboard } from '@/components/pos/Dashboard';
-import { ProductManagement } from '@/components/pos/ProductManagement';
-import { Reports } from '@/components/pos/Reports';
-import { Settings } from '@/components/pos/Settings';
-import { OnlineStoreManager } from '@/components/online-store/OnlineStoreManager';
-import { SuperAdminStoreManager } from '@/components/pos/SuperAdminStoreManager';
-import { ThemeProvider } from '@/components/pos/ThemeProvider';
-import { StoreProvider } from '@/contexts/StoreContext';
-import { DemoModeProvider, useDemoMode } from '@/contexts/DemoModeContext';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getProducts, getCustomers, getTransactions, getAttendants, getSuppliers, getExpenses } from '@/lib/database';
-
-const IndexContent = () => {
-  const [activeTab, setActiveTab] = useState('pos');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isDemoMode, demoProducts, demoCustomers, demoTransactions, demoAttendants } = useDemoMode();
-
-  // Fetch data for components (only if not in demo mode)
-  const { data: products = [] } = useQuery({
-    queryKey: ['products'],
-    queryFn: getProducts,
-    enabled: !isDemoMode
-  });
-
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: getCustomers,
-    enabled: !isDemoMode
-  });
-
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: getTransactions,
-    enabled: !isDemoMode
-  });
-
-  const { data: attendants = [] } = useQuery({
-    queryKey: ['attendants'],
-    queryFn: getAttendants,
-    enabled: !isDemoMode
-  });
-
-  const { data: suppliers = [] } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: getSuppliers,
-    enabled: !isDemoMode
-  });
-
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: getExpenses,
-    enabled: !isDemoMode
-  });
-
-  // Use demo data or real data based on mode
-  const currentProducts = isDemoMode ? demoProducts : products;
-  const currentCustomers = isDemoMode ? demoCustomers : customers;
-  const currentTransactions = isDemoMode ? demoTransactions : transactions;
-  const currentAttendants = isDemoMode ? demoAttendants : attendants;
-
-  // Calculate dashboard metrics
-  const totalSales = currentTransactions.reduce((sum, t) => sum + t.total, 0);
-  const todaySales = currentTransactions
-    .filter(t => new Date(t.timestamp).toDateString() === new Date().toDateString())
-    .reduce((sum, t) => sum + t.total, 0);
-  const transactionCount = currentTransactions.length;
-
-  const handleSaveSettings = (settings: any) => {
-    console.log('Settings saved:', settings);
-  };
-
-  // Log current state for debugging
-  console.log('Demo Mode Status:', isDemoMode);
-  console.log('Current Products:', currentProducts.length);
-  console.log('Current Customers:', currentCustomers.length);
-  console.log('Current Transactions:', currentTransactions.length);
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'pos':
-        return <ProductManagement />;
-      case 'dashboard':
-        return (
-          <Dashboard
-            totalSales={totalSales}
-            todaySales={todaySales}
-            transactionCount={transactionCount}
-            transactions={currentTransactions}
-            products={currentProducts}
-          />
-        );
-      case 'reports':
-        return (
-          <Reports
-            transactions={currentTransactions}
-            products={currentProducts}
-            attendants={currentAttendants}
-          />
-        );
-      case 'settings':
-        return <Settings onSaveSettings={handleSaveSettings} />;
-      case 'online-store':
-        return <OnlineStoreManager />;
-      case 'stores':
-        return <SuperAdminStoreManager />;
-      default:
-        return <ProductManagement />;
-    }
-  };
-
-  return (
-    <StoreProvider>
-      <ThemeProvider>
-        <div className="min-h-screen bg-background text-foreground flex theme-transition">
-          <Sidebar 
-            activeTab={activeTab} 
-            onTabChange={setActiveTab}
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
-          />
-          
-          <div className="flex-1 lg:ml-0">
-            {/* Mobile header */}
-            <div className="lg:hidden bg-card border-b p-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            <main className="p-4 lg:p-8">
-              {renderContent()}
-            </main>
-          </div>
-        </div>
-      </ThemeProvider>
-    </StoreProvider>
-  );
-};
+import { 
+  ShoppingCart, 
+  Users, 
+  Package, 
+  TrendingUp,
+  Store,
+  Settings
+} from 'lucide-react';
 
 const Index = () => {
   return (
-    <DemoModeProvider>
-      <IndexContent />
-    </DemoModeProvider>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">M-Super POS</h1>
+          <p className="text-gray-600">Welcome to your Point of Sale system</p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <ShoppingCart className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Today's Sales</p>
+                  <p className="text-2xl font-bold text-gray-900">KSh 0</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Users className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Customers</p>
+                  <p className="text-2xl font-bold text-gray-900">0</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Package className="h-8 w-8 text-orange-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Products</p>
+                  <p className="text-2xl font-bold text-gray-900">0</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <TrendingUp className="h-8 w-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900">KSh 0</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Store className="mr-2 h-5 w-5" />
+                Point of Sale
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Process sales, manage inventory, and handle customer transactions.
+              </p>
+              <Button className="w-full">
+                Open POS
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Package className="mr-2 h-5 w-5" />
+                Inventory
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Manage products, track stock levels, and update pricing.
+              </p>
+              <Button variant="outline" className="w-full">
+                Manage Inventory
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="mr-2 h-5 w-5" />
+                Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Configure your store settings, users, and system preferences.
+              </p>
+              <Button variant="outline" className="w-full">
+                Open Settings
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Getting Started */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Getting Started</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  1
+                </div>
+                <div className="ml-4">
+                  <h4 className="font-semibold">Set up your store information</h4>
+                  <p className="text-gray-600">Configure your store details, currency, and basic settings.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  2
+                </div>
+                <div className="ml-4">
+                  <h4 className="font-semibold">Add your products</h4>
+                  <p className="text-gray-600">Create your product catalog with prices and stock levels.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  3
+                </div>
+                <div className="ml-4">
+                  <h4 className="font-semibold">Start selling</h4>
+                  <p className="text-gray-600">Begin processing sales and managing your business.</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 
