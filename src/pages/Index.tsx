@@ -10,9 +10,10 @@ import { SuperAdminStoreManager } from '@/components/pos/SuperAdminStoreManager'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Menu, Store } from 'lucide-react';
+import { Product, Transaction, Attendant, CartItem } from '@/types';
 
 // Standalone demo data - no external providers needed
-const demoProducts = [
+const demoProducts: Product[] = [
   {
     id: '1',
     name: 'Coca Cola 500ml',
@@ -45,26 +46,26 @@ const demoProducts = [
   }
 ];
 
-const demoTransactions = [
+const demoTransactions: Transaction[] = [
   {
     id: 'demo-trans-1',
-    items: [{ ...demoProducts[0], quantity: 2 }],
+    items: [{ ...demoProducts[0], quantity: 2 } as CartItem],
     total: 100,
     timestamp: new Date(),
     customerId: 'walk-in',
     attendantId: 'demo',
-    paymentSplits: [{ method: 'cash', amount: 100 }],
-    status: 'completed'
+    paymentSplits: [{ method: 'cash' as const, amount: 100 }],
+    status: 'completed' as const
   }
 ];
 
-const demoAttendants = [
+const demoAttendants: Attendant[] = [
   {
     id: 'demo',
     name: 'Demo User',
     email: 'demo@example.com',
     phone: '+254700000000',
-    role: 'manager',
+    role: 'manager' as const,
     pin: '1234',
     isActive: true,
     permissions: ['pos', 'reports', 'settings'],
