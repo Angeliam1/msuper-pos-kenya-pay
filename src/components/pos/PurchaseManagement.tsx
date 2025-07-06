@@ -74,7 +74,8 @@ export const PurchaseManagement: React.FC = () => {
       productName: '',
       quantity: 1,
       unitCost: 0,
-      totalCost: 0
+      totalCost: 0,
+      total: 0
     }]);
   };
 
@@ -83,7 +84,9 @@ export const PurchaseManagement: React.FC = () => {
     newItems[index] = { ...newItems[index], ...updates };
     
     if (updates.quantity || updates.unitCost) {
-      newItems[index].totalCost = newItems[index].quantity * newItems[index].unitCost;
+      const totalCost = newItems[index].quantity * newItems[index].unitCost;
+      newItems[index].totalCost = totalCost;
+      newItems[index].total = totalCost;
     }
     
     setPurchaseItems(newItems);
@@ -115,8 +118,7 @@ export const PurchaseManagement: React.FC = () => {
       purchaseDate: new Date(),
       status: 'pending',
       invoiceNumber,
-      notes,
-      createdAt: new Date()
+      notes
     };
 
     addPurchaseMutation.mutate(purchaseData);

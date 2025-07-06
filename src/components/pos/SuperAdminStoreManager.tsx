@@ -59,10 +59,8 @@ export const SuperAdminStoreManager: React.FC = () => {
         name: newStore.name,
         address: newStore.address,
         phone: newStore.phone,
-        manager: newStore.manager,
         managerId: '',
-        totalSales: 0,
-        status: 'pending',
+        status: 'inactive',
         isActive: false,
         createdAt: new Date()
       });
@@ -223,7 +221,7 @@ export const SuperAdminStoreManager: React.FC = () => {
                           <div className="text-sm text-gray-500">{store.address}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{store.manager || 'Not assigned'}</TableCell>
+                      <TableCell>{store.managerId || 'Not assigned'}</TableCell>
                       <TableCell>
                         <Badge variant={store.isActive ? 'default' : 'secondary'}>
                           {store.status || (store.isActive ? 'Active' : 'Inactive')}

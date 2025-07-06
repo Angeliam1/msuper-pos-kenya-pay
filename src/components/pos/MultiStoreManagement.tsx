@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,9 +35,7 @@ export const MultiStoreManagement: React.FC = () => {
     address: '',
     phone: '',
     managerId: '',
-    manager: '',
-    status: 'active' as 'active' | 'inactive',
-    totalSales: 0,
+    status: 'active' as 'active' | 'inactive' | 'suspended',
     isActive: true,
     createdAt: new Date()
   });
@@ -54,9 +51,7 @@ export const MultiStoreManagement: React.FC = () => {
         address: newStore.address,
         phone: newStore.phone,
         managerId: newStore.managerId,
-        manager: newStore.manager,
         status: newStore.status,
-        totalSales: newStore.totalSales,
         isActive: newStore.isActive,
         createdAt: new Date()
       });
@@ -65,9 +60,7 @@ export const MultiStoreManagement: React.FC = () => {
         address: '',
         phone: '',
         managerId: '',
-        manager: '',
         status: 'active',
-        totalSales: 0,
         isActive: true,
         createdAt: new Date()
       });
@@ -128,8 +121,8 @@ export const MultiStoreManagement: React.FC = () => {
                 <div>
                   <Label>Manager</Label>
                   <Input
-                    value={newStore.manager}
-                    onChange={(e) => setNewStore(prev => ({ ...prev, manager: e.target.value }))}
+                    value={newStore.managerId}
+                    onChange={(e) => setNewStore(prev => ({ ...prev, managerId: e.target.value }))}
                     placeholder="Manager name"
                   />
                 </div>
@@ -257,7 +250,7 @@ export const MultiStoreManagement: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-purple-500" />
-                          <span>Manager: {store.manager || 'Not assigned'}</span>
+                          <span>Manager ID: {store.managerId || 'Not assigned'}</span>
                         </div>
                       </div>
                       
@@ -326,7 +319,7 @@ export const MultiStoreManagement: React.FC = () => {
                     <p><strong>Name:</strong> {selectedStoreForDetails.name}</p>
                     <p><strong>Address:</strong> {selectedStoreForDetails.address}</p>
                     <p><strong>Phone:</strong> {selectedStoreForDetails.phone}</p>
-                    <p><strong>Manager:</strong> {selectedStoreForDetails.manager}</p>
+                    <p><strong>Manager ID:</strong> {selectedStoreForDetails.managerId}</p>
                   </div>
                 </div>
                 <div>

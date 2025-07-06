@@ -64,8 +64,7 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
         installmentAmount,
         installmentPeriod,
         nextPaymentDate,
-        status: 'active',
-        createdAt: new Date()
+        status: 'active'
       });
 
       console.log('Hire purchase created:', hirePurchaseId);

@@ -121,7 +121,6 @@ export const SecureRegistration: React.FC<SecureRegistrationProps> = ({ onComple
         address: formData.storeAddress,
         phone: formData.storePhone,
         managerId: '', // Will be set when user is confirmed
-        totalSales: 0,
         status: 'active',
         isActive: true,
         createdAt: new Date()
