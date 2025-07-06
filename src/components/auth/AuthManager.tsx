@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Registration } from './Registration';
 import { PinLogin } from './PinLogin';
@@ -85,6 +86,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
       phone: '+1234567890',
       role: 'admin',
       isActive: true,
+      pin: 'demo123',
       createdAt: new Date(),
       // Demo mode specific properties
       isDemoMode: true,
