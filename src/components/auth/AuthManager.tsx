@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Registration } from './Registration';
 import { PinLogin } from './PinLogin';
@@ -6,6 +5,7 @@ import { StaffLogin } from './StaffLogin';
 import { SecureLogin } from './SecureLogin';
 import { SecureRegistration } from './SecureRegistration';
 import { SuperAdminLogin } from './SuperAdminLogin';
+import { DemoAdminLogin } from './DemoAdminLogin';
 import { StoreSelector } from './StoreSelector';
 import { SecurityConfigChecker } from './SecurityConfigChecker';
 import { useAuth } from '@/hooks/useSupabaseAuth';
@@ -16,8 +16,8 @@ interface AuthManagerProps {
   attendants?: Attendant[];
 }
 
-type UserRole = 'super_admin' | 'store_owner' | 'store_worker';
-type AuthScreen = 'welcome' | 'super-admin' | 'store-selector' | 'store-owner-options' | 'store-owner-signup' | 'store-owner-login' | 'worker-login' | 'staff-login';
+type UserRole = 'super_admin' | 'store_owner' | 'store_worker' | 'demo_admin';
+type AuthScreen = 'welcome' | 'super-admin' | 'demo-admin' | 'store-selector' | 'store-owner-options' | 'store-owner-signup' | 'store-owner-login' | 'worker-login' | 'staff-login';
 
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
   const { user, isEnvironmentValid } = useAuth();
@@ -25,8 +25,8 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
   const [selectedUserType, setSelectedUserType] = useState<UserRole | null>(null);
   const [loginError, setLoginError] = useState<string>('');
 
-  // Show security configuration checker if environment is not valid
-  if (!isEnvironmentValid) {
+  // Show security configuration checker if environment is not valid - but allow demo admin
+  if (!isEnvironmentValid && currentScreen !== 'demo-admin' && currentScreen !== 'welcome') {
     return <SecurityConfigChecker />;
   }
 
@@ -49,6 +49,9 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
     switch (userType) {
       case 'super_admin':
         setCurrentScreen('super-admin');
+        break;
+      case 'demo_admin':
+        setCurrentScreen('demo-admin');
         break;
       case 'store_owner':
         setCurrentScreen('store-owner-options');
@@ -89,6 +92,14 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
             <p className="text-white/90 text-lg">Select your role to continue:</p>
             
             <button
+              onClick={() => handleUserTypeSelection('demo_admin')}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-lg font-semibold transition-colors duration-200 shadow-lg"
+            >
+              🚀 Demo Admin (No Setup Required)
+              <div className="text-sm text-orange-100 mt-1">Quick access for testing</div>
+            </button>
+            
+            <button
               onClick={() => handleUserTypeSelection('super_admin')}
               className="w-full bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-lg font-semibold transition-colors duration-200 shadow-lg"
             >
@@ -118,6 +129,15 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (currentScreen === 'demo-admin') {
+    return (
+      <DemoAdminLogin
+        onAdminLogin={() => onLogin()}
+        onBack={() => setCurrentScreen('welcome')}
+      />
     );
   }
 
