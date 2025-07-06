@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Eye, EyeOff, Shield, Store, User } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Shield, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
 
-interface SecureLoginProps {
+interface SuperAdminLoginProps {
+  onSuccess: () => void;
   onBack: () => void;
-  userType?: 'owner' | 'worker';
 }
 
-export const SecureLogin: React.FC<SecureLoginProps> = ({ onBack, userType = 'owner' }) => {
+export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onSuccess, onBack }) => {
   const { signIn } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +23,6 @@ export const SecureLogin: React.FC<SecureLoginProps> = ({ onBack, userType = 'ow
     password: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const isWorkerLogin = userType === 'worker';
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -59,15 +57,16 @@ export const SecureLogin: React.FC<SecureLoginProps> = ({ onBack, userType = 'ow
     if (error) {
       setErrors({ submit: error });
       toast({
-        title: "Login Failed",
+        title: "Authentication Failed",
         description: error,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Login Successful",
-        description: `Welcome back${isWorkerLogin ? ' to your workplace' : ' to your store'}!`,
+        title: "Super Admin Access Granted",
+        description: "Welcome to MSUPER POS Administration",
       });
+      onSuccess();
     }
 
     setLoading(false);
@@ -80,67 +79,46 @@ export const SecureLogin: React.FC<SecureLoginProps> = ({ onBack, userType = 'ow
     }
   };
 
-  const getThemeColors = () => {
-    if (isWorkerLogin) {
-      return {
-        bg: 'bg-blue-500',
-        primary: 'text-blue-600',
-        secondary: 'text-blue-100',
-        accent: 'bg-blue-600',
-        icon: User
-      };
-    }
-    return {
-      bg: 'bg-green-500',
-      primary: 'text-green-600',
-      secondary: 'text-green-100',
-      accent: 'bg-green-600',
-      icon: Store
-    };
-  };
-
-  const theme = getThemeColors();
-  const IconComponent = theme.icon;
-
   return (
-    <div className={`min-h-screen ${theme.bg} flex items-center justify-center p-4`}>
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
+    <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center p-4">
+      <Card className="w-full max-w-sm border-red-200 shadow-2xl">
+        <CardHeader className="text-center bg-red-50 rounded-t-lg">
           <Button
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="absolute top-4 left-4"
+            className="absolute top-4 left-4 text-red-600"
             disabled={loading}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center justify-center gap-2 mb-2">
-            <IconComponent className={`h-6 w-6 ${theme.primary}`} />
-            <span className={`text-sm ${theme.accent} text-white px-2 py-1 rounded font-semibold`}>
-              {isWorkerLogin ? 'EMPLOYEE LOGIN' : 'STORE OWNER'}
+            <Crown className="h-8 w-8 text-red-600" />
+            <span className="text-sm bg-red-600 text-white px-3 py-1 rounded-full font-bold">
+              SUPER ADMIN
             </span>
           </div>
-          <CardTitle className="text-xl">
-            {isWorkerLogin ? 'Employee Access' : 'Store Owner Login'}
-          </CardTitle>
-          <p className="text-sm text-gray-600">
-            {isWorkerLogin 
-              ? 'Sign in with your employee credentials'
-              : 'Access your store management system'
-            }
-          </p>
+          <CardTitle className="text-2xl text-red-800">System Administrator</CardTitle>
+          <p className="text-sm text-red-600">High-level system access</p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-6 space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-red-600" />
+              <p className="text-red-700 text-sm font-medium">Restricted Access Area</p>
+            </div>
+            <p className="text-red-600 text-xs mt-1">
+              This area is reserved for system administrators only
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">
-                {isWorkerLogin ? 'Employee Email' : 'Store Owner Email'}
-              </Label>
+              <Label htmlFor="email">Administrator Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder={isWorkerLogin ? 'employee@store.com' : 'owner@yourstore.com'}
+                placeholder="admin@msuper-pos.com"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className={errors.email ? 'border-red-500' : ''}
@@ -150,12 +128,12 @@ export const SecureLogin: React.FC<SecureLoginProps> = ({ onBack, userType = 'ow
             </div>
 
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Master Password</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
+                  placeholder="Enter master password"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   className={errors.password ? 'border-red-500' : ''}
@@ -183,19 +161,16 @@ export const SecureLogin: React.FC<SecureLoginProps> = ({ onBack, userType = 'ow
 
             <Button 
               type="submit" 
-              className="w-full"
+              className="w-full bg-red-600 hover:bg-red-700"
               disabled={loading}
             >
-              {loading ? 'Signing In...' : (isWorkerLogin ? 'Clock In' : 'Access Store')}
+              {loading ? 'Authenticating...' : 'Access Admin Panel'}
             </Button>
           </form>
 
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              {isWorkerLogin 
-                ? 'Contact your manager if you forgot your password'
-                : 'Secure store owner authentication'
-              }
+              Unauthorized access attempts are logged and monitored
             </p>
           </div>
         </CardContent>

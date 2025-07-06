@@ -5,6 +5,8 @@ import { PinLogin } from './PinLogin';
 import { StaffLogin } from './StaffLogin';
 import { SecureLogin } from './SecureLogin';
 import { SecureRegistration } from './SecureRegistration';
+import { SuperAdminLogin } from './SuperAdminLogin';
+import { StoreSelector } from './StoreSelector';
 import { SecurityConfigChecker } from './SecurityConfigChecker';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 import { Attendant } from '@/types';
@@ -14,9 +16,13 @@ interface AuthManagerProps {
   attendants?: Attendant[];
 }
 
+type UserRole = 'super_admin' | 'store_owner' | 'store_worker';
+type AuthScreen = 'welcome' | 'super-admin' | 'store-selector' | 'store-owner-signup' | 'store-owner-login' | 'worker-login' | 'staff-login';
+
 export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = [] }) => {
   const { user, isEnvironmentValid } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'register' | 'login' | 'staff-login'>('welcome');
+  const [currentScreen, setCurrentScreen] = useState<AuthScreen>('welcome');
+  const [selectedUserType, setSelectedUserType] = useState<UserRole | null>(null);
   const [loginError, setLoginError] = useState<string>('');
 
   // Show security configuration checker if environment is not valid
@@ -27,9 +33,35 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
   // If user is already authenticated, handle login
   React.useEffect(() => {
     if (user) {
-      onLogin();
+      // Check user role and redirect accordingly
+      const userRole = user.user_metadata?.role || 'store_owner';
+      if (userRole === 'super_admin') {
+        setCurrentScreen('store-selector');
+      } else {
+        onLogin();
+      }
     }
   }, [user, onLogin]);
+
+  const handleUserTypeSelection = (userType: UserRole) => {
+    setSelectedUserType(userType);
+    
+    switch (userType) {
+      case 'super_admin':
+        setCurrentScreen('super-admin');
+        break;
+      case 'store_owner':
+        setCurrentScreen('store-owner-login');
+        break;
+      case 'store_worker':
+        setCurrentScreen('worker-login');
+        break;
+    }
+  };
+
+  const handleStoreOwnerAction = (action: 'login' | 'signup') => {
+    setCurrentScreen(action === 'login' ? 'store-owner-login' : 'store-owner-signup');
+  };
 
   const handleRegistrationComplete = () => {
     setCurrentScreen('welcome');
@@ -44,52 +76,122 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
     }
   };
 
+  const handleStoreSelection = (storeId: string) => {
+    // Super admin selected a store, proceed to staff login for that store
+    setCurrentScreen('staff-login');
+    onLogin();
+  };
+
   if (currentScreen === 'welcome') {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center p-4">
-        <div className="text-center space-y-6">
-          <h1 className="text-4xl font-bold text-primary-foreground">MSUPER POS</h1>
-          <p className="text-primary-foreground/80">Secure Point of Sale System - Kenya</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
+        <div className="text-center space-y-8 max-w-md w-full">
           <div className="space-y-4">
+            <h1 className="text-5xl font-bold text-white">MSUPER POS</h1>
+            <p className="text-xl text-blue-100">Secure Multi-Store Point of Sale System</p>
+            <div className="h-1 bg-white/20 rounded-full">
+              <div className="h-1 bg-white rounded-full w-3/4 animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <p className="text-white/90 text-lg">Select your role to continue:</p>
+            
             <button
-              onClick={() => setCurrentScreen('register')}
-              className="w-full bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
+              onClick={() => handleUserTypeSelection('super_admin')}
+              className="w-full bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-lg font-semibold transition-colors duration-200 shadow-lg"
             >
-              Register New Store
+              🔐 Super Administrator
+              <div className="text-sm text-red-100 mt-1">Manage all stores and systems</div>
             </button>
+            
             <button
-              onClick={() => setCurrentScreen('login')}
-              className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
+              onClick={() => handleUserTypeSelection('store_owner')}
+              className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-4 rounded-lg font-semibold transition-colors duration-200 shadow-lg"
             >
-              Secure Login
+              🏪 Store Owner / Manager
+              <div className="text-sm text-green-100 mt-1">Own or manage a store</div>
             </button>
-            {user && (
-              <button
-                onClick={() => setCurrentScreen('staff-login')}
-                className="w-full bg-transparent border-2 border-white text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary"
-              >
-                Staff Login
-              </button>
-            )}
+            
+            <button
+              onClick={() => handleUserTypeSelection('store_worker')}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 rounded-lg font-semibold transition-colors duration-200 shadow-lg"
+            >
+              👤 Store Employee
+              <div className="text-sm text-blue-100 mt-1">Cashier, Supervisor, Staff</div>
+            </button>
+          </div>
+
+          <div className="text-center text-white/60 text-sm">
+            Secure authentication with encrypted data storage
           </div>
         </div>
       </div>
     );
   }
 
-  if (currentScreen === 'register') {
+  if (currentScreen === 'super-admin') {
     return (
-      <SecureRegistration
-        onComplete={handleRegistrationComplete}
+      <SuperAdminLogin
+        onSuccess={() => setCurrentScreen('store-selector')}
         onBack={() => setCurrentScreen('welcome')}
       />
     );
   }
 
-  if (currentScreen === 'login') {
+  if (currentScreen === 'store-selector') {
+    return (
+      <StoreSelector
+        onStoreSelect={handleStoreSelection}
+        onBack={() => setCurrentScreen('welcome')}
+      />
+    );
+  }
+
+  if (currentScreen === 'store-owner-login') {
+    return (
+      <div className="min-h-screen bg-green-500 flex items-center justify-center p-4">
+        <div className="text-center space-y-6 max-w-md w-full">
+          <h2 className="text-3xl font-bold text-white">Store Owner Access</h2>
+          <div className="space-y-4">
+            <button
+              onClick={() => setCurrentScreen('store-owner-login')}
+              className="w-full bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100"
+            >
+              Sign In to Existing Store
+            </button>
+            <button
+              onClick={() => setCurrentScreen('store-owner-signup')}
+              className="w-full bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600"
+            >
+              Register New Store
+            </button>
+            <button
+              onClick={() => setCurrentScreen('welcome')}
+              className="w-full text-white/80 hover:text-white"
+            >
+              ← Back to Role Selection
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentScreen === 'store-owner-signup') {
+    return (
+      <SecureRegistration
+        onComplete={handleRegistrationComplete}
+        onBack={() => setCurrentScreen('store-owner-login')}
+      />
+    );
+  }
+
+  if (currentScreen === 'worker-login') {
     return (
       <SecureLogin
         onBack={() => setCurrentScreen('welcome')}
+        userType="worker"
       />
     );
   }
@@ -105,5 +207,10 @@ export const AuthManager: React.FC<AuthManagerProps> = ({ onLogin, attendants = 
     );
   }
 
-  return null;
+  // Default fallback for store owner login
+  return (
+    <SecureLogin
+      onBack={() => setCurrentScreen('welcome')}
+    />
+  );
 };
