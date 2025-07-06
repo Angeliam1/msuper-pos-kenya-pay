@@ -5,214 +5,116 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import type { HirePurchase as HirePurchaseType, Customer } from '@/types';
-import { Calendar, CreditCard, ArrowLeft, MessageSquare, CheckCircle } from 'lucide-react';
-import { sendHirePurchaseSMS } from '@/utils/smsService';
 import { useToast } from '@/hooks/use-toast';
+import { Customer, CartItem, HirePurchase } from '@/types';
 
 interface HirePurchaseProps {
-  totalAmount?: number;
-  customers?: Customer[];
-  hirePurchases?: HirePurchaseType[];
-  cartItems?: any[];
-  storeSettings?: any;
-  onCreateHirePurchase?: (hirePurchase: Omit<HirePurchaseType, 'id'>) => string;
-  onCancel?: () => void;
+  customer: Customer | null;
+  cartItems: CartItem[];
+  total: number;
+  onCreateHirePurchase: (hirePurchase: Omit<HirePurchase, 'id'>) => void;
 }
 
-export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
-  totalAmount = 0,
-  customers = [],
-  hirePurchases = [],
-  cartItems = [],
-  storeSettings = {},
-  onCreateHirePurchase = () => 'mock-id',
-  onCancel = () => {}
-}) => {
+export const HirePurchase: React.FC<HirePurchaseProps> = ({ customer, cartItems, total, onCreateHirePurchase }) => {
   const { toast } = useToast();
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [downPayment, setDownPayment] = useState(0);
+  const [installmentAmount, setInstallmentAmount] = useState(0);
   const [installmentPeriod, setInstallmentPeriod] = useState<'weekly' | 'monthly'>('monthly');
-  const [numberOfInstallments, setNumberOfInstallments] = useState(12);
-  const [isCreating, setIsCreating] = useState(false);
+  const remainingBalance = total - downPayment;
 
-  const formatPrice = (price: number) => `KES ${price.toLocaleString()}`;
-  
-  const remainingAmount = totalAmount - downPayment;
-  const installmentAmount = remainingAmount / numberOfInstallments;
-  
-  const nextPaymentDate = new Date();
-  if (installmentPeriod === 'weekly') {
-    nextPaymentDate.setDate(nextPaymentDate.getDate() + 7);
-  } else {
-    nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-  }
-
-  const handleCreateHirePurchase = async () => {
-    if (!selectedCustomerId || downPayment < 0 || numberOfInstallments < 1) return;
-
-    setIsCreating(true);
-    
-    try {
-      const hirePurchaseId = onCreateHirePurchase({
-        customerId: selectedCustomerId,
-        items: cartItems,
-        totalAmount,
-        downPayment,
-        remainingBalance: remainingAmount,
-        installmentAmount,
-        installmentPeriod,
-        nextPaymentDate,
-        status: 'active'
-      });
-
-      console.log('Hire purchase created:', hirePurchaseId);
-
-      // Send SMS automatically if SMS is enabled
-      const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-      if (selectedCustomer && storeSettings.smsEnabled) {
-        const itemsText = cartItems.map(item => `${item.name} x${item.quantity}`).join(', ');
-        
-        // Generate payment link with payment options
-        const paymentOptions = [];
-        if (storeSettings.mpesaPaybill && storeSettings.mpesaAccount) {
-          paymentOptions.push(`M-Pesa Paybill: ${storeSettings.mpesaPaybill} Account: ${storeSettings.mpesaAccount}`);
-        }
-        if (storeSettings.mpesaTill) {
-          paymentOptions.push(`M-Pesa Till: ${storeSettings.mpesaTill}`);
-        }
-        if (storeSettings.bankAccount) {
-          paymentOptions.push(`Bank: ${storeSettings.bankAccount}`);
-        }
-        
-        const paymentLink = `${window.location.origin}/payment?hp=${hirePurchaseId}\n\nPayment Options:\n${paymentOptions.join('\n')}`;
-        
-        const smsSuccess = await sendHirePurchaseSMS(
-          {
-            customerName: selectedCustomer.name,
-            customerPhone: selectedCustomer.phone,
-            businessName: storeSettings.businessName || 'TOPTEN ELECTRONICS',
-            businessPhone: storeSettings.businessPhone || '0725333337',
-            items: itemsText,
-            total: totalAmount,
-            paid: downPayment,
-            balance: remainingAmount,
-            paymentLink,
-            transactionId: hirePurchaseId
-          },
-          storeSettings.hirePurchaseTemplate || 'Hi {customerName}, you have purchased {items} for KES {total}. Paid: KES {paid}, Balance: KES {balance}. Payment Link: {paymentLink} - {businessName}',
-          storeSettings.smsProvider || 'phone'
-        );
-
-        if (smsSuccess) {
-          toast({
-            title: "Hire Purchase Created",
-            description: "SMS with payment link sent to customer successfully!",
-          });
-        } else {
-          toast({
-            title: "Hire Purchase Created",
-            description: "Created successfully, but failed to send SMS.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Hire Purchase Created",
-          description: "Agreement created successfully!",
-        });
-      }
-
-      // Reset form
-      setSelectedCustomerId('');
-      setDownPayment(0);
-      setNumberOfInstallments(12);
-      
-    } catch (error) {
-      console.error('Error creating hire purchase:', error);
+  const handleCreateHirePurchase = () => {
+    if (!customer || cartItems.length === 0 || downPayment <= 0) {
       toast({
         title: "Error",
-        description: "Failed to create hire purchase agreement.",
-        variant: "destructive",
+        description: "Please select customer, add items, and enter down payment",
+        variant: "destructive"
       });
-    } finally {
-      setIsCreating(false);
+      return;
     }
+
+    const startDate = new Date();
+    const endDate = new Date();
+    if (installmentPeriod === 'weekly') {
+      endDate.setDate(startDate.getDate() + (Math.ceil(remainingBalance / installmentAmount) * 7));
+    } else {
+      endDate.setMonth(startDate.getMonth() + Math.ceil(remainingBalance / installmentAmount));
+    }
+
+    const nextPaymentDate = new Date();
+    if (installmentPeriod === 'weekly') {
+      nextPaymentDate.setDate(startDate.getDate() + 7);
+    } else {
+      nextPaymentDate.setMonth(startDate.getMonth() + 1);
+    }
+
+    const hirePurchaseData: Omit<HirePurchase, 'id'> = {
+      customerId: customer.id,
+      items: cartItems,
+      totalAmount: total,
+      downPayment: downPayment,
+      remainingBalance: remainingBalance,
+      installmentAmount: installmentAmount,
+      installmentPeriod: installmentPeriod,
+      startDate: startDate,
+      endDate: endDate,
+      nextPaymentDate: nextPaymentDate,
+      status: 'active',
+      payments: []
+    };
+
+    onCreateHirePurchase(hirePurchaseData);
+    
+    setDownPayment(0);
+    setInstallmentAmount(0);
+    setInstallmentPeriod('monthly');
+
+    toast({
+      title: "Hire Purchase Created",
+      description: "Hire purchase agreement has been created",
+    });
   };
 
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Hire Purchase Setup
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-sm text-gray-600">Total Amount</p>
-            <p className="text-2xl font-bold text-green-600">{formatPrice(totalAmount)}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Customer *</Label>
-            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select customer" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map(customer => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.phone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedCustomer && (
-              <div className="text-sm text-gray-600">
-                Credit Limit: {formatPrice(selectedCustomer.creditLimit)} | 
-                Outstanding: {formatPrice(selectedCustomer.outstandingBalance)}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Down Payment (KES)</Label>
-              <Input
-                type="number"
-                value={downPayment}
-                onChange={(e) => setDownPayment(Number(e.target.value))}
-                max={totalAmount}
-                min={0}
-              />
-            </div>
-            <div>
-              <Label>Number of Installments</Label>
-              <Input
-                type="number"
-                value={numberOfInstallments}
-                onChange={(e) => setNumberOfInstallments(Number(e.target.value))}
-                min={1}
-                max={60}
-              />
-            </div>
-          </div>
-
+    <Card>
+      <CardHeader>
+        <CardTitle>Create Hire Purchase</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Payment Period</Label>
-            <Select value={installmentPeriod} onValueChange={(value: 'weekly' | 'monthly') => setInstallmentPeriod(value)}>
+            <Label>Down Payment</Label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={downPayment}
+              onChange={(e) => setDownPayment(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <Label>Remaining Balance</Label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={remainingBalance}
+              readOnly
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Installment Amount</Label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={installmentAmount}
+              onChange={(e) => setInstallmentAmount(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <Label>Installment Period</Label>
+            <Select value={installmentPeriod} onValueChange={value => setInstallmentPeriod(value as 'weekly' | 'monthly')}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="weekly">Weekly</SelectItem>
@@ -220,90 +122,11 @@ export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({
               </SelectContent>
             </Select>
           </div>
-
-          <div className="border rounded-lg p-4 bg-gray-50 space-y-2">
-            <h4 className="font-medium">Payment Summary</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-600">Down Payment:</p>
-                <p className="font-medium">{formatPrice(downPayment)}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Remaining Amount:</p>
-                <p className="font-medium">{formatPrice(remainingAmount)}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Installment Amount:</p>
-                <p className="font-bold text-green-600">{formatPrice(installmentAmount)}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Next Payment:</p>
-                <p className="font-medium">{nextPaymentDate.toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-
-          {storeSettings.smsEnabled && selectedCustomer && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-              <MessageSquare className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-blue-700">
-                SMS will be sent automatically to {selectedCustomer.phone}
-              </span>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </div>
-          )}
-
-          <Button
-            onClick={handleCreateHirePurchase}
-            className="w-full"
-            disabled={!selectedCustomerId || remainingAmount <= 0 || isCreating}
-          >
-            {isCreating ? 'Creating...' : 'Create Hire Purchase Agreement'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Hire Purchases</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Remaining</TableHead>
-                <TableHead>Next Payment</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hirePurchases.filter(hp => hp.status === 'active').map(hp => {
-                const customer = customers.find(c => c.id === hp.customerId);
-                return (
-                  <TableRow key={hp.id}>
-                    <TableCell>{customer?.name || 'Unknown'}</TableCell>
-                    <TableCell>{formatPrice(hp.totalAmount)}</TableCell>
-                    <TableCell>{formatPrice(hp.remainingBalance)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(hp.nextPaymentDate).toLocaleDateString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="default">{hp.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        <Button onClick={handleCreateHirePurchase} className="w-full">
+          Create Hire Purchase
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
-
-export const HirePurchase = HirePurchaseComponent;
