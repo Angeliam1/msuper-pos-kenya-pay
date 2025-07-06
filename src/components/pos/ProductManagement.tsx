@@ -33,7 +33,7 @@ import { QuickAddProduct } from './QuickAddProduct';
 import { Receipt } from './Receipt';
 import { SplitPayment } from './SplitPayment';
 import { MPesaPayment } from './MPesaPayment';
-import { HirePurchase } from './HirePurchase';
+import { HirePurchaseComponent } from './HirePurchase';
 import { StoreAuthManager } from './StoreAuthManager';
 import { useStore } from '@/contexts/StoreContext';
 
@@ -465,7 +465,7 @@ export const ProductManagement: React.FC = () => {
   if (showHirePurchase) {
     return (
       <div className="fixed inset-0 bg-white z-50">
-        <HirePurchase
+        <HirePurchaseComponent
           totalAmount={calculateTotal()}
           customers={customers}
           cartItems={cart}

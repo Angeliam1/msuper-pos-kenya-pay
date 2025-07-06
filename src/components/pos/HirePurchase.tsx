@@ -1,29 +1,37 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Customer, CartItem, HirePurchase } from '@/types';
+import type { Customer, CartItem, HirePurchase as HirePurchaseType } from '@/types';
 
 interface HirePurchaseProps {
-  customer: Customer | null;
+  totalAmount: number;
+  customers: Customer[];
   cartItems: CartItem[];
-  total: number;
-  onCreateHirePurchase: (hirePurchase: Omit<HirePurchase, 'id'>) => void;
+  onCreateHirePurchase: (hirePurchaseData: Omit<HirePurchaseType, 'id'>) => string;
+  onCancel: () => void;
 }
 
-export const HirePurchase: React.FC<HirePurchaseProps> = ({ customer, cartItems, total, onCreateHirePurchase }) => {
+export const HirePurchaseComponent: React.FC<HirePurchaseProps> = ({ 
+  totalAmount, 
+  customers, 
+  cartItems, 
+  onCreateHirePurchase, 
+  onCancel 
+}) => {
   const { toast } = useToast();
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [downPayment, setDownPayment] = useState(0);
   const [installmentAmount, setInstallmentAmount] = useState(0);
   const [installmentPeriod, setInstallmentPeriod] = useState<'weekly' | 'monthly'>('monthly');
-  const remainingBalance = total - downPayment;
+  const remainingBalance = totalAmount - downPayment;
 
   const handleCreateHirePurchase = () => {
-    if (!customer || cartItems.length === 0 || downPayment <= 0) {
+    if (!selectedCustomer || cartItems.length === 0 || downPayment <= 0) {
       toast({
         title: "Error",
         description: "Please select customer, add items, and enter down payment",
@@ -47,10 +55,10 @@ export const HirePurchase: React.FC<HirePurchaseProps> = ({ customer, cartItems,
       nextPaymentDate.setMonth(startDate.getMonth() + 1);
     }
 
-    const hirePurchaseData: Omit<HirePurchase, 'id'> = {
-      customerId: customer.id,
+    const hirePurchaseData: Omit<HirePurchaseType, 'id'> = {
+      customerId: selectedCustomer.id,
       items: cartItems,
-      totalAmount: total,
+      totalAmount: totalAmount,
       downPayment: downPayment,
       remainingBalance: remainingBalance,
       installmentAmount: installmentAmount,
@@ -75,41 +83,78 @@ export const HirePurchase: React.FC<HirePurchaseProps> = ({ customer, cartItems,
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Hire Purchase</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+    <div className="p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Create Hire Purchase
+            <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
-            <Label>Down Payment</Label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={downPayment}
-              onChange={(e) => setDownPayment(parseFloat(e.target.value) || 0)}
-            />
+            <Label>Select Customer</Label>
+            <Select 
+              value={selectedCustomer?.id || ''} 
+              onValueChange={(value) => {
+                const customer = customers.find(c => c.id === value);
+                setSelectedCustomer(customer || null);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name} - {customer.phone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div>
-            <Label>Remaining Balance</Label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={remainingBalance}
-              readOnly
-            />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Total Amount</Label>
+              <Input
+                type="number"
+                value={totalAmount}
+                readOnly
+              />
+            </div>
+            <div>
+              <Label>Down Payment</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={downPayment}
+                onChange={(e) => setDownPayment(parseFloat(e.target.value) || 0)}
+              />
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Installment Amount</Label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={installmentAmount}
-              onChange={(e) => setInstallmentAmount(parseFloat(e.target.value) || 0)}
-            />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Remaining Balance</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={remainingBalance}
+                readOnly
+              />
+            </div>
+            <div>
+              <Label>Installment Amount</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={installmentAmount}
+                onChange={(e) => setInstallmentAmount(parseFloat(e.target.value) || 0)}
+              />
+            </div>
           </div>
+          
           <div>
             <Label>Installment Period</Label>
             <Select value={installmentPeriod} onValueChange={value => setInstallmentPeriod(value as 'weekly' | 'monthly')}>
@@ -122,11 +167,12 @@ export const HirePurchase: React.FC<HirePurchaseProps> = ({ customer, cartItems,
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <Button onClick={handleCreateHirePurchase} className="w-full">
-          Create Hire Purchase
-        </Button>
-      </CardContent>
-    </Card>
+          
+          <Button onClick={handleCreateHirePurchase} className="w-full">
+            Create Hire Purchase
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
