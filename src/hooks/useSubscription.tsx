@@ -64,6 +64,7 @@ export const useSubscription = () => {
       }
 
       if (tenantUserData && tenantUserData.tenants) {
+        // Handle both array and single object cases
         const tenantData = Array.isArray(tenantUserData.tenants) 
           ? tenantUserData.tenants[0] 
           : tenantUserData.tenants;
