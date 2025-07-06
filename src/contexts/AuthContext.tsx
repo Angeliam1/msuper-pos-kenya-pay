@@ -6,6 +6,7 @@ export interface AuthContextType {
   user: { id: string; email: string } | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, userData?: any) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -19,6 +20,7 @@ export const useAuthContext = () => {
       user: { id: 'demo', email: 'demo@example.com' },
       loading: false,
       signIn: async () => ({ error: undefined }),
+      signUp: async () => ({ error: undefined }),
       signOut: async () => {},
     };
   }

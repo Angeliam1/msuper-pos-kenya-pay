@@ -43,14 +43,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Initialize user's store from their profile when authenticated
   useEffect(() => {
-    if (user && user.user_metadata) {
+    if (user) {
       const userStore: StoreLocation = {
         id: `store-${user.id}`,
-        name: user.user_metadata.store_name || 'My Store',
-        address: user.user_metadata.address || 'Store Address',
-        phone: user.user_metadata.phone || '',
+        name: 'My Store', // Default store name
+        address: 'Store Address', // Default address
+        phone: '', // Default phone
         managerId: user.id,
-        manager: user.user_metadata.owner_name || user.email || 'Store Owner',
+        manager: user.email || 'Store Owner', // Use email as manager name
         status: 'active',
         totalSales: 0,
         isActive: true,
