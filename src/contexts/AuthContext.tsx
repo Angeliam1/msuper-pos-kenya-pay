@@ -1,17 +1,12 @@
 
 import React, { createContext, useContext } from 'react';
-import { User } from '@supabase/supabase-js';
-import { Attendant } from '@/types';
 
+// Simple standalone auth context for demo
 export interface AuthContextType {
-  user: User | null;
-  attendant: Attendant | null;
+  user: { id: string; email: string } | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (email: string, password: string, userData: any) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: any) => Promise<{ error?: string }>;
-  isEnvironmentValid: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,7 +14,13 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const useAuthContext = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
+    // Return a default implementation for standalone mode
+    return {
+      user: { id: 'demo', email: 'demo@example.com' },
+      loading: false,
+      signIn: async () => ({ error: undefined }),
+      signOut: async () => {},
+    };
   }
   return context;
 };
