@@ -16,7 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isEnvironmentValid] = useState(() => validateEnvironment().isValid);
 
-  // Get subscription data
+  // Get subscription data - pass user to avoid circular dependency
   const {
     subscriptionStatus,
     subscriptionPlan,
@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userRole,
     isSubscriptionActive,
     loading: subscriptionLoading
-  } = useSubscription();
+  } = useSubscription(user);
 
   // Use the auth operations hook
   const { signIn, signUp, signOut, updateProfile } = useAuthOperations(

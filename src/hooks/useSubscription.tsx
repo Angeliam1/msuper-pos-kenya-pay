@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useSupabaseAuth';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 interface SubscriptionData {
@@ -13,8 +13,7 @@ interface SubscriptionData {
   gracePeriodEnds: Date | null;
 }
 
-export const useSubscription = () => {
-  const { user } = useAuth();
+export const useSubscription = (user: User | null = null) => {
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
     subscriptionStatus: null,
     subscriptionPlan: null,
@@ -28,7 +27,10 @@ export const useSubscription = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSubscriptionData = async () => {
-    if (!user || !supabase) return;
+    if (!user || !supabase) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
