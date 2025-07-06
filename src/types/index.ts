@@ -5,12 +5,12 @@ export interface Product {
   category: string;
   buyingCost: number;
   retailPrice: number;
-  price: number; // Added missing price property
+  price: number;
   wholesalePrice?: number;
   stock: number;
   minStock: number;
   maxStock?: number;
-  lowStockThreshold?: number; // Added missing property
+  lowStockThreshold?: number;
   barcode?: string;
   description?: string;
   imageUrl?: string;
@@ -39,9 +39,9 @@ export interface CartItem extends Product {
 }
 
 export interface PaymentSplit {
-  method: 'cash' | 'mpesa' | 'card' | 'credit' | 'bank'; // Added 'bank' method
+  method: 'cash' | 'mpesa' | 'card' | 'credit' | 'bank';
   amount: number;
-  reference?: string; // Added missing reference property
+  reference?: string;
 }
 
 export interface Transaction {
@@ -52,7 +52,7 @@ export interface Transaction {
   customerId: string;
   attendantId: string;
   paymentSplits: PaymentSplit[];
-  status: 'completed' | 'pending' | 'cancelled' | 'refunded' | 'voided'; // Added 'voided' status
+  status: 'completed' | 'pending' | 'cancelled' | 'refunded' | 'voided';
   notes?: string;
 }
 
@@ -67,12 +67,12 @@ export interface Attendant {
   id: string;
   name: string;
   email?: string;
-  phone?: string; // Added missing phone property
-  role: 'admin' | 'cashier' | 'manager' | 'staff'; // Added 'staff' role
+  phone?: string;
+  role: 'admin' | 'cashier' | 'manager' | 'staff';
   isActive: boolean;
   isDemoMode?: boolean;
-  permissions: string[]; // Added missing permissions property
-  workSchedule?: WorkSchedule; // Added missing workSchedule property
+  permissions: string[];
+  workSchedule?: WorkSchedule;
   createdAt: Date;
   pin?: string;
 }
@@ -89,7 +89,6 @@ export interface Store {
   createdAt: Date;
 }
 
-// Additional missing types
 export interface Expense {
   id: string;
   description: string;
@@ -99,6 +98,13 @@ export interface Expense {
   attendantId: string;
   receiptUrl?: string;
   notes?: string;
+}
+
+export interface HirePurchasePayment {
+  id: string;
+  amount: number;
+  date: Date;
+  method: 'cash' | 'mpesa' | 'card';
 }
 
 export interface HirePurchase {
@@ -116,21 +122,37 @@ export interface HirePurchase {
   payments: HirePurchasePayment[];
 }
 
-export interface HirePurchasePayment {
-  id: string;
-  amount: number;
-  date: Date;
-  method: 'cash' | 'mpesa' | 'card';
-}
-
 export interface HeldTransaction {
   id: string;
   items: CartItem[];
   customerId?: string;
+  customerName?: string;
   total: number;
   timestamp: Date;
+  heldAt?: Date;
   attendantId: string;
+  heldBy?: string;
   reason?: string;
+  note?: string;
+}
+
+export interface ReceiptSettings {
+  showLogo: boolean;
+  logoUrl?: string;
+  businessName: string;
+  businessAddress: string;
+  businessPhone: string;
+  footerMessage: string;
+  showQr: boolean;
+  qrType: 'payment' | 'website' | 'custom';
+  qrValue?: string;
+}
+
+export interface PricingSettings {
+  allowNegativePricing: boolean;
+  roundPrices: boolean;
+  defaultMarkup: number;
+  bulkPricingEnabled: boolean;
 }
 
 export interface StoreLocation {
@@ -140,7 +162,17 @@ export interface StoreLocation {
   phone?: string;
   managerId: string;
   isActive: boolean;
+  status?: 'active' | 'inactive' | 'suspended';
   createdAt: Date;
+  receiptSettings?: ReceiptSettings;
+  pricingSettings?: PricingSettings;
+}
+
+export interface PurchaseItem {
+  productId: string;
+  quantity: number;
+  unitCost: number;
+  total: number;
 }
 
 export interface Purchase {
@@ -154,9 +186,25 @@ export interface Purchase {
   notes?: string;
 }
 
-export interface PurchaseItem {
-  productId: string;
-  quantity: number;
-  unitCost: number;
-  total: number;
+export interface Supplier {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  contactPerson?: string;
+  paymentTerms?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Online store types
+export interface OnlineProduct extends Product {
+  features: string[];
+  originalPrice: number;
+  salesPrice: number;
+  inStock: boolean;
+  tags: string[];
+  isOnline: boolean;
 }

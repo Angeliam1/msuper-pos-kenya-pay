@@ -5,11 +5,11 @@ import { Product, Customer, Transaction, Attendant } from '@/types';
 interface DemoModeContextType {
   isDemoMode: boolean;
   setDemoMode: (enabled: boolean) => void;
-  toggleDemoMode: () => void; // Added missing method
+  toggleDemoMode: () => void;
   demoProducts: Product[];
   demoCustomers: Customer[];
   demoTransactions: Transaction[];
-  demoAttendants: Attendant[]; // Added missing property
+  demoAttendants: Attendant[];
   addDemoTransaction: (transaction: Transaction) => void;
   updateDemoProductStock: (productId: string, newStock: number) => void;
 }
@@ -24,7 +24,7 @@ const sampleProducts: Product[] = [
     category: 'Beverages',
     buyingCost: 35,
     retailPrice: 50,
-    price: 50, // Added price property
+    price: 50,
     wholesalePrice: 45,
     stock: 24,
     minStock: 5,
@@ -39,7 +39,7 @@ const sampleProducts: Product[] = [
     category: 'Bakery',
     buyingCost: 40,
     retailPrice: 60,
-    price: 60, // Added price property
+    price: 60,
     wholesalePrice: 55,
     stock: 15,
     minStock: 3,
@@ -54,7 +54,7 @@ const sampleProducts: Product[] = [
     category: 'Groceries',
     buyingCost: 180,
     retailPrice: 250,
-    price: 250, // Added price property
+    price: 250,
     wholesalePrice: 220,
     stock: 8,
     minStock: 2,
@@ -79,7 +79,6 @@ const sampleCustomers: Customer[] = [
   }
 ];
 
-// Sample demo attendants
 const sampleAttendants: Attendant[] = [
   {
     id: 'demo-attendant-1',
@@ -122,7 +121,7 @@ export const DemoModeProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [demoProducts, setDemoProducts] = useState<Product[]>(sampleProducts);
   const [demoCustomers] = useState<Customer[]>(sampleCustomers);
   const [demoTransactions, setDemoTransactions] = useState<Transaction[]>([]);
-  const [demoAttendants] = useState<Attendant[]>(sampleAttendants); // Added demo attendants
+  const [demoAttendants] = useState<Attendant[]>(sampleAttendants);
 
   const setDemoMode = (enabled: boolean) => {
     setIsDemoMode(enabled);

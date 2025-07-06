@@ -38,6 +38,7 @@ const SimpleLogin = ({ onLogin }: { onLogin: (attendant: Attendant) => void }) =
               role: 'admin',
               isActive: true,
               isDemoMode: true,
+              permissions: ['pos', 'products', 'customers', 'reports', 'settings'],
               createdAt: new Date()
             })}
             className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
@@ -51,6 +52,7 @@ const SimpleLogin = ({ onLogin }: { onLogin: (attendant: Attendant) => void }) =
               role: 'admin',
               isActive: true,
               isDemoMode: false,
+              permissions: ['pos', 'products', 'customers', 'reports', 'settings'],
               createdAt: new Date()
             })}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
