@@ -16,21 +16,15 @@ const Index = () => {
   const navigate = useNavigate();
 
   const handleOpenPOS = () => {
-    // This will navigate to a POS route when it's implemented
-    console.log('Opening POS...');
-    // navigate('/pos');
+    navigate('/pos');
   };
 
   const handleManageInventory = () => {
-    // This will navigate to inventory management
-    console.log('Opening Inventory Management...');
-    // navigate('/inventory');
+    navigate('/pos?view=products');
   };
 
   const handleOpenSettings = () => {
-    // This will navigate to settings
-    console.log('Opening Settings...');
-    // navigate('/settings');
+    navigate('/pos?view=settings');
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SecurityUtils, SecureStorage } from '@/utils/security';
@@ -139,12 +140,18 @@ export const useSecureAttendantAuth = () => {
 
       // Store secure session
       const sessionToken = SecurityUtils.generateSecureToken();
+      
+      // Fix the role type assertion to match the expected union type
+      const validRole = ['admin', 'cashier', 'manager', 'staff'].includes(attendantData.role) 
+        ? attendantData.role as 'admin' | 'cashier' | 'manager' | 'staff'
+        : 'staff' as const;
+
       const attendant: Attendant = {
         id: attendantData.id,
         name: attendantData.name,
         email: attendantData.email,
         phone: attendantData.phone,
-        role: attendantData.role,
+        role: validRole,
         isActive: attendantData.is_active,
         createdAt: new Date(attendantData.created_at)
       };
@@ -264,7 +271,7 @@ export const useSecureAttendantAuth = () => {
           name: newAttendant.name,
           email: newAttendant.email,
           phone: newAttendant.phone,
-          role: newAttendant.role,
+          role: newAttendant.role as 'admin' | 'cashier' | 'manager' | 'staff',
           isActive: newAttendant.is_active,
           createdAt: new Date(newAttendant.created_at)
         } as Attendant
