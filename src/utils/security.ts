@@ -42,10 +42,22 @@ export class SecurityUtils {
       .replace(/\//g, '&#x2F;');
   }
 
+  // General input sanitization
+  static sanitizeInput(input: string): string {
+    if (!input) return '';
+    return input.trim().replace(/[<>]/g, '');
+  }
+
   // Validate email format
   static validateEmail(email: string): boolean {
     const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     return emailRegex.test(email);
+  }
+
+  // Validate name (letters, spaces, basic punctuation)
+  static validateName(name: string): boolean {
+    const nameRegex = /^[A-Za-z\s\-\.\']{1,100}$/;
+    return nameRegex.test(name);
   }
 
   // Validate phone number (international format)
@@ -270,3 +282,8 @@ export class SecureStorage {
     localStorage.clear();
   }
 }
+
+// Export individual functions for backward compatibility
+export const validateEmail = SecurityUtils.validateEmail;
+export const validateName = SecurityUtils.validateName;
+export const sanitizeInput = SecurityUtils.sanitizeInput;

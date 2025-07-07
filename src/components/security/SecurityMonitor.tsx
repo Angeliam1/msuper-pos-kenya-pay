@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,12 +44,20 @@ export const SecurityMonitor: React.FC = () => {
         return;
       }
 
-      setEvents(data || []);
+      // Type assertion and filtering to ensure valid severity values
+      const validEvents = (data || []).map(event => ({
+        ...event,
+        severity: ['info', 'medium', 'high', 'critical'].includes(event.severity) 
+          ? event.severity as 'info' | 'medium' | 'high' | 'critical'
+          : 'info' as const
+      }));
+
+      setEvents(validEvents);
       
       // Calculate stats
       const newStats = { critical: 0, high: 0, medium: 0, info: 0 };
-      data?.forEach(event => {
-        newStats[event.severity as keyof typeof newStats]++;
+      validEvents.forEach(event => {
+        newStats[event.severity]++;
       });
       setStats(newStats);
 

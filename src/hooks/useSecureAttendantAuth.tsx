@@ -1,8 +1,15 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SecurityUtils, SecureStorage } from '@/utils/security';
 import { Attendant } from '@/types';
+
+interface SessionData {
+  attendantId: string;
+  token: string;
+  loginTime: string;
+  expiresAt: string;
+  attendant?: Attendant;
+}
 
 export const useSecureAttendantAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -132,11 +139,22 @@ export const useSecureAttendantAuth = () => {
 
       // Store secure session
       const sessionToken = SecurityUtils.generateSecureToken();
-      const sessionData = {
+      const attendant: Attendant = {
+        id: attendantData.id,
+        name: attendantData.name,
+        email: attendantData.email,
+        phone: attendantData.phone,
+        role: attendantData.role,
+        isActive: attendantData.is_active,
+        createdAt: new Date(attendantData.created_at)
+      };
+
+      const sessionData: SessionData = {
         attendantId: attendantData.id,
         token: sessionToken,
         loginTime: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() // 8 hours
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
+        attendant
       };
 
       SecureStorage.setItem('attendant_session', sessionData);
@@ -149,18 +167,7 @@ export const useSecureAttendantAuth = () => {
         'info'
       );
 
-      return { 
-        success: true, 
-        attendant: {
-          id: attendantData.id,
-          name: attendantData.name,
-          email: attendantData.email,
-          phone: attendantData.phone,
-          role: attendantData.role,
-          isActive: attendantData.is_active,
-          createdAt: new Date(attendantData.created_at)
-        } as Attendant
-      };
+      return { success: true, attendant };
 
     } catch (error) {
       console.error('Authentication error:', error);
@@ -272,7 +279,7 @@ export const useSecureAttendantAuth = () => {
   }, []);
 
   const logout = useCallback(async (): Promise<void> => {
-    const session = SecureStorage.getItem('attendant_session');
+    const session = SecureStorage.getItem<SessionData>('attendant_session');
     if (session?.attendantId) {
       await SecurityUtils.logSecurityEvent(
         'logout',
@@ -288,12 +295,12 @@ export const useSecureAttendantAuth = () => {
   }, []);
 
   const checkSession = useCallback((): Attendant | null => {
-    const session = SecureStorage.getItem('attendant_session');
+    const session = SecureStorage.getItem<SessionData>('attendant_session');
     if (!session || new Date(session.expiresAt) < new Date()) {
       SecureStorage.removeItem('attendant_session');
       return null;
     }
-    return session.attendant;
+    return session.attendant || null;
   }, []);
 
   return {
