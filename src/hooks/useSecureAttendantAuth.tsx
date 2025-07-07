@@ -146,6 +146,20 @@ export const useSecureAttendantAuth = () => {
         ? attendantData.role as 'admin' | 'cashier' | 'manager' | 'staff'
         : 'staff' as const;
 
+      // Define default permissions based on role
+      const getDefaultPermissions = (role: string): string[] => {
+        switch (role) {
+          case 'admin':
+            return ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'];
+          case 'manager':
+            return ['pos', 'products', 'customers', 'suppliers', 'reports'];
+          case 'cashier':
+            return ['pos', 'customers'];
+          default:
+            return ['pos'];
+        }
+      };
+
       const attendant: Attendant = {
         id: attendantData.id,
         name: attendantData.name,
@@ -153,7 +167,8 @@ export const useSecureAttendantAuth = () => {
         phone: attendantData.phone,
         role: validRole,
         isActive: attendantData.is_active,
-        createdAt: new Date(attendantData.created_at)
+        createdAt: new Date(attendantData.created_at),
+        permissions: getDefaultPermissions(validRole)
       };
 
       const sessionData: SessionData = {
@@ -264,6 +279,20 @@ export const useSecureAttendantAuth = () => {
         'info'
       );
 
+      // Define default permissions based on role
+      const getDefaultPermissions = (role: string): string[] => {
+        switch (role) {
+          case 'admin':
+            return ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings'];
+          case 'manager':
+            return ['pos', 'products', 'customers', 'suppliers', 'reports'];
+          case 'cashier':
+            return ['pos', 'customers'];
+          default:
+            return ['pos'];
+        }
+      };
+
       return {
         success: true,
         attendant: {
@@ -273,7 +302,8 @@ export const useSecureAttendantAuth = () => {
           phone: newAttendant.phone,
           role: newAttendant.role as 'admin' | 'cashier' | 'manager' | 'staff',
           isActive: newAttendant.is_active,
-          createdAt: new Date(newAttendant.created_at)
+          createdAt: new Date(newAttendant.created_at),
+          permissions: getDefaultPermissions(newAttendant.role)
         } as Attendant
       };
 

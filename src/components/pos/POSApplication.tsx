@@ -28,7 +28,12 @@ type POSView = 'dashboard' | 'products' | 'customers' | 'sales' | 'transactions'
 
 export const POSApplication: React.FC = () => {
   const [currentView, setCurrentView] = useState<POSView>('dashboard');
-  const { currentStore, products, customers, transactions } = useStore();
+  const { currentStore, getStoreProducts, getStoreCustomers, getStoreTransactions } = useStore();
+
+  // Get store data using the proper methods
+  const products = currentStore ? getStoreProducts(currentStore.id) : [];
+  const customers = currentStore ? getStoreCustomers(currentStore.id) : [];
+  const transactions = currentStore ? getStoreTransactions(currentStore.id) : [];
 
   const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
   const todaySales = transactions
@@ -36,6 +41,11 @@ export const POSApplication: React.FC = () => {
     .reduce((sum, t) => sum + t.total, 0);
 
   const lowStockProducts = products.filter(p => p.stock <= p.minStock);
+
+  const handleSaveSettings = (settings: any) => {
+    console.log('Settings saved:', settings);
+    // Implement settings save logic here
+  };
 
   const renderMainContent = () => {
     switch (currentView) {
@@ -54,9 +64,9 @@ export const POSApplication: React.FC = () => {
       case 'customers':
         return <CustomerManagement />;
       case 'transactions':
-        return <TransactionHistory />;
+        return <TransactionHistory transactions={transactions} />;
       case 'settings':
-        return <POSSettings />;
+        return <POSSettings onSaveSettings={handleSaveSettings} />;
       case 'expenses':
         return (
           <ExpenseManagement
@@ -69,7 +79,8 @@ export const POSApplication: React.FC = () => {
               phone: '+1234567890',
               role: 'admin',
               isActive: true,
-              createdAt: new Date()
+              createdAt: new Date(),
+              permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings']
             }}
             onAddExpense={() => {}}
           />
