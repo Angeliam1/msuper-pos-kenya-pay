@@ -32,10 +32,12 @@ import { OnlineStoreManager } from '../online-store/OnlineStoreManager';
 import { MultiStoreManagement } from './MultiStoreManagement';
 import { Reports } from './Reports';
 import { Cart } from './Cart';
+import { SplitPayment } from './SplitPayment';
+import { HirePurchaseComponent } from './HirePurchase';
 import { useStore } from '@/contexts/StoreContext';
-import { CartItem, Transaction, Customer, PaymentSplit } from '@/types';
+import { CartItem, Transaction, Customer, PaymentSplit, HirePurchase } from '@/types';
 
-type POSView = 'dashboard' | 'pos' | 'cart' | 'products' | 'customers' | 'sales' | 'transactions' | 'settings' | 'expenses' | 'online-store' | 'stores' | 'reports';
+type POSView = 'dashboard' | 'pos' | 'cart' | 'split-payment' | 'hire-purchase' | 'products' | 'customers' | 'sales' | 'transactions' | 'settings' | 'expenses' | 'online-store' | 'stores' | 'reports';
 
 export const POSApplication: React.FC = () => {
   const [currentView, setCurrentView] = useState<POSView>('dashboard');
@@ -113,6 +115,60 @@ export const POSApplication: React.FC = () => {
     return transaction;
   };
 
+  const handleSplitPaymentComplete = (paymentSplits: PaymentSplit[], customerId?: string): Transaction => {
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    const transaction: Transaction = {
+      id: `txn-${Date.now()}`,
+      items: cartItems,
+      total,
+      timestamp: new Date(),
+      customerId: customerId || '',
+      attendantId: 'demo-attendant',
+      paymentSplits,
+      status: 'completed'
+    };
+
+    if (currentStore) {
+      addTransactionToStore(currentStore.id, transaction);
+    }
+
+    // Clear cart and return to cart view
+    setCartItems([]);
+    setCurrentView('cart');
+    return transaction;
+  };
+
+  const handleCreateHirePurchase = (hirePurchaseData: Omit<HirePurchase, 'id'>): string => {
+    const hirePurchaseId = `hp-${Date.now()}`;
+    
+    // Create initial transaction for down payment if any
+    if (hirePurchaseData.downPayment > 0) {
+      const downPaymentTransaction: Transaction = {
+        id: `txn-${Date.now()}`,
+        items: cartItems,
+        total: hirePurchaseData.downPayment,
+        timestamp: new Date(),
+        customerId: hirePurchaseData.customerId,
+        attendantId: 'demo-attendant',
+        paymentSplits: [{ method: 'cash', amount: hirePurchaseData.downPayment }],
+        status: 'completed'
+      };
+
+      if (currentStore) {
+        addTransactionToStore(currentStore.id, downPaymentTransaction);
+      }
+    }
+
+    // In a real implementation, you would save the hire purchase to the store context
+    console.log('Created hire purchase:', { id: hirePurchaseId, ...hirePurchaseData });
+
+    // Clear cart and return to cart view
+    setCartItems([]);
+    setCurrentView('cart');
+    return hirePurchaseId;
+  };
+
   const handleAddCustomer = (customerData: Omit<Customer, 'id' | 'createdAt'>) => {
     // This would be implemented with the store context
     console.log('Add customer:', customerData);
@@ -158,6 +214,8 @@ export const POSApplication: React.FC = () => {
     receiptCodeType: 'qr' as const
   };
 
+  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
   const renderMainContent = () => {
     switch (currentView) {
       case 'dashboard':
@@ -170,6 +228,25 @@ export const POSApplication: React.FC = () => {
             products={products}
           />
         );
+      case 'split-payment':
+        return (
+          <SplitPayment
+            totalAmount={cartTotal}
+            customers={customers}
+            onConfirmPayment={handleSplitPaymentComplete}
+            onCancel={() => setCurrentView('cart')}
+          />
+        );
+      case 'hire-purchase':
+        return (
+          <HirePurchaseComponent
+            totalAmount={cartTotal}
+            customers={customers}
+            cartItems={cartItems}
+            onCreateHirePurchase={handleCreateHirePurchase}
+            onCancel={() => setCurrentView('cart')}
+          />
+        );
       case 'cart':
         return (
           <Cart
@@ -178,8 +255,8 @@ export const POSApplication: React.FC = () => {
             onUpdateItem={handleUpdateCartItem}
             onUpdateItemPrice={handleUpdateItemPrice}
             onCompleteTransaction={handleCompleteTransaction}
-            onSplitPayment={() => console.log('Split payment')}
-            onHirePurchase={() => console.log('Hire purchase')}
+            onSplitPayment={() => setCurrentView('split-payment')}
+            onHirePurchase={() => setCurrentView('hire-purchase')}
             onHoldTransaction={() => console.log('Hold transaction')}
             onAddCustomer={handleAddCustomer}
             onUpdateCustomerLoyaltyPoints={handleUpdateCustomerLoyaltyPoints}
