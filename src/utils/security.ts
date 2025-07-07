@@ -1,352 +1,272 @@
-// Enhanced input validation and sanitization utilities
 
-export const sanitizeInput = (input: string): string => {
-  if (typeof input !== 'string') return '';
-  
-  return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
-    .replace(/data:text\/html/gi, '') // Remove data URLs
-    .replace(/[<>]/g, '') // Remove angle brackets
-    .trim();
-};
+import { supabase } from '@/integrations/supabase/client';
 
-export const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return emailRegex.test(email) && email.length <= 254 && email.length >= 5;
-};
-
-export const validatePhone = (phone: string): boolean => {
-  const phoneRegex = /^[\+]?[\d\s\-\(\)]{7,15}$/;
-  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  return phoneRegex.test(phone) && cleanPhone.length >= 7 && cleanPhone.length <= 15;
-};
-
-export const validatePrice = (price: number): boolean => {
-  return !isNaN(price) && price >= 0 && price <= 1000000 && Number.isFinite(price);
-};
-
-export const validateQuantity = (quantity: number): boolean => {
-  return Number.isInteger(quantity) && quantity >= 0 && quantity <= 100000;
-};
-
-export const validateName = (name: string): boolean => {
-  const nameRegex = /^[a-zA-Z\s\-'\.]{1,100}$/;
-  const sanitized = sanitizeInput(name);
-  return nameRegex.test(sanitized) && sanitized.length >= 1;
-};
-
-export const validateBarcode = (barcode: string): boolean => {
-  if (!barcode) return true; // Optional field
-  const barcodeRegex = /^[0-9]{8,14}$/;
-  return barcodeRegex.test(barcode);
-};
-
-export const validateStrongPassword = (password: string): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long');
-  }
-  
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
-  }
-  
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
-  }
-  
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
-  }
-  
-  // Check for common weak passwords
-  const commonPasswords = ['password', '12345678', 'qwerty', 'admin', 'letmein'];
-  if (commonPasswords.includes(password.toLowerCase())) {
-    errors.push('Password is too common. Please choose a more secure password');
-  }
-  
-  return { isValid: errors.length === 0, errors };
-};
-
-// Enhanced rate limiting with memory cleanup
-class RateLimiter {
-  private attempts: Map<string, number[]> = new Map();
-  private readonly windowMs: number;
-  private readonly maxAttempts: number;
-  private cleanupInterval: NodeJS.Timeout;
-
-  constructor(windowMs: number = 60000, maxAttempts: number = 30) {
-    this.windowMs = windowMs;
-    this.maxAttempts = maxAttempts;
+// Enhanced security utilities
+export class SecurityUtils {
+  // Secure password validation
+  static validatePassword(password: string): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
     
-    // Clean up old entries every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 300000);
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    if (!/\d/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('Password must contain at least one special character');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 
-  private cleanup(): void {
-    const now = Date.now();
-    for (const [key, attempts] of this.attempts.entries()) {
-      const validAttempts = attempts.filter(time => now - time < this.windowMs);
-      if (validAttempts.length === 0) {
-        this.attempts.delete(key);
+  // XSS protection - sanitize HTML input
+  static sanitizeHtml(input: string): string {
+    if (!input) return '';
+    
+    return input
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;');
+  }
+
+  // Validate email format
+  static validateEmail(email: string): boolean {
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return emailRegex.test(email);
+  }
+
+  // Validate phone number (international format)
+  static validatePhone(phone: string): boolean {
+    const phoneRegex = /^[\+]?[\d\s\-\(\)]{7,15}$/;
+    return phoneRegex.test(phone);
+  }
+
+  // Validate and sanitize product data
+  static validateProductData(data: any): { isValid: boolean; sanitized: any; errors: string[] } {
+    const errors: string[] = [];
+    const sanitized: any = {};
+
+    // Validate and sanitize name
+    if (!data.name || data.name.trim().length === 0) {
+      errors.push('Product name is required');
+    } else if (data.name.length > 100) {
+      errors.push('Product name must not exceed 100 characters');
+    } else {
+      sanitized.name = this.sanitizeHtml(data.name.trim());
+    }
+
+    // Validate and sanitize description
+    if (data.description) {
+      if (data.description.length > 500) {
+        errors.push('Description must not exceed 500 characters');
       } else {
-        this.attempts.set(key, validAttempts);
+        sanitized.description = this.sanitizeHtml(data.description.trim());
       }
     }
+
+    // Validate prices
+    if (data.cost_price && (isNaN(data.cost_price) || data.cost_price < 0)) {
+      errors.push('Cost price must be a positive number');
+    } else {
+      sanitized.cost_price = data.cost_price;
+    }
+
+    if (data.selling_price && (isNaN(data.selling_price) || data.selling_price < 0)) {
+      errors.push('Selling price must be a positive number');
+    } else {
+      sanitized.selling_price = data.selling_price;
+    }
+
+    // Validate barcode format
+    if (data.barcode && !/^[0-9]{8,14}$/.test(data.barcode)) {
+      errors.push('Barcode must be 8-14 digits');
+    } else {
+      sanitized.barcode = data.barcode;
+    }
+
+    // Validate stock quantities
+    if (data.stock_quantity && (isNaN(data.stock_quantity) || data.stock_quantity < 0)) {
+      errors.push('Stock quantity must be a non-negative number');
+    } else {
+      sanitized.stock_quantity = data.stock_quantity;
+    }
+
+    return {
+      isValid: errors.length === 0,
+      sanitized,
+      errors
+    };
   }
 
-  isAllowed(key: string): boolean {
+  // Validate customer data
+  static validateCustomerData(data: any): { isValid: boolean; sanitized: any; errors: string[] } {
+    const errors: string[] = [];
+    const sanitized: any = {};
+
+    // Validate and sanitize name
+    if (!data.name || data.name.trim().length === 0) {
+      errors.push('Customer name is required');
+    } else if (data.name.length > 100) {
+      errors.push('Customer name must not exceed 100 characters');
+    } else {
+      sanitized.name = this.sanitizeHtml(data.name.trim());
+    }
+
+    // Validate email
+    if (data.email) {
+      if (!this.validateEmail(data.email)) {
+        errors.push('Invalid email format');
+      } else {
+        sanitized.email = data.email.toLowerCase().trim();
+      }
+    }
+
+    // Validate phone
+    if (data.phone) {
+      if (!this.validatePhone(data.phone)) {
+        errors.push('Invalid phone number format');
+      } else {
+        sanitized.phone = data.phone.trim();
+      }
+    }
+
+    // Validate and sanitize address
+    if (data.address) {
+      if (data.address.length > 200) {
+        errors.push('Address must not exceed 200 characters');
+      } else {
+        sanitized.address = this.sanitizeHtml(data.address.trim());
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      sanitized,
+      errors
+    };
+  }
+
+  // Rate limiting for API calls
+  private static rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+  static checkRateLimit(key: string, maxRequests: number = 10, windowMs: number = 60000): boolean {
     const now = Date.now();
-    const attempts = this.attempts.get(key) || [];
-    
-    // Remove old attempts outside the window
-    const validAttempts = attempts.filter(time => now - time < this.windowMs);
-    
-    if (validAttempts.length >= this.maxAttempts) {
+    const record = this.rateLimitMap.get(key);
+
+    if (!record || now > record.resetTime) {
+      this.rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+      return true;
+    }
+
+    if (record.count >= maxRequests) {
       return false;
     }
-    
-    validAttempts.push(now);
-    this.attempts.set(key, validAttempts);
+
+    record.count++;
     return true;
   }
 
-  reset(key: string): void {
-    this.attempts.delete(key);
+  // Log security events
+  static async logSecurityEvent(
+    eventType: string,
+    resourceType?: string,
+    resourceId?: string,
+    details?: any,
+    severity: 'info' | 'medium' | 'high' | 'critical' = 'info'
+  ): Promise<void> {
+    try {
+      const { data, error } = await supabase.rpc('log_security_event', {
+        p_event_type: eventType,
+        p_resource_type: resourceType,
+        p_resource_id: resourceId,
+        p_details: details ? JSON.stringify(details) : null,
+        p_severity: severity
+      });
+
+      if (error) {
+        console.error('Failed to log security event:', error);
+      }
+    } catch (error) {
+      console.error('Security logging error:', error);
+    }
   }
 
-  destroy(): void {
-    clearInterval(this.cleanupInterval);
-    this.attempts.clear();
+  // Generate secure session tokens
+  static generateSecureToken(length: number = 32): string {
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
-}
 
-export const apiRateLimiter = new RateLimiter(60000, 30); // 30 requests per minute
-export const loginRateLimiter = new RateLimiter(300000, 5); // 5 login attempts per 5 minutes
-export const strictRateLimiter = new RateLimiter(3600000, 3); // 3 attempts per hour for sensitive operations
-
-// Session security
-export const generateSecureToken = (): string => {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-};
-
-export const isSecureContext = (): boolean => {
-  return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
-};
-
-// Enhanced data validation schemas
-export const productValidationSchema = {
-  name: (value: string) => validateName(value) && value.length >= 1 && value.length <= 100,
-  buyingCost: validatePrice,
-  wholesalePrice: validatePrice,
-  retailPrice: validatePrice,
-  category: (value: string) => validateName(value) && value.length >= 1,
-  stock: validateQuantity,
-  barcode: validateBarcode,
-  lowStockThreshold: (value: number) => validateQuantity(value) && value >= 0 && value <= 1000
-};
-
-export const customerValidationSchema = {
-  name: (value: string) => validateName(value) && value.length >= 1 && value.length <= 100,
-  phone: validatePhone,
-  email: (value: string) => !value || validateEmail(value),
-  creditLimit: validatePrice,
-  address: (value: string) => !value || (sanitizeInput(value).length <= 200)
-};
-
-export const attendantValidationSchema = {
-  name: (value: string) => validateName(value) && value.length >= 2 && value.length <= 50,
-  email: (value: string) => !value || validateEmail(value),
-  phone: (value: string) => !value || validatePhone(value),
-  password: (value: string) => validateStrongPassword(value).isValid,
-  role: (value: string) => ['owner', 'admin', 'manager', 'staff'].includes(value)
-};
-
-export const validateProduct = (product: any): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  
-  if (!productValidationSchema.name(product.name)) {
-    errors.push('Product name is invalid or too long');
-  }
-  if (!productValidationSchema.buyingCost(product.buyingCost)) {
-    errors.push('Buying cost must be a valid positive number');
-  }
-  if (!productValidationSchema.wholesalePrice(product.wholesalePrice)) {
-    errors.push('Wholesale price must be a valid positive number');
-  }
-  if (!productValidationSchema.retailPrice(product.retailPrice)) {
-    errors.push('Retail price must be a valid positive number');
-  }
-  if (product.buyingCost > product.wholesalePrice) {
-    errors.push('Wholesale price must be greater than or equal to buying cost');
-  }
-  if (product.wholesalePrice > product.retailPrice) {
-    errors.push('Retail price must be greater than or equal to wholesale price');
-  }
-  if (!productValidationSchema.stock(product.stock)) {
-    errors.push('Stock must be a valid non-negative integer');
-  }
-  if (product.barcode && !productValidationSchema.barcode(product.barcode)) {
-    errors.push('Barcode must be 8-14 digits');
-  }
-  
-  return { isValid: errors.length === 0, errors };
-};
-
-export const validateCustomer = (customer: any): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  
-  if (!customerValidationSchema.name(customer.name)) {
-    errors.push('Customer name is invalid or too long');
-  }
-  if (!customerValidationSchema.phone(customer.phone)) {
-    errors.push('Phone number is invalid');
-  }
-  if (customer.email && !customerValidationSchema.email(customer.email)) {
-    errors.push('Email address is invalid');
-  }
-  if (!customerValidationSchema.creditLimit(customer.creditLimit || 0)) {
-    errors.push('Credit limit must be a valid positive number');
-  }
-  
-  return { isValid: errors.length === 0, errors };
-};
-
-export const validateAttendant = (attendant: any): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  
-  if (!attendantValidationSchema.name(attendant.name)) {
-    errors.push('Attendant name must be 2-50 characters and contain only letters, spaces, and basic punctuation');
-  }
-  if (attendant.email && !attendantValidationSchema.email(attendant.email)) {
-    errors.push('Email address is invalid');
-  }
-  if (attendant.phone && !attendantValidationSchema.phone(attendant.phone)) {
-    errors.push('Phone number is invalid');
-  }
-  if (attendant.password && !attendantValidationSchema.password(attendant.password)) {
-    const passwordValidation = validateStrongPassword(attendant.password);
-    errors.push(...passwordValidation.errors);
-  }
-  if (!attendantValidationSchema.role(attendant.role)) {
-    errors.push('Role must be one of: owner, admin, manager, staff');
-  }
-  
-  return { isValid: errors.length === 0, errors };
-};
-
-// Secure local storage wrapper with encryption
-class SecureStorage {
-  private readonly prefix = 'secure_';
-  
-  private encrypt(data: string): string {
-    // Simple XOR encryption for demonstration
-    // In production, use a proper encryption library
-    const key = 'secure_key_change_in_production';
+  // Secure data storage with encryption
+  static encryptData(data: string, key: string): string {
+    // Simple XOR encryption for demo - in production use proper encryption
     let encrypted = '';
     for (let i = 0; i < data.length; i++) {
       encrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
     }
     return btoa(encrypted);
   }
-  
-  private decrypt(encryptedData: string): string {
+
+  static decryptData(encryptedData: string, key: string): string {
     try {
-      const data = atob(encryptedData);
-      const key = 'secure_key_change_in_production';
+      const encrypted = atob(encryptedData);
       let decrypted = '';
-      for (let i = 0; i < data.length; i++) {
-        decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      for (let i = 0; i < encrypted.length; i++) {
+        decrypted += String.fromCharCode(encrypted.charCodeAt(i) ^ key.charCodeAt(i % key.length));
       }
       return decrypted;
     } catch {
       return '';
     }
   }
+}
 
-  setItem(key: string, value: any): void {
+// Enhanced secure storage class
+export class SecureStorage {
+  private static encryptionKey = 'pos-secure-key-2024'; // In production, use environment variable
+
+  static setItem(key: string, value: any): void {
     try {
-      const sanitizedKey = sanitizeInput(key);
-      const jsonValue = JSON.stringify(value);
-      const encryptedValue = this.encrypt(jsonValue);
-      localStorage.setItem(this.prefix + sanitizedKey, encryptedValue);
+      const serialized = JSON.stringify(value);
+      const encrypted = SecurityUtils.encryptData(serialized, this.encryptionKey);
+      localStorage.setItem(key, encrypted);
     } catch (error) {
-      console.error('Failed to save to secure storage:', error);
+      console.error('Failed to store secure data:', error);
     }
   }
-  
-  getItem<T = any>(key: string): T | null {
+
+  static getItem<T>(key: string): T | null {
     try {
-      const sanitizedKey = sanitizeInput(key);
-      const encryptedItem = localStorage.getItem(this.prefix + sanitizedKey);
-      if (!encryptedItem) return null;
+      const encrypted = localStorage.getItem(key);
+      if (!encrypted) return null;
       
-      const decryptedItem = this.decrypt(encryptedItem);
-      return decryptedItem ? JSON.parse(decryptedItem) : null;
+      const decrypted = SecurityUtils.decryptData(encrypted, this.encryptionKey);
+      return JSON.parse(decrypted);
     } catch (error) {
-      console.error('Failed to retrieve from secure storage:', error);
+      console.error('Failed to retrieve secure data:', error);
       return null;
     }
   }
-  
-  removeItem(key: string): void {
-    try {
-      const sanitizedKey = sanitizeInput(key);
-      localStorage.removeItem(this.prefix + sanitizedKey);
-    } catch (error) {
-      console.error('Failed to remove from secure storage:', error);
-    }
+
+  static removeItem(key: string): void {
+    localStorage.removeItem(key);
   }
-  
-  clear(): void {
-    try {
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith(this.prefix)) {
-          localStorage.removeItem(key);
-        }
-      });
-    } catch (error) {
-      console.error('Failed to clear secure storage:', error);
-    }
+
+  static clear(): void {
+    localStorage.clear();
   }
 }
-
-export const secureStorage = new SecureStorage();
-
-// Security event reporting
-export const reportSecurityEvent = async (eventType: string, details: any = {}) => {
-  try {
-    // In a real application, this would send to a security monitoring service
-    console.warn(`Security Event: ${eventType}`, {
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      details
-    });
-    
-    // Store locally for debugging
-    const events = secureStorage.getItem<any[]>('security_events') || [];
-    events.push({
-      type: eventType,
-      timestamp: new Date().toISOString(),
-      details
-    });
-    
-    // Keep only last 100 events
-    if (events.length > 100) {
-      events.splice(0, events.length - 100);
-    }
-    
-    secureStorage.setItem('security_events', events);
-  } catch (error) {
-    console.error('Failed to report security event:', error);
-  }
-};
