@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,10 +32,11 @@ import { ExpenseManagement } from './ExpenseManagement';
 import { OnlineStoreManager } from '../online-store/OnlineStoreManager';
 import { MultiStoreManagement } from './MultiStoreManagement';
 import { Reports } from './Reports';
+import { Cart } from './Cart';
 import { useStore } from '@/contexts/StoreContext';
-import { CartItem, Transaction, Customer } from '@/types';
+import { CartItem, Transaction, Customer, PaymentSplit } from '@/types';
 
-type POSView = 'dashboard' | 'pos' | 'products' | 'customers' | 'sales' | 'transactions' | 'settings' | 'expenses' | 'online-store' | 'stores' | 'reports';
+type POSView = 'dashboard' | 'pos' | 'cart' | 'products' | 'customers' | 'sales' | 'transactions' | 'settings' | 'expenses' | 'online-store' | 'stores' | 'reports';
 
 export const POSApplication: React.FC = () => {
   const [currentView, setCurrentView] = useState<POSView>('dashboard');
@@ -77,22 +79,22 @@ export const POSApplication: React.FC = () => {
   };
 
   const handleCompleteTransaction = (
-    paymentMethod: 'mpesa' | 'cash', 
-    mpesaReference?: string, 
+    paymentSplits: PaymentSplit[], 
     customerId?: string, 
     discount?: number, 
     loyaltyPointsUsed?: number
   ): Transaction => {
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) - (discount || 0);
+    
     const transaction: Transaction = {
       id: `txn-${Date.now()}`,
       items: cartItems,
-      total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) - (discount || 0),
-      paymentMethod,
+      total,
       timestamp: new Date(),
-      customerId,
-      mpesaReference,
-      discount: discount || 0,
-      loyaltyPointsUsed: loyaltyPointsUsed || 0
+      customerId: customerId || '',
+      attendantId: 'demo-attendant',
+      paymentSplits,
+      status: 'completed'
     };
 
     if (currentStore) {
@@ -161,119 +163,86 @@ export const POSApplication: React.FC = () => {
             products={products}
           />
         );
+      case 'cart':
+        return (
+          <Cart
+            items={cartItems}
+            customers={customers}
+            onUpdateItem={handleUpdateCartItem}
+            onUpdateItemPrice={handleUpdateItemPrice}
+            onCompleteTransaction={handleCompleteTransaction}
+            onAddCustomer={handleAddCustomer}
+            onUpdateCustomerLoyaltyPoints={handleUpdateCustomerLoyaltyPoints}
+          />
+        );
       case 'pos':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-            {/* Products List */}
-            <div className="lg:col-span-2">
+          <div className="space-y-4">
+            {/* Mobile Product Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {products.map(product => (
+                <Button
+                  key={product.id}
+                  variant="outline"
+                  className="h-auto p-3 flex flex-col items-center text-center"
+                  onClick={() => {
+                    const existingItem = cartItems.find(item => item.id === product.id);
+                    if (existingItem) {
+                      handleUpdateCartItem(product.id, existingItem.quantity + 1);
+                    } else {
+                      const cartItem: CartItem = {
+                        id: product.id,
+                        name: product.name,
+                        category: product.category,
+                        buyingCost: product.buyingCost,
+                        retailPrice: product.retailPrice,
+                        price: product.price,
+                        wholesalePrice: product.wholesalePrice,
+                        stock: product.stock,
+                        minStock: product.minStock,
+                        maxStock: product.maxStock,
+                        barcode: product.barcode,
+                        description: product.description,
+                        imageUrl: product.imageUrl,
+                        unit: product.unit || 'pcs',
+                        supplierId: product.supplierId,
+                        createdAt: product.createdAt,
+                        updatedAt: product.updatedAt,
+                        quantity: 1
+                      };
+                      setCartItems(prev => [...prev, cartItem]);
+                    }
+                  }}
+                  disabled={product.stock <= 0}
+                >
+                  <Package className="h-6 w-6 mb-2" />
+                  <span className="text-xs font-medium">{product.name}</span>
+                  <span className="text-xs text-green-600">KES {product.price.toLocaleString()}</span>
+                  <span className="text-xs text-gray-500">Stock: {product.stock}</span>
+                </Button>
+              ))}
+            </div>
+
+            {/* Cart Summary */}
+            {cartItems.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Products</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {products.map(product => (
-                      <Button
-                        key={product.id}
-                        variant="outline"
-                        className="h-auto p-3 flex flex-col items-center text-center"
-                        onClick={() => {
-                          const existingItem = cartItems.find(item => item.id === product.id);
-                          if (existingItem) {
-                            handleUpdateCartItem(product.id, existingItem.quantity + 1);
-                          } else {
-                            const cartItem: CartItem = {
-                              id: product.id,
-                              name: product.name,
-                              price: product.price,
-                              quantity: 1,
-                              stock: product.stock,
-                              unit: product.unit || 'pcs',
-                              wholesalePrice: product.wholesalePrice || product.price
-                            };
-                            setCartItems(prev => [...prev, cartItem]);
-                          }
-                        }}
-                        disabled={product.stock <= 0}
-                      >
-                        <Package className="h-6 w-6 mb-2" />
-                        <span className="text-xs font-medium">{product.name}</span>
-                        <span className="text-xs text-green-600">KES {product.price.toLocaleString()}</span>
-                        <span className="text-xs text-gray-500">Stock: {product.stock}</span>
-                      </Button>
-                    ))}
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">Cart ({cartItems.length} items)</span>
+                    <Button 
+                      size="sm" 
+                      onClick={() => setCurrentView('cart')}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      View Cart
+                    </Button>
+                  </div>
+                  <div className="text-lg font-bold text-green-600">
+                    Total: KES {cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}
                   </div>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Cart */}
-            <div className="lg:col-span-1">
-              <div className="bg-white p-4 rounded-lg shadow-sm border">
-                <h3 className="text-lg font-semibold mb-4">Cart ({cartItems.length} items)</h3>
-                
-                {cartItems.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">Cart is empty</p>
-                ) : (
-                  <>
-                    <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-                      {cartItems.map(item => (
-                        <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                            <p className="text-xs text-gray-500">KES {item.price.toLocaleString()} x {item.quantity}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUpdateCartItem(item.id, Math.max(0, item.quantity - 1))}
-                              className="h-6 w-6 p-0"
-                            >
-                              -
-                            </Button>
-                            <span className="text-sm w-6 text-center">{item.quantity}</span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUpdateCartItem(item.id, item.quantity + 1)}
-                              className="h-6 w-6 p-0"
-                              disabled={item.quantity >= item.stock}
-                            >
-                              +
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t pt-4">
-                      <div className="flex justify-between items-center text-lg font-bold mb-4">
-                        <span>Total:</span>
-                        <span className="text-green-600">
-                          KES {cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          onClick={() => handleCompleteTransaction('cash')}
-                          className="w-full"
-                        >
-                          Cash
-                        </Button>
-                        <Button
-                          onClick={() => handleCompleteTransaction('mpesa', 'MPESA123')}
-                          className="w-full bg-green-600 hover:bg-green-700"
-                        >
-                          M-Pesa
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         );
       case 'products':
@@ -322,6 +291,7 @@ export const POSApplication: React.FC = () => {
   const menuItems = [
     { id: 'dashboard' as POSView, label: 'Dashboard', icon: BarChart3, badge: null },
     { id: 'pos' as POSView, label: 'POS', icon: ShoppingCart, badge: null },
+    { id: 'cart' as POSView, label: 'Cart', icon: ShoppingCart, badge: cartItems.length },
     { id: 'products' as POSView, label: 'Products', icon: Package, badge: products.length },
     { id: 'customers' as POSView, label: 'Customers', icon: Users, badge: customers.length },
     { id: 'transactions' as POSView, label: 'Transactions', icon: Receipt, badge: transactions.length },
@@ -364,13 +334,13 @@ export const POSApplication: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <div className="bg-white shadow-sm border-b lg:hidden">
+      <div className="bg-white shadow-sm border-b">
         <div className="px-4">
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center">
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="mr-2">
+                  <Button variant="ghost" size="sm" className="mr-2 lg:hidden">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -405,123 +375,13 @@ export const POSApplication: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Header */}
-      <div className="bg-white shadow-sm border-b hidden lg:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.history.back()}
-                className="mr-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {currentStore?.name || 'M-Super POS'}
-                </h1>
-                <p className="text-sm text-gray-500">Point of Sale Management</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {lowStockProducts.length > 0 && (
-                <Badge variant="destructive" className="animate-pulse">
-                  {lowStockProducts.length} Low Stock
-                </Badge>
-              )}
-              <Badge variant="outline">
-                Today: KES {todaySales.toLocaleString()}
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-        <div className="flex gap-4 lg:gap-8">
-          {/* Desktop Sidebar Navigation */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-700">Navigation</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <nav className="space-y-1">
-                  {menuItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setCurrentView(item.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors ${
-                        currentView === item.id
-                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <item.icon className="h-4 w-4 mr-3" />
-                        {item.label}
-                      </div>
-                      {item.badge !== null && (
-                        <Badge variant="secondary" className="text-xs">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </button>
-                  ))}
-                </nav>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-700">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button 
-                  size="sm" 
-                  className="w-full justify-start" 
-                  variant="outline"
-                  onClick={() => setCurrentView('pos')}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Sale
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="w-full justify-start" 
-                  variant="outline"
-                  onClick={() => setCurrentView('customers')}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Customer
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="w-full justify-start" 
-                  variant="outline"
-                  onClick={() => setCurrentView('products')}
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {renderMainContent()}
-          </div>
-        </div>
+      {/* Main Content */}
+      <div className="p-4">
+        {renderMainContent()}
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t lg:hidden">
         <div className="grid grid-cols-5 gap-1 p-2">
           {menuItems.slice(0, 5).map((item) => (
             <button
@@ -546,7 +406,7 @@ export const POSApplication: React.FC = () => {
       </div>
 
       {/* Mobile spacing for bottom nav */}
-      <div className="lg:hidden h-20"></div>
+      <div className="h-20 lg:hidden"></div>
     </div>
   );
 };
