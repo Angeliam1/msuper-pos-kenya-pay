@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { 
   ShoppingCart, 
   Users, 
@@ -12,6 +13,26 @@ import {
 } from 'lucide-react';
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  const handleOpenPOS = () => {
+    // This will navigate to a POS route when it's implemented
+    console.log('Opening POS...');
+    // navigate('/pos');
+  };
+
+  const handleManageInventory = () => {
+    // This will navigate to inventory management
+    console.log('Opening Inventory Management...');
+    // navigate('/inventory');
+  };
+
+  const handleOpenSettings = () => {
+    // This will navigate to settings
+    console.log('Opening Settings...');
+    // navigate('/settings');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
@@ -85,7 +106,7 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                 Process sales, manage inventory, and handle customer transactions.
               </p>
-              <Button className="w-full">
+              <Button className="w-full" onClick={handleOpenPOS}>
                 Open POS
               </Button>
             </CardContent>
@@ -102,7 +123,7 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                 Manage products, track stock levels, and update pricing.
               </p>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleManageInventory}>
                 Manage Inventory
               </Button>
             </CardContent>
@@ -119,7 +140,7 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                 Configure your store settings, users, and system preferences.
               </p>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleOpenSettings}>
                 Open Settings
               </Button>
             </CardContent>
