@@ -624,6 +624,51 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          role: string | null
+          store_id: string | null
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: string | null
+          store_id?: string | null
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: string | null
+          store_id?: string | null
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -632,6 +677,14 @@ export type Database = {
       get_current_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_user_role_for_store: {
+        Args: { p_user_id: string; p_store_id: string }
+        Returns: string
+      }
+      has_role_in_store: {
+        Args: { p_user_id: string; p_store_id: string; p_role: string }
+        Returns: boolean
       }
       hash_password: {
         Args: { p_password: string }

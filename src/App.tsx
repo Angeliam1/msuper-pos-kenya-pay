@@ -1,35 +1,63 @@
 
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/components/auth/AuthProvider";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import { LoginPage } from "@/components/auth/LoginPage";
+import { RoleBasedDashboard } from "@/components/pos/RoleBasedDashboard";
 import { StoreProvider } from "@/contexts/StoreContext";
-import { DemoProductManagement } from "./components/pos/demo/DemoProductManagement";
-import { POSApplication } from "./components/pos/POSApplication";
-import { OnlineStoreFrontend } from "./components/online-store/OnlineStoreFrontend";
-import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <StoreProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/pos" element={<POSApplication />} />
-              <Route path="/demo" element={<DemoProductManagement />} />
-              <Route path="/store/:storeId" element={<OnlineStoreFrontend />} />
-              <Route path="/store" element={<OnlineStoreFrontend />} />
-            </Routes>
-          </BrowserRouter>
-        </StoreProvider>
-      </AuthProvider>
-    </TooltipProvider>
+    <StoreProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<LoginPage />} />
+            
+            {/* Super Admin Routes */}
+            <Route 
+              path="/super-admin" 
+              element={
+                <AuthGuard requiredRole="super_admin">
+                  <RoleBasedDashboard />
+                </AuthGuard>
+              } 
+            />
+            
+            {/* Admin/Manager Routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <AuthGuard>
+                  <RoleBasedDashboard />
+                </AuthGuard>
+              } 
+            />
+            
+            {/* POS Routes */}
+            <Route 
+              path="/pos" 
+              element={
+                <AuthGuard>
+                  <RoleBasedDashboard />
+                </AuthGuard>
+              } 
+            />
+            
+            {/* Default route - redirect to auth */}
+            <Route path="/" element={<Navigate to="/auth" replace />} />
+            <Route path="*" element={<Navigate to="/auth" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </StoreProvider>
   </QueryClientProvider>
 );
 
