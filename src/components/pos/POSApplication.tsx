@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,12 +78,20 @@ export const POSApplication: React.FC = () => {
   };
 
   const handleCompleteTransaction = (
-    paymentSplits: PaymentSplit[], 
+    paymentMethod: 'mpesa' | 'cash',
+    mpesaReference?: string, 
     customerId?: string, 
     discount?: number, 
     loyaltyPointsUsed?: number
   ): Transaction => {
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) - (discount || 0);
+    
+    // Create payment splits based on payment method
+    const paymentSplits: PaymentSplit[] = [{
+      method: paymentMethod,
+      amount: total,
+      reference: mpesaReference
+    }];
     
     const transaction: Transaction = {
       id: `txn-${Date.now()}`,
@@ -171,8 +178,12 @@ export const POSApplication: React.FC = () => {
             onUpdateItem={handleUpdateCartItem}
             onUpdateItemPrice={handleUpdateItemPrice}
             onCompleteTransaction={handleCompleteTransaction}
+            onSplitPayment={() => console.log('Split payment')}
+            onHirePurchase={() => console.log('Hire purchase')}
+            onHoldTransaction={() => console.log('Hold transaction')}
             onAddCustomer={handleAddCustomer}
             onUpdateCustomerLoyaltyPoints={handleUpdateCustomerLoyaltyPoints}
+            storeSettings={mockStoreSettings}
           />
         );
       case 'pos':
