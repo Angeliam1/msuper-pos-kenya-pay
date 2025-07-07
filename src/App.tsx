@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { StoreProvider } from "@/contexts/StoreContext";
 import { DemoProductManagement } from "./components/pos/demo/DemoProductManagement";
 import { POSApplication } from "./components/pos/POSApplication";
+import { OnlineStoreFrontend } from "./components/online-store/OnlineStoreFrontend";
 import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/pos" element={<POSApplication />} />
               <Route path="/demo" element={<DemoProductManagement />} />
+              <Route path="/store/:storeId" element={<OnlineStoreFrontend />} />
+              <Route path="/store" element={<OnlineStoreFrontend />} />
             </Routes>
           </BrowserRouter>
         </StoreProvider>
