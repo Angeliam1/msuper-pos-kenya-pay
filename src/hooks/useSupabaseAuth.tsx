@@ -97,6 +97,8 @@ export const useAuth = () => {
   const fetchUserRole = async (userId: string) => {
     try {
       console.log('Fetching user role for:', userId);
+      
+      // First, let's check if a role exists
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -107,8 +109,28 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        // Even if role fetch fails, we should still allow the user to proceed
-        setUserRole(null);
+        
+        // If no role exists, try to create one for existing users
+        console.log('Attempting to create default role for user...');
+        const { data: insertData, error: insertError } = await supabase
+          .from('user_roles')
+          .insert([
+            {
+              user_id: userId,
+              role: 'staff',
+              is_active: true
+            }
+          ])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating default role:', insertError);
+          setUserRole(null);
+        } else {
+          console.log('Default role created:', insertData);
+          setUserRole(insertData as UserRole);
+        }
       } else if (data && data.length > 0) {
         console.log('User role found:', data[0]);
         const roleData = data[0];
@@ -118,11 +140,31 @@ export const useAuth = () => {
           role: validRole
         } as UserRole);
       } else {
-        console.log('No user role found, user may need to complete setup');
-        setUserRole(null);
+        console.log('No user role found, creating default...');
+        
+        // Create a default role if none exists
+        const { data: insertData, error: insertError } = await supabase
+          .from('user_roles')
+          .insert([
+            {
+              user_id: userId,
+              role: 'staff',
+              is_active: true
+            }
+          ])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating default role:', insertError);
+          setUserRole(null);
+        } else {
+          console.log('Default role created:', insertData);
+          setUserRole(insertData as UserRole);
+        }
       }
     } catch (error) {
-      console.error('Error fetching user role:', error);
+      console.error('Error in fetchUserRole:', error);
       setUserRole(null);
     } finally {
       console.log('Setting loading to false after role fetch');

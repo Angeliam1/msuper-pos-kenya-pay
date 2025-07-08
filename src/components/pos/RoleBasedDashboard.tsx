@@ -5,14 +5,50 @@ import { SuperAdminStoreManager } from './SuperAdminStoreManager';
 import { POSApplication } from './POSApplication';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Store, Users, Package } from 'lucide-react';
+import { Shield, Store, Users, Package, Loader2 } from 'lucide-react';
 
 export const RoleBasedDashboard: React.FC = () => {
-  const { userRole, signOut } = useAuth();
+  const { userRole, signOut, loading, user } = useAuth();
 
-  if (!userRole) {
+  // Show loading state while checking authentication
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading your account...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // If user is authenticated but no role (shouldn't happen with the new logic, but just in case)
+  if (user && !userRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card>
+          <CardHeader>
+            <CardTitle>Setting up your account...</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Please wait while we set up your account permissions.</p>
+            <p className="text-sm text-gray-500 mt-2">This should only take a moment.</p>
+            <Button onClick={signOut} variant="outline" className="mt-4">
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // If no user at all, show access denied
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -75,7 +111,7 @@ export const RoleBasedDashboard: React.FC = () => {
     );
   }
 
-  // Cashier/Staff Dashboard
+  // Cashier/Staff Dashboard (including 'staff' role)
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b p-4">
