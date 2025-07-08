@@ -24,7 +24,7 @@ export const RoleGate: React.FC<RoleGateProps> = ({
 
   // Check role-based access
   const hasRoleAccess = allowedRoles.length === 0 || 
-    (userRole && allowedRoles.includes(userRole));
+    (userRole && allowedRoles.includes(userRole.role));
 
   // Check permission-based access
   const hasPermissionAccess = !requiredPermission || 
@@ -61,7 +61,7 @@ export const RoleGate: React.FC<RoleGateProps> = ({
         
         {userRole && (
           <Badge variant="outline">
-            Your Role: {userRole.replace('_', ' ').toUpperCase()}
+            Your Role: {userRole.role.replace('_', ' ').toUpperCase()}
           </Badge>
         )}
 

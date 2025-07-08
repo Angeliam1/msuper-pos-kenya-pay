@@ -20,6 +20,12 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Mock subscription data for now - can be enhanced later
+  const subscriptionStatus = 'active' as const;
+  const subscriptionPlan = 'basic' as const;
+  const isSubscriptionActive = true;
+  const isEnvironmentValid = true;
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -64,7 +70,13 @@ export const useAuth = () => {
         console.error('Error fetching user role:', error);
         setUserRole(null);
       } else if (data && data.length > 0) {
-        setUserRole(data[0]);
+        // Type assertion to ensure the role field matches our expected type
+        const roleData = data[0];
+        const validRole = roleData.role as UserRole['role'];
+        setUserRole({
+          ...roleData,
+          role: validRole
+        } as UserRole);
       } else {
         setUserRole(null);
       }
@@ -174,6 +186,11 @@ export const useAuth = () => {
     return rolePermissions.includes('all') || rolePermissions.includes(permission);
   };
 
+  const canAccessFeature = (feature: string): boolean => {
+    // Basic feature access - can be enhanced later with actual subscription logic
+    return true;
+  };
+
   return {
     user,
     session,
@@ -182,6 +199,11 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
-    hasPermission
+    hasPermission,
+    canAccessFeature,
+    subscriptionStatus,
+    subscriptionPlan,
+    isSubscriptionActive,
+    isEnvironmentValid
   };
 };
