@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,14 +31,25 @@ export const LoginPage: React.FC = () => {
 
   // Redirect authenticated users based on their role
   useEffect(() => {
-    if (user && userRole && !loading) {
-      // Auto-redirect based on role
-      if (userRole.role === 'super_admin') {
-        window.location.href = '/super-admin';
-      } else if (['owner', 'admin', 'manager'].includes(userRole.role)) {
-        window.location.href = '/admin';
-      } else {
+    console.log('Auth state in LoginPage:', { user: !!user, userRole, loading });
+    
+    if (user && !loading) {
+      // If user exists but no role, redirect to POS (they can set up later)
+      if (!userRole) {
+        console.log('User exists but no role, redirecting to POS');
         window.location.href = '/pos';
+      } else {
+        // Auto-redirect based on role
+        if (userRole.role === 'super_admin') {
+          console.log('Redirecting super admin to /super-admin');
+          window.location.href = '/super-admin';
+        } else if (['owner', 'admin', 'manager'].includes(userRole.role)) {
+          console.log('Redirecting admin/manager to /admin');
+          window.location.href = '/admin';
+        } else {
+          console.log('Redirecting to /pos');
+          window.location.href = '/pos';
+        }
       }
     }
   }, [user, userRole, loading]);
@@ -49,7 +61,7 @@ export const LoginPage: React.FC = () => {
     const { error } = await signIn(loginData.email, loginData.password);
     
     if (error) {
-      if (error.includes('Email not confirmed')) {
+      if (error.includes('Email not confirmed') || error.includes('email not confirmed')) {
         setShowEmailConfirmation(true);
         toast({
           title: "Email Verification Required",
@@ -63,9 +75,9 @@ export const LoginPage: React.FC = () => {
           variant: "destructive"
         });
       }
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
+    // Don't set loading to false on success - let the auth flow handle it
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -96,15 +108,15 @@ export const LoginPage: React.FC = () => {
         description: error,
         variant: "destructive"
       });
+      setIsLoading(false);
     } else {
       setShowEmailConfirmation(true);
       toast({
         title: "Registration Successful",
         description: "Please check your email to verify your account before signing in.",
       });
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   if (loading) {

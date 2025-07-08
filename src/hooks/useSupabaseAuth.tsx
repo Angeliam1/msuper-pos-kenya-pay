@@ -89,6 +89,7 @@ export const useAuth = () => {
 
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log('Fetching user role for:', userId);
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -99,9 +100,10 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Error fetching user role:', error);
+        // Even if role fetch fails, we should still allow the user to proceed
         setUserRole(null);
       } else if (data && data.length > 0) {
-        // Type assertion to ensure the role field matches our expected type
+        console.log('User role found:', data[0]);
         const roleData = data[0];
         const validRole = roleData.role as UserRole['role'];
         setUserRole({
@@ -109,18 +111,21 @@ export const useAuth = () => {
           role: validRole
         } as UserRole);
       } else {
+        console.log('No user role found, user may need to complete setup');
         setUserRole(null);
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
       setUserRole(null);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
+      setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -128,19 +133,23 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Sign in error:', error);
+        setLoading(false);
         return { error: error.message };
       }
 
+      // Don't set loading to false here - let the auth state change handle it
       return { data };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Sign in error:', errorMessage);
+      setLoading(false);
       return { error: errorMessage };
     }
   };
 
   const signUp = async (email: string, password: string, metadata: any = {}) => {
     try {
+      setLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -152,13 +161,16 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Sign up error:', error);
+        setLoading(false);
         return { error: error.message };
       }
 
+      // Don't set loading to false here - let the email confirmation flow handle it
       return { data };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Sign up error:', errorMessage);
+      setLoading(false);
       return { error: errorMessage };
     }
   };
