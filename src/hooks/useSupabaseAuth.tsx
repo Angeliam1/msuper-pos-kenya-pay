@@ -27,20 +27,48 @@ export const useAuth = () => {
   const isEnvironmentValid = true;
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setLoading(false);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
+
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await fetchUserRole(session.user.id);
+          } else {
+            setLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -53,7 +81,10 @@ export const useAuth = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserRole = async (userId: string) => {
@@ -96,22 +127,14 @@ export const useAuth = () => {
       });
 
       if (error) {
-        toast({
-          title: "Sign In Error",
-          description: error.message,
-          variant: "destructive"
-        });
+        console.error('Sign in error:', error);
         return { error: error.message };
       }
 
       return { data };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: "Sign In Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      console.error('Sign in error:', errorMessage);
       return { error: errorMessage };
     }
   };
@@ -128,27 +151,14 @@ export const useAuth = () => {
       });
 
       if (error) {
-        toast({
-          title: "Sign Up Error",
-          description: error.message,
-          variant: "destructive"
-        });
+        console.error('Sign up error:', error);
         return { error: error.message };
       }
-
-      toast({
-        title: "Sign Up Successful",
-        description: "Please check your email to verify your account.",
-      });
 
       return { data };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: "Sign Up Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      console.error('Sign up error:', errorMessage);
       return { error: errorMessage };
     }
   };
