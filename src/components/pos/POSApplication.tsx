@@ -14,7 +14,7 @@ import { useOfflineSupport } from '@/hooks/useOfflineSupport';
 import { useStore } from '@/contexts/StoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Menu, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Menu, Wifi, WifiOff, RefreshCw, Scan } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const POSApplication: React.FC = () => {
@@ -92,6 +92,11 @@ export const POSApplication: React.FC = () => {
     }
   };
 
+  const handleSaveSettings = (settings: any) => {
+    console.log('Saving settings:', settings);
+    // Implement settings save functionality
+  };
+
   const renderContent = () => {
     if (showBarcodeScanner) {
       return (
@@ -146,7 +151,7 @@ export const POSApplication: React.FC = () => {
         return (
           <div className="p-6">
             <div className="space-y-6">
-              <Settings />
+              <Settings onSaveSettings={handleSaveSettings} />
               
               <div className="border-t pt-6">
                 <h3 className="text-lg font-semibold mb-4">Enhanced Product Management</h3>

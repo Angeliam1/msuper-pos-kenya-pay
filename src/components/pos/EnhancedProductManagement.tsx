@@ -15,6 +15,7 @@ import {
   Trash2, 
   AlertTriangle, 
   TrendingUp,
+  TrendingDown,
   BarChart3,
   Archive
 } from 'lucide-react';
@@ -49,7 +50,7 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
     wholesalePrice: '',
     buyingCost: '',
     stock: '',
-    minStockLevel: '',
+    minStock: '',
     description: ''
   });
 
@@ -63,7 +64,7 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     
     const matchesStock = stockFilter === 'all' || 
-                        (stockFilter === 'low' && product.stock <= product.minStockLevel) ||
+                        (stockFilter === 'low' && product.stock <= product.minStock) ||
                         (stockFilter === 'out' && product.stock === 0) ||
                         (stockFilter === 'in' && product.stock > 0);
 
@@ -71,7 +72,7 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
   });
 
   const getLowStockProducts = () => {
-    return products.filter(p => p.stock <= p.minStockLevel && p.stock > 0);
+    return products.filter(p => p.stock <= p.minStock && p.stock > 0);
   };
 
   const getOutOfStockProducts = () => {
@@ -88,22 +89,25 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
       return;
     }
 
-    const product = {
+    const product: Omit<Product, 'id'> = {
       name: newProduct.name,
       barcode: newProduct.barcode || undefined,
       category: newProduct.category || 'General',
       retailPrice: parseFloat(newProduct.retailPrice),
       wholesalePrice: parseFloat(newProduct.wholesalePrice) || parseFloat(newProduct.retailPrice),
       buyingCost: parseFloat(newProduct.buyingCost),
+      price: parseFloat(newProduct.retailPrice), // Map retailPrice to price
       stock: parseInt(newProduct.stock) || 0,
-      minStockLevel: parseInt(newProduct.minStockLevel) || 5,
-      description: newProduct.description || undefined
+      minStock: parseInt(newProduct.minStock) || 5,
+      description: newProduct.description || undefined,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     onAddProduct(product);
     setNewProduct({
       name: '', barcode: '', category: '', retailPrice: '', wholesalePrice: '',
-      buyingCost: '', stock: '', minStockLevel: '', description: ''
+      buyingCost: '', stock: '', minStock: '', description: ''
     });
     setShowAddDialog(false);
     
@@ -123,7 +127,7 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
       wholesalePrice: product.wholesalePrice?.toString() || '',
       buyingCost: product.buyingCost.toString(),
       stock: product.stock.toString(),
-      minStockLevel: product.minStockLevel.toString(),
+      minStock: product.minStock.toString(),
       description: product.description || ''
     });
     setShowAddDialog(true);
@@ -132,23 +136,25 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
   const handleUpdateProduct = () => {
     if (!editingProduct) return;
 
-    const updates = {
+    const updates: Partial<Product> = {
       name: newProduct.name,
       barcode: newProduct.barcode || undefined,
       category: newProduct.category || 'General',
       retailPrice: parseFloat(newProduct.retailPrice),
       wholesalePrice: parseFloat(newProduct.wholesalePrice) || parseFloat(newProduct.retailPrice),
       buyingCost: parseFloat(newProduct.buyingCost),
+      price: parseFloat(newProduct.retailPrice), // Map retailPrice to price
       stock: parseInt(newProduct.stock) || 0,
-      minStockLevel: parseInt(newProduct.minStockLevel) || 5,
-      description: newProduct.description || undefined
+      minStock: parseInt(newProduct.minStock) || 5,
+      description: newProduct.description || undefined,
+      updatedAt: new Date()
     };
 
     onUpdateProduct(editingProduct.id, updates);
     setEditingProduct(null);
     setNewProduct({
       name: '', barcode: '', category: '', retailPrice: '', wholesalePrice: '',
-      buyingCost: '', stock: '', minStockLevel: '', description: ''
+      buyingCost: '', stock: '', minStock: '', description: ''
     });
     setShowAddDialog(false);
     
@@ -341,8 +347,8 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
                       <Label>Min Stock Level</Label>
                       <Input
                         type="number"
-                        value={newProduct.minStockLevel}
-                        onChange={(e) => setNewProduct({...newProduct, minStockLevel: e.target.value})}
+                        value={newProduct.minStock}
+                        onChange={(e) => setNewProduct({...newProduct, minStock: e.target.value})}
                         placeholder="5"
                       />
                     </div>
@@ -391,14 +397,14 @@ export const EnhancedProductManagement: React.FC<EnhancedProductManagementProps>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">{product.name}</h4>
-                    {product.stock <= product.minStockLevel && (
+                    {product.stock <= product.minStock && (
                       <Badge variant={product.stock === 0 ? "destructive" : "secondary"}>
                         {product.stock === 0 ? 'Out of Stock' : 'Low Stock'}
                       </Badge>
                     )}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
-                    {product.category} • Stock: {product.stock} • Min: {product.minStockLevel}
+                    {product.category} • Stock: {product.stock} • Min: {product.minStock}
                   </div>
                   <div className="text-sm mt-1">
                     <span className="text-gray-600">Cost: {formatPrice(product.buyingCost)}</span>
