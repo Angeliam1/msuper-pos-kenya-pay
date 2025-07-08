@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SimplePOS } from './SimplePOS';
 import { Product, CartItem } from '@/types';
@@ -88,6 +87,7 @@ export const SimplePOSApp: React.FC = () => {
     };
     
     setProducts(prev => [...prev, newProduct]);
+    console.log('Product added:', newProduct);
   };
 
   const handleUpdateProduct = (id: string, updates: Partial<Product>) => {
@@ -98,6 +98,10 @@ export const SimplePOSApp: React.FC = () => {
           : product
       )
     );
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(product => product.id !== id));
   };
 
   const handleProcessSale = (items: CartItem[], total: number) => {
@@ -120,6 +124,7 @@ export const SimplePOSApp: React.FC = () => {
       products={products}
       onAddProduct={handleAddProduct}
       onUpdateProduct={handleUpdateProduct}
+      onDeleteProduct={handleDeleteProduct}
       onProcessSale={handleProcessSale}
       onBusinessNameChange={handleBusinessNameChange}
     />

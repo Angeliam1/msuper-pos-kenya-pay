@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, 
   Plus, 
@@ -15,17 +14,20 @@ import {
   Package,
   Receipt,
   Store,
-  Settings
+  Menu
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, CartItem } from '@/types';
 import { StoreSettings } from './StoreSettings';
+import { EnhancedProductManagement } from './EnhancedProductManagement';
+import { Sidebar } from './Sidebar';
 
 interface SimplePOSProps {
   businessName?: string;
   products: Product[];
   onAddProduct: (product: Omit<Product, 'id'>) => void;
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
+  onDeleteProduct: (id: string) => void;
   onProcessSale: (items: CartItem[], total: number) => void;
   onBusinessNameChange: (name: string) => void;
 }
@@ -35,6 +37,7 @@ export const SimplePOS: React.FC<SimplePOSProps> = ({
   products,
   onAddProduct,
   onUpdateProduct,
+  onDeleteProduct,
   onProcessSale,
   onBusinessNameChange
 }) => {
@@ -44,6 +47,7 @@ export const SimplePOS: React.FC<SimplePOSProps> = ({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: 0,
@@ -192,236 +196,251 @@ export const SimplePOS: React.FC<SimplePOSProps> = ({
     });
   };
 
+  const handleDeleteProduct = (id: string) => {
+    onDeleteProduct(id);
+  };
+
   const formatPrice = (price: number) => `KSh${price.toLocaleString()}`;
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Store className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{businessName}</h1>
-                <p className="text-sm text-gray-600">Point of Sale System</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Products</p>
-                <p className="text-lg font-semibold">{products.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pos" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Point of Sale
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Products
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pos" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Products Section */}
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5" />
-                      Products
-                    </CardTitle>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search products..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[500px]">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {filteredProducts.map(product => (
-                          <div key={product.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium">{product.name}</h4>
-                              <Badge variant="secondary" className="text-xs">
-                                {product.category}
-                              </Badge>
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'pos':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Products Section */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Products
+                  </CardTitle>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search products..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[500px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {filteredProducts.map(product => (
+                        <div key={product.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">{product.name}</h4>
+                            <Badge variant="secondary" className="text-xs">
+                              {product.category}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-lg font-bold text-green-600">
+                                {formatPrice(product.price)}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Stock: {product.stock}
+                              </p>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-lg font-bold text-green-600">
-                                  {formatPrice(product.price)}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  Stock: {product.stock}
-                                </p>
-                              </div>
+                            <Button
+                              onClick={() => addToCart(product)}
+                              size="sm"
+                              disabled={product.stock <= 0}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {filteredProducts.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No products found
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Cart Section */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Cart ({cart.length})
+                  </CardTitle>
+                  <Input
+                    placeholder="Customer name (optional)"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px] mb-4">
+                    {cart.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        Cart is empty
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {cart.map(item => (
+                          <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex-1">
+                              <h5 className="font-medium">{item.name}</h5>
+                              <p className="text-sm text-gray-600">
+                                {formatPrice(item.price)} each
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
                               <Button
-                                onClick={() => addToCart(product)}
                                 size="sm"
-                                disabled={product.stock <= 0}
-                                className="bg-blue-600 hover:bg-blue-700"
+                                variant="outline"
+                                onClick={() => adjustQuantity(item.id, item.quantity - 1)}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center">{item.quantity}</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => adjustQuantity(item.id, item.quantity + 1)}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeFromCart(item.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
                         ))}
                       </div>
-                      
-                      {filteredProducts.length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          No products found
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </div>
+                    )}
+                  </ScrollArea>
 
-              {/* Cart Section */}
-              <div className="lg:col-span-1">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ShoppingCart className="h-5 w-5" />
-                      Cart ({cart.length})
-                    </CardTitle>
-                    <Input
-                      placeholder="Customer name (optional)"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[300px] mb-4">
-                      {cart.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          Cart is empty
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {cart.map(item => (
-                            <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h5 className="font-medium">{item.name}</h5>
-                                <p className="text-sm text-gray-600">
-                                  {formatPrice(item.price)} each
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => adjustQuantity(item.id, item.quantity - 1)}
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="w-8 text-center">{item.quantity}</span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => adjustQuantity(item.id, item.quantity + 1)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => removeFromCart(item.id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </ScrollArea>
-
-                    <Separator className="my-4" />
-                    
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center text-lg font-bold">
-                        <span>Total:</span>
-                        <span className="text-green-600">{formatPrice(calculateTotal())}</span>
-                      </div>
-                      
-                      <Button
-                        onClick={processSale}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        size="lg"
-                        disabled={cart.length === 0}
-                      >
-                        <Receipt className="h-4 w-4 mr-2" />
-                        Process Sale
-                      </Button>
-                      
-                      {cart.length > 0 && (
-                        <Button
-                          onClick={() => setCart([])}
-                          variant="outline"
-                          className="w-full"
-                        >
-                          Clear Cart
-                        </Button>
-                      )}
+                  <Separator className="my-4" />
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-lg font-bold">
+                      <span>Total:</span>
+                      <span className="text-green-600">{formatPrice(calculateTotal())}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    
+                    <Button
+                      onClick={processSale}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      size="lg"
+                      disabled={cart.length === 0}
+                    >
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Process Sale
+                    </Button>
+                    
+                    {cart.length > 0 && (
+                      <Button
+                        onClick={() => setCart([])}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        Clear Cart
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+
+      case 'inventory':
+        return (
+          <EnhancedProductManagement
+            products={products}
+            onAddProduct={onAddProduct}
+            onUpdateProduct={onUpdateProduct}
+            onDeleteProduct={handleDeleteProduct}
+          />
+        );
+
+      case 'settings':
+        return (
+          <StoreSettings 
+            businessName={businessName}
+            onBusinessNameChange={onBusinessNameChange}
+          />
+        );
+
+      default:
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">{activeTab} features will be available here</p>
+                <p className="text-sm text-gray-500 mt-2">Coming soon...</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="lg:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <Store className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{businessName}</h1>
+                  <p className="text-sm text-gray-600">Point of Sale System</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Products</p>
+                  <p className="text-lg font-semibold">{products.length}</p>
+                </div>
               </div>
             </div>
-          </TabsContent>
+          </div>
+        </div>
 
-          <TabsContent value="products" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Product Management</h3>
-              <Button 
-                onClick={() => setShowAddProduct(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-            </div>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600">Product management features will be available here</p>
-                  <p className="text-sm text-gray-500 mt-2">View, edit, and manage your inventory</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <StoreSettings 
-              businessName={businessName}
-              onBusinessNameChange={onBusinessNameChange}
-            />
-          </TabsContent>
-        </Tabs>
+        {/* Content */}
+        <div className="flex-1 max-w-7xl mx-auto px-4 py-6 w-full">
+          {renderContent()}
+        </div>
       </div>
 
       {/* Add Product Modal */}
