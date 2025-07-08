@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { ProductManagement } from './ProductManagement';
@@ -11,11 +12,13 @@ import { EnhancedReports } from './EnhancedReports';
 import { EnhancedProductManagement } from './EnhancedProductManagement';
 import { LoyaltyProgram } from './LoyaltyProgram';
 import { ThermalPrinter } from './ThermalPrinter';
+import { AdvancedMultiStoreDashboard } from './AdvancedMultiStoreDashboard';
+import { AdvancedInventoryManagement } from './AdvancedInventoryManagement';
 import { useOfflineSupport } from '@/hooks/useOfflineSupport';
 import { useStore } from '@/contexts/StoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Menu, Wifi, WifiOff, RefreshCw, Scan, Gift, Printer } from 'lucide-react';
+import { Menu, Wifi, WifiOff, RefreshCw, Scan, Gift, Printer, Store, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const POSApplication: React.FC = () => {
@@ -161,7 +164,13 @@ export const POSApplication: React.FC = () => {
       case 'stores':
         return (
           <div className="p-6">
-            <MultiStoreManagement />
+            <AdvancedMultiStoreDashboard />
+          </div>
+        );
+      case 'inventory':
+        return (
+          <div className="p-6">
+            <AdvancedInventoryManagement />
           </div>
         );
       case 'online-store':
@@ -281,6 +290,24 @@ export const POSApplication: React.FC = () => {
             >
               <Scan className="h-4 w-4 mr-1" />
               Scanner
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('stores')}
+            >
+              <Store className="h-4 w-4 mr-1" />
+              Stores
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('inventory')}
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Inventory
             </Button>
 
             <Button
