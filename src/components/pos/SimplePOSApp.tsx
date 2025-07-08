@@ -68,6 +68,17 @@ export const SimplePOSApp: React.FC = () => {
     setProducts(sampleProducts);
   }, []);
 
+  // Load business name from localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('storeConfig');
+    if (savedConfig) {
+      const config = JSON.parse(savedConfig);
+      if (config.businessName) {
+        setBusinessName(config.businessName);
+      }
+    }
+  }, []);
+
   const handleAddProduct = (productData: Omit<Product, 'id'>) => {
     const newProduct: Product = {
       ...productData,
@@ -99,6 +110,10 @@ export const SimplePOSApp: React.FC = () => {
     });
   };
 
+  const handleBusinessNameChange = (name: string) => {
+    setBusinessName(name);
+  };
+
   return (
     <SimplePOS
       businessName={businessName}
@@ -106,6 +121,7 @@ export const SimplePOSApp: React.FC = () => {
       onAddProduct={handleAddProduct}
       onUpdateProduct={handleUpdateProduct}
       onProcessSale={handleProcessSale}
+      onBusinessNameChange={handleBusinessNameChange}
     />
   );
 };
