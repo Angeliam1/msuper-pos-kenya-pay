@@ -109,29 +109,12 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        
-        // If no role exists, try to create one for existing users
-        console.log('Attempting to create default role for user...');
-        const { data: insertData, error: insertError } = await supabase
-          .from('user_roles')
-          .insert([
-            {
-              user_id: userId,
-              role: 'staff',
-              is_active: true
-            }
-          ])
-          .select()
-          .single();
+        setUserRole(null);
+        setLoading(false);
+        return;
+      }
 
-        if (insertError) {
-          console.error('Error creating default role:', insertError);
-          setUserRole(null);
-        } else {
-          console.log('Default role created:', insertData);
-          setUserRole(insertData as UserRole);
-        }
-      } else if (data && data.length > 0) {
+      if (data && data.length > 0) {
         console.log('User role found:', data[0]);
         const roleData = data[0];
         const validRole = roleData.role as UserRole['role'];
@@ -139,35 +122,54 @@ export const useAuth = () => {
           ...roleData,
           role: validRole
         } as UserRole);
-      } else {
-        console.log('No user role found, creating default...');
-        
-        // Create a default role if none exists
-        const { data: insertData, error: insertError } = await supabase
-          .from('user_roles')
-          .insert([
-            {
-              user_id: userId,
-              role: 'staff',
-              is_active: true
-            }
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating default role:', insertError);
-          setUserRole(null);
-        } else {
-          console.log('Default role created:', insertData);
-          setUserRole(insertData as UserRole);
-        }
+        setLoading(false);
+        return;
       }
+
+      // If no role exists, create one
+      console.log('No user role found, creating default...');
+      const { data: insertData, error: insertError } = await supabase
+        .from('user_roles')
+        .insert([
+          {
+            user_id: userId,
+            role: 'staff',
+            is_active: true
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating default role:', insertError);
+        // Even if role creation fails, don't block the user
+        // Create a temporary role object
+        setUserRole({
+          id: 'temp',
+          user_id: userId,
+          store_id: null,
+          tenant_id: null,
+          role: 'staff',
+          is_active: true
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('Default role created:', insertData);
+      setUserRole(insertData as UserRole);
+      setLoading(false);
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
-      setUserRole(null);
-    } finally {
-      console.log('Setting loading to false after role fetch');
+      // Don't leave user stuck - provide a default role
+      setUserRole({
+        id: 'temp',
+        user_id: userId,
+        store_id: null,
+        tenant_id: null,
+        role: 'staff',
+        is_active: true
+      });
       setLoading(false);
     }
   };
