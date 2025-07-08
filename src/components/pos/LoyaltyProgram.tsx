@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -80,7 +79,7 @@ export const LoyaltyProgram: React.FC<LoyaltyProgramProps> = ({
   );
 
   const getCustomerLoyaltyPoints = (customer: Customer) => {
-    return (customer as any).loyaltyPoints || 0;
+    return customer.loyaltyPoints || 0;
   };
 
   const getCustomerTier = (points: number) => {
@@ -97,7 +96,6 @@ export const LoyaltyProgram: React.FC<LoyaltyProgramProps> = ({
       const newPoints = Math.max(0, currentPoints + points);
       
       onUpdateCustomer(customerId, {
-        ...customer,
         loyaltyPoints: newPoints
       });
 
@@ -144,6 +142,8 @@ export const LoyaltyProgram: React.FC<LoyaltyProgramProps> = ({
       phone: newCustomer.phone,
       email: newCustomer.email || undefined,
       loyaltyPoints: 0,
+      creditLimit: 0,
+      outstandingBalance: 0,
       createdAt: new Date(),
       updatedAt: new Date()
     };
