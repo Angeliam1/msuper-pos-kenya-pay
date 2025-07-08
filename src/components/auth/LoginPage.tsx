@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Store, UserPlus, LogIn, Shield, Mail } from 'lucide-react';
+import { Store, UserPlus, LogIn, Shield, Mail, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export const LoginPage: React.FC = () => {
   const { user, userRole, signIn, signUp, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
     email: '',
@@ -28,39 +28,66 @@ export const LoginPage: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
+
+  // Check for email confirmation on mount
+  useEffect(() => {
+    const checkEmailConfirmation = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type');
+      
+      if (type === 'email') {
+        console.log('Email confirmation detected');
+        setEmailConfirmed(true);
+        toast({
+          title: "Email Confirmed",
+          description: "Your email has been successfully verified. You can now sign in.",
+        });
+        
+        // Clear the URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    checkEmailConfirmation();
+  }, [toast]);
 
   // Redirect authenticated users based on their role
   useEffect(() => {
     console.log('Auth state in LoginPage:', { user: !!user, userRole, loading });
     
     if (user && !loading) {
+      console.log('User is authenticated, redirecting...');
+      
       // If user exists but no role, redirect to POS (they can set up later)
       if (!userRole) {
         console.log('User exists but no role, redirecting to POS');
-        window.location.href = '/pos';
+        navigate('/pos', { replace: true });
       } else {
         // Auto-redirect based on role
         if (userRole.role === 'super_admin') {
           console.log('Redirecting super admin to /super-admin');
-          window.location.href = '/super-admin';
+          navigate('/super-admin', { replace: true });
         } else if (['owner', 'admin', 'manager'].includes(userRole.role)) {
           console.log('Redirecting admin/manager to /admin');
-          window.location.href = '/admin';
+          navigate('/admin', { replace: true });
         } else {
           console.log('Redirecting to /pos');
-          window.location.href = '/pos';
+          navigate('/pos', { replace: true });
         }
       }
     }
-  }, [user, userRole, loading]);
+  }, [user, userRole, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
+    console.log('Attempting login...');
     const { error } = await signIn(loginData.email, loginData.password);
     
     if (error) {
+      console.error('Login error:', error);
       if (error.includes('Email not confirmed') || error.includes('email not confirmed')) {
         setShowEmailConfirmation(true);
         toast({
@@ -76,6 +103,8 @@ export const LoginPage: React.FC = () => {
         });
       }
       setIsLoading(false);
+    } else {
+      console.log('Login successful, auth state will handle redirect');
     }
     // Don't set loading to false on success - let the auth flow handle it
   };
@@ -93,6 +122,8 @@ export const LoginPage: React.FC = () => {
     }
 
     setIsLoading(true);
+    console.log('Attempting registration...');
+    
     const { error } = await signUp(registerData.email, registerData.password, {
       store_name: registerData.storeName,
       owner_name: registerData.ownerName,
@@ -103,6 +134,7 @@ export const LoginPage: React.FC = () => {
     });
 
     if (error) {
+      console.error('Registration error:', error);
       toast({
         title: "Registration Error",
         description: error,
@@ -110,6 +142,7 @@ export const LoginPage: React.FC = () => {
       });
       setIsLoading(false);
     } else {
+      console.log('Registration successful');
       setShowEmailConfirmation(true);
       toast({
         title: "Registration Successful",
@@ -119,7 +152,7 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !showEmailConfirmation && !emailConfirmed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">
@@ -144,7 +177,23 @@ export const LoginPage: React.FC = () => {
         </CardHeader>
         
         <CardContent>
-          {showEmailConfirmation ? (
+          {emailConfirmed ? (
+            <div className="text-center space-y-4">
+              <div className="p-3 bg-green-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-green-600">Email Confirmed!</h3>
+              <p className="text-gray-600 text-sm">
+                Your email has been successfully verified. You can now sign in to your account.
+              </p>
+              <Button 
+                onClick={() => setEmailConfirmed(false)}
+                className="w-full"
+              >
+                Continue to Sign In
+              </Button>
+            </div>
+          ) : showEmailConfirmation ? (
             <div className="text-center space-y-4">
               <div className="p-3 bg-blue-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
                 <Mail className="h-8 w-8 text-blue-600" />

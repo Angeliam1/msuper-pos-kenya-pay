@@ -32,6 +32,7 @@ export const useAuth = () => {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -42,13 +43,17 @@ export const useAuth = () => {
           return;
         }
 
+        console.log('Initial session:', session?.user?.email || 'No user');
+        
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
           
           if (session?.user) {
+            console.log('User found, fetching role...');
             await fetchUserRole(session.user.id);
           } else {
+            console.log('No user found, setting loading to false');
             setLoading(false);
           }
         }
@@ -67,14 +72,16 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('Auth state changed:', event, session?.user?.email || 'No user');
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('User authenticated, fetching role...');
           await fetchUserRole(session.user.id);
         } else {
+          console.log('User signed out, clearing role');
           setUserRole(null);
           setLoading(false);
         }
@@ -118,7 +125,7 @@ export const useAuth = () => {
       console.error('Error fetching user role:', error);
       setUserRole(null);
     } finally {
-      console.log('Setting loading to false');
+      console.log('Setting loading to false after role fetch');
       setLoading(false);
     }
   };
@@ -126,6 +133,8 @@ export const useAuth = () => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log('Attempting sign in for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -137,6 +146,7 @@ export const useAuth = () => {
         return { error: error.message };
       }
 
+      console.log('Sign in successful');
       // Don't set loading to false here - let the auth state change handle it
       return { data };
     } catch (error) {
@@ -150,12 +160,14 @@ export const useAuth = () => {
   const signUp = async (email: string, password: string, metadata: any = {}) => {
     try {
       setLoading(true);
+      console.log('Attempting sign up for:', email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
@@ -165,6 +177,7 @@ export const useAuth = () => {
         return { error: error.message };
       }
 
+      console.log('Sign up successful');
       // Don't set loading to false here - let the email confirmation flow handle it
       return { data };
     } catch (error) {
