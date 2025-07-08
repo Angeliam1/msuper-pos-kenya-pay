@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -10,7 +9,9 @@ import {
   Menu,
   X,
   Globe,
-  Store
+  Store,
+  Gift,
+  Printer
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,8 @@ const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'reports', label: 'Reports', icon: FileText },
   { id: 'stores', label: 'Multi Store', icon: Store },
+  { id: 'loyalty', label: 'Loyalty Program', icon: Gift },
+  { id: 'printer', label: 'Thermal Printer', icon: Printer },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 

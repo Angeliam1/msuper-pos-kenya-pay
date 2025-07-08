@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { ProductManagement } from './ProductManagement';
@@ -10,11 +9,13 @@ import { OnlineStoreManager } from '../online-store/OnlineStoreManager';
 import { EnhancedBarcodeScanner } from './EnhancedBarcodeScanner';
 import { EnhancedReports } from './EnhancedReports';
 import { EnhancedProductManagement } from './EnhancedProductManagement';
+import { LoyaltyProgram } from './LoyaltyProgram';
+import { ThermalPrinter } from './ThermalPrinter';
 import { useOfflineSupport } from '@/hooks/useOfflineSupport';
 import { useStore } from '@/contexts/StoreContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Menu, Wifi, WifiOff, RefreshCw, Scan } from 'lucide-react';
+import { Menu, Wifi, WifiOff, RefreshCw, Scan, Gift, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const POSApplication: React.FC = () => {
@@ -29,7 +30,9 @@ export const POSApplication: React.FC = () => {
     addProductToStore,
     getStoreTransactions,
     getStoreCustomers,
-    addTransactionToStore
+    addTransactionToStore,
+    addCustomerToStore,
+    updateStoreCustomer
   } = useStore();
 
   const { 
@@ -41,7 +44,6 @@ export const POSApplication: React.FC = () => {
 
   const { toast } = useToast();
 
-  // Get store-specific data
   const products = currentStore ? getStoreProducts(currentStore.id) : [];
   const transactions = currentStore ? getStoreTransactions(currentStore.id) : [];
   const customers = currentStore ? getStoreCustomers(currentStore.id) : [];
@@ -52,7 +54,6 @@ export const POSApplication: React.FC = () => {
     .reduce((sum, t) => sum + t.total, 0);
 
   const handleProductFound = (product: any) => {
-    // This would be handled by the ProductManagement component
     console.log('Product found:', product);
     setShowBarcodeScanner(false);
   };
@@ -87,14 +88,36 @@ export const POSApplication: React.FC = () => {
     if (!isOnline) {
       saveOfflineData('products', { storeId: currentStore.id, productId: id, action: 'delete' });
     } else {
-      // Implement delete functionality
       console.log('Delete product:', id);
+    }
+  };
+
+  const handleAddCustomer = (customerData: any) => {
+    if (!currentStore) return;
+    
+    if (!isOnline) {
+      saveOfflineData('customers', { storeId: currentStore.id, customer: customerData });
+      toast({
+        title: "Saved Offline",
+        description: "Customer will be synced when online",
+      });
+    } else {
+      addCustomerToStore(currentStore.id, customerData);
+    }
+  };
+
+  const handleUpdateCustomer = (id: string, updates: any) => {
+    if (!currentStore) return;
+    
+    if (!isOnline) {
+      saveOfflineData('customers', { storeId: currentStore.id, customerId: id, updates });
+    } else {
+      updateStoreCustomer(currentStore.id, id, updates);
     }
   };
 
   const handleSaveSettings = (settings: any) => {
     console.log('Saving settings:', settings);
-    // Implement settings save functionality
   };
 
   const renderContent = () => {
@@ -145,6 +168,22 @@ export const POSApplication: React.FC = () => {
         return (
           <div className="p-6">
             <OnlineStoreManager />
+          </div>
+        );
+      case 'loyalty':
+        return (
+          <div className="p-6">
+            <LoyaltyProgram
+              customers={customers}
+              onUpdateCustomer={handleUpdateCustomer}
+              onAddCustomer={handleAddCustomer}
+            />
+          </div>
+        );
+      case 'printer':
+        return (
+          <div className="p-6">
+            <ThermalPrinter />
           </div>
         );
       case 'settings':
@@ -234,7 +273,7 @@ export const POSApplication: React.FC = () => {
               </Button>
             )}
 
-            {/* Enhanced Barcode Scanner Button */}
+            {/* Quick Actions */}
             <Button
               variant="outline"
               size="sm"
@@ -242,6 +281,24 @@ export const POSApplication: React.FC = () => {
             >
               <Scan className="h-4 w-4 mr-1" />
               Scanner
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('loyalty')}
+            >
+              <Gift className="h-4 w-4 mr-1" />
+              Loyalty
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('printer')}
+            >
+              <Printer className="h-4 w-4 mr-1" />
+              Print
             </Button>
           </div>
         </header>
