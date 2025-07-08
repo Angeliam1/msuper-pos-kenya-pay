@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -142,7 +141,7 @@ export const AdvancedInventoryManagement: React.FC = () => {
           suggestedOrder,
           daysUntilStockout,
           avgDailySales: dailySales,
-          supplier: product.supplier || 'Unknown'
+          supplier: product.supplierId || 'Unknown'
         });
       }
     });
@@ -152,7 +151,7 @@ export const AdvancedInventoryManagement: React.FC = () => {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+                         product.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
     
@@ -345,7 +344,7 @@ export const AdvancedInventoryManagement: React.FC = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-base">{product.name}</CardTitle>
-                        <p className="text-sm text-gray-600">{product.sku}</p>
+                        <p className="text-sm text-gray-600">{product.barcode || 'No barcode'}</p>
                       </div>
                       <Badge className={stockStatus.textColor} variant="outline">
                         {stockStatus.status}

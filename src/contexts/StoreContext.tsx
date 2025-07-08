@@ -84,12 +84,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const switchStore = (storeId: string) => {
+    const store = stores.find(s => s.id === storeId);
+    if (store) {
+      setCurrentStore(store);
+    }
+  };
+
   const contextValue: StoreContextType = {
     currentStore,
     setCurrentStore,
     stores,
     addStore,
     updateStore,
+    switchStore,
     ...storeProducts,
     ...storeCustomers,
     ...storeTransactions,

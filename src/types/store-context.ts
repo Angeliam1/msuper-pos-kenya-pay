@@ -58,6 +58,7 @@ export interface StoreContextType {
   stores: StoreLocation[];
   addStore: (store: Omit<StoreLocation, 'id'>) => void;
   updateStore: (id: string, updates: Partial<StoreLocation>) => void;
+  switchStore: (storeId: string) => void;
   getStoreProducts: (storeId: string) => Product[];
   updateStoreProduct: (storeId: string, productId: string, updates: Partial<Product>) => void;
   addProductToStore: (storeId: string, product: Omit<Product, 'id'>) => void;
