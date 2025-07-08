@@ -6,7 +6,7 @@ import { Shield, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useSupabaseAuth';
 
 interface RoleGateProps {
-  allowedRoles?: ('super_admin' | 'owner' | 'admin' | 'manager' | 'staff')[];
+  allowedRoles?: ('super_admin' | 'owner' | 'admin' | 'manager' | 'cashier' | 'staff')[];
   requiredPermission?: string;
   children: React.ReactNode;
   fallback?: React.ReactNode;

@@ -21,8 +21,8 @@ export const useAuth = () => {
   const { toast } = useToast();
 
   // Mock subscription data for now - can be enhanced later
-  const subscriptionStatus = 'active' as const;
-  const subscriptionPlan = 'basic' as const;
+  const subscriptionStatus: 'active' | 'past_due' | 'cancelled' | 'suspended' | 'trial' = 'active';
+  const subscriptionPlan: 'basic' | 'premium' | 'enterprise' = 'basic';
   const isSubscriptionActive = true;
   const isEnvironmentValid = true;
 
