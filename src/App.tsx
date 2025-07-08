@@ -9,7 +9,14 @@ import { LoginPage } from "@/components/auth/LoginPage";
 import { RoleBasedDashboard } from "@/components/pos/RoleBasedDashboard";
 import { StoreProvider } from "@/contexts/StoreContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -51,9 +58,9 @@ const App = () => (
               } 
             />
             
-            {/* Default route - redirect to auth */}
-            <Route path="/" element={<Navigate to="/auth" replace />} />
-            <Route path="*" element={<Navigate to="/auth" replace />} />
+            {/* Default route - redirect to POS */}
+            <Route path="/" element={<Navigate to="/pos" replace />} />
+            <Route path="*" element={<Navigate to="/pos" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

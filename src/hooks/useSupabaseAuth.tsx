@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +19,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Mock subscription data for now - can be enhanced later
+  // Mock subscription data for now
   const subscriptionStatus: 'active' | 'past_due' | 'cancelled' | 'suspended' | 'trial' = 'active';
   const subscriptionPlan: 'basic' | 'premium' | 'enterprise' = 'basic';
   const isSubscriptionActive = true;
@@ -29,10 +28,8 @@ export const useAuth = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -43,17 +40,26 @@ export const useAuth = () => {
           return;
         }
 
-        console.log('Initial session:', session?.user?.email || 'No user');
-        
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
           
           if (session?.user) {
-            console.log('User found, fetching role...');
-            await fetchUserRole(session.user.id);
+            // Set a default role immediately to prevent blocking
+            const defaultRole: UserRole = {
+              id: 'temp',
+              user_id: session.user.id,
+              store_id: null,
+              tenant_id: null,
+              role: 'staff',
+              is_active: true
+            };
+            setUserRole(defaultRole);
+            setLoading(false);
+            
+            // Try to fetch actual role in background
+            fetchUserRole(session.user.id);
           } else {
-            console.log('No user found, setting loading to false');
             setLoading(false);
           }
         }
@@ -67,21 +73,29 @@ export const useAuth = () => {
 
     initializeAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state changed:', event, session?.user?.email || 'No user');
-        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('User authenticated, fetching role...');
-          await fetchUserRole(session.user.id);
+          // Set default role immediately
+          const defaultRole: UserRole = {
+            id: 'temp',
+            user_id: session.user.id,
+            store_id: null,
+            tenant_id: null,
+            role: 'staff',
+            is_active: true
+          };
+          setUserRole(defaultRole);
+          setLoading(false);
+          
+          // Fetch actual role in background
+          fetchUserRole(session.user.id);
         } else {
-          console.log('User signed out, clearing role');
           setUserRole(null);
           setLoading(false);
         }
@@ -96,9 +110,6 @@ export const useAuth = () => {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      console.log('Fetching user role for:', userId);
-      
-      // First, let's check if a role exists
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -109,75 +120,21 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        setUserRole(null);
-        setLoading(false);
         return;
       }
 
       if (data && data.length > 0) {
-        console.log('User role found:', data[0]);
-        const roleData = data[0];
-        const validRole = roleData.role as UserRole['role'];
-        setUserRole({
-          ...roleData,
-          role: validRole
-        } as UserRole);
-        setLoading(false);
-        return;
+        setUserRole(data[0] as UserRole);
       }
-
-      // If no role exists, create one
-      console.log('No user role found, creating default...');
-      const { data: insertData, error: insertError } = await supabase
-        .from('user_roles')
-        .insert([
-          {
-            user_id: userId,
-            role: 'staff',
-            is_active: true
-          }
-        ])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error creating default role:', insertError);
-        // Even if role creation fails, don't block the user
-        // Create a temporary role object
-        setUserRole({
-          id: 'temp',
-          user_id: userId,
-          store_id: null,
-          tenant_id: null,
-          role: 'staff',
-          is_active: true
-        });
-        setLoading(false);
-        return;
-      }
-
-      console.log('Default role created:', insertData);
-      setUserRole(insertData as UserRole);
-      setLoading(false);
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
-      // Don't leave user stuck - provide a default role
-      setUserRole({
-        id: 'temp',
-        user_id: userId,
-        store_id: null,
-        tenant_id: null,
-        role: 'staff',
-        is_active: true
-      });
-      setLoading(false);
+      // Keep the default role if fetch fails
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      console.log('Attempting sign in for:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -185,17 +142,13 @@ export const useAuth = () => {
       });
 
       if (error) {
-        console.error('Sign in error:', error);
         setLoading(false);
         return { error: error.message };
       }
 
-      console.log('Sign in successful');
-      // Don't set loading to false here - let the auth state change handle it
       return { data };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Sign in error:', errorMessage);
       setLoading(false);
       return { error: errorMessage };
     }
@@ -204,7 +157,6 @@ export const useAuth = () => {
   const signUp = async (email: string, password: string, metadata: any = {}) => {
     try {
       setLoading(true);
-      console.log('Attempting sign up for:', email);
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -216,17 +168,13 @@ export const useAuth = () => {
       });
 
       if (error) {
-        console.error('Sign up error:', error);
         setLoading(false);
         return { error: error.message };
       }
 
-      console.log('Sign up successful');
-      // Don't set loading to false here - let the email confirmation flow handle it
       return { data };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Sign up error:', errorMessage);
       setLoading(false);
       return { error: errorMessage };
     }
@@ -248,10 +196,8 @@ export const useAuth = () => {
   const hasPermission = (permission: string): boolean => {
     if (!userRole) return false;
     
-    // Super admins have all permissions
     if (userRole.role === 'super_admin') return true;
     
-    // Define role permissions
     const permissions = {
       super_admin: ['all'],
       owner: ['store_management', 'user_management', 'pos', 'reports', 'settings'],
@@ -266,7 +212,6 @@ export const useAuth = () => {
   };
 
   const canAccessFeature = (feature: string): boolean => {
-    // Basic feature access - can be enhanced later with actual subscription logic
     return true;
   };
 
