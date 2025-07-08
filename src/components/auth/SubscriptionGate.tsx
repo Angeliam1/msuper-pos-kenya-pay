@@ -94,7 +94,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({
           </Button>
         </div>
 
-        {subscriptionStatus === 'past_due' && (
+        {(subscriptionStatus as string) === 'past_due' && (
           <Alert className="mt-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>

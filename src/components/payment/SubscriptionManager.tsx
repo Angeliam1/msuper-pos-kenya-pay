@@ -169,7 +169,7 @@ export const SubscriptionManager: React.FC = () => {
             </Button>
           </div>
 
-          {subscriptionStatus === 'past_due' && (
+          {(subscriptionStatus as string) === 'past_due' && (
             <Alert className="border-orange-200 bg-orange-50">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
@@ -178,7 +178,7 @@ export const SubscriptionManager: React.FC = () => {
             </Alert>
           )}
 
-          {(subscriptionStatus === 'cancelled' || !subscriptionStatus) && (
+          {((subscriptionStatus as string) === 'cancelled' || !subscriptionStatus) && (
             <Alert>
               <AlertDescription>
                 You don't have an active subscription. Subscribe to a plan to unlock premium features.
