@@ -1,500 +1,251 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { 
-  ArrowLeft,
-  ShoppingCart, 
-  Users, 
-  Package, 
-  Settings,
-  BarChart3,
-  CreditCard,
-  Truck,
-  Receipt,
-  UserPlus,
-  Plus,
-  Menu,
-  Globe,
-  Store,
-  FileText,
-  TrendingUp,
-  DollarSign
-} from 'lucide-react';
-import { ProductManagement } from './ProductManagement';
-import { CustomerManagement } from './CustomerManagement';
-import { Dashboard } from './Dashboard';
-import { Settings as POSSettings } from './Settings';
-import { TransactionHistory } from './TransactionHistory';
-import { ExpenseManagement } from './ExpenseManagement';
-import { OnlineStoreManager } from '../online-store/OnlineStoreManager';
-import { MultiStoreManagement } from './MultiStoreManagement';
-import { Reports } from './Reports';
-import { Cart } from './Cart';
-import { SplitPayment } from './SplitPayment';
-import { HirePurchaseComponent } from './HirePurchase';
-import { useStore } from '@/contexts/StoreContext';
-import { CartItem, Transaction, Customer, PaymentSplit, HirePurchase } from '@/types';
 
-type POSView = 'dashboard' | 'pos' | 'cart' | 'split-payment' | 'hire-purchase' | 'products' | 'customers' | 'sales' | 'transactions' | 'settings' | 'expenses' | 'online-store' | 'stores' | 'reports';
+import React, { useState } from 'react';
+import { Sidebar } from './Sidebar';
+import { ProductManagement } from './ProductManagement';
+import { Dashboard } from './Dashboard';
+import { Reports } from './Reports';
+import { Settings } from './Settings';
+import { MultiStoreManagement } from './MultiStoreManagement';
+import { OnlineStoreManager } from '../online-store/OnlineStoreManager';
+import { EnhancedBarcodeScanner } from './EnhancedBarcodeScanner';
+import { EnhancedReports } from './EnhancedReports';
+import { EnhancedProductManagement } from './EnhancedProductManagement';
+import { useOfflineSupport } from '@/hooks/useOfflineSupport';
+import { useStore } from '@/contexts/StoreContext';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Menu, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const POSApplication: React.FC = () => {
-  const [currentView, setCurrentView] = useState<POSView>('dashboard');
+  const [activeTab, setActiveTab] = useState('pos');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const { currentStore, getStoreProducts, getStoreCustomers, getStoreTransactions, addTransactionToStore, updateStoreCustomer } = useStore();
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  
+  const { 
+    currentStore, 
+    getStoreProducts, 
+    updateStoreProduct, 
+    addProductToStore,
+    getStoreTransactions,
+    getStoreCustomers,
+    addTransactionToStore
+  } = useStore();
 
-  // Get store data using the proper methods
+  const { 
+    isOnline, 
+    pendingSyncCount, 
+    syncOfflineData,
+    saveOfflineData 
+  } = useOfflineSupport();
+
+  const { toast } = useToast();
+
+  // Get store-specific data
   const products = currentStore ? getStoreProducts(currentStore.id) : [];
-  const customers = currentStore ? getStoreCustomers(currentStore.id) : [];
   const transactions = currentStore ? getStoreTransactions(currentStore.id) : [];
+  const customers = currentStore ? getStoreCustomers(currentStore.id) : [];
 
   const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
   const todaySales = transactions
     .filter(t => new Date(t.timestamp).toDateString() === new Date().toDateString())
     .reduce((sum, t) => sum + t.total, 0);
 
-  const lowStockProducts = products.filter(p => p.stock <= p.minStock);
-
-  const handleSaveSettings = (settings: any) => {
-    console.log('Settings saved:', settings);
-    // Implement settings save logic here
+  const handleProductFound = (product: any) => {
+    // This would be handled by the ProductManagement component
+    console.log('Product found:', product);
+    setShowBarcodeScanner(false);
   };
 
-  // Cart functionality
-  const handleUpdateCartItem = (id: string, quantity: number) => {
-    if (quantity === 0) {
-      setCartItems(prev => prev.filter(item => item.id !== id));
+  const handleAddProduct = (productData: any) => {
+    if (!currentStore) return;
+    
+    if (!isOnline) {
+      saveOfflineData('products', { storeId: currentStore.id, product: productData });
+      toast({
+        title: "Saved Offline",
+        description: "Product will be synced when online",
+      });
     } else {
-      setCartItems(prev => prev.map(item => 
-        item.id === id ? { ...item, quantity } : item
-      ));
+      addProductToStore(currentStore.id, productData);
     }
   };
 
-  const handleUpdateItemPrice = (id: string, newPrice: number) => {
-    setCartItems(prev => prev.map(item => 
-      item.id === id ? { ...item, price: newPrice } : item
-    ));
-  };
-
-  const handleCompleteTransaction = (
-    paymentMethod: 'mpesa' | 'cash',
-    mpesaReference?: string, 
-    customerId?: string, 
-    discount?: number, 
-    loyaltyPointsUsed?: number
-  ): Transaction => {
-    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) - (discount || 0);
+  const handleUpdateProduct = (id: string, updates: any) => {
+    if (!currentStore) return;
     
-    // Create payment splits based on payment method
-    const paymentSplits: PaymentSplit[] = [{
-      method: paymentMethod,
-      amount: total,
-      reference: mpesaReference
-    }];
+    if (!isOnline) {
+      saveOfflineData('products', { storeId: currentStore.id, productId: id, updates });
+    } else {
+      updateStoreProduct(currentStore.id, id, updates);
+    }
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    if (!currentStore) return;
     
-    const transaction: Transaction = {
-      id: `txn-${Date.now()}`,
-      items: cartItems,
-      total,
-      timestamp: new Date(),
-      customerId: customerId || '',
-      attendantId: 'demo-attendant',
-      paymentSplits,
-      status: 'completed'
-    };
-
-    if (currentStore) {
-      addTransactionToStore(currentStore.id, transaction);
-    }
-
-    // Clear cart after successful transaction
-    setCartItems([]);
-    return transaction;
-  };
-
-  const handleSplitPaymentComplete = (paymentSplits: PaymentSplit[], customerId?: string): Transaction => {
-    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    const transaction: Transaction = {
-      id: `txn-${Date.now()}`,
-      items: cartItems,
-      total,
-      timestamp: new Date(),
-      customerId: customerId || '',
-      attendantId: 'demo-attendant',
-      paymentSplits,
-      status: 'completed'
-    };
-
-    if (currentStore) {
-      addTransactionToStore(currentStore.id, transaction);
-    }
-
-    // Clear cart and return to cart view
-    setCartItems([]);
-    setCurrentView('cart');
-    return transaction;
-  };
-
-  const handleCreateHirePurchase = (hirePurchaseData: Omit<HirePurchase, 'id'>): string => {
-    const hirePurchaseId = `hp-${Date.now()}`;
-    
-    // Create initial transaction for down payment if any
-    if (hirePurchaseData.downPayment > 0) {
-      const downPaymentTransaction: Transaction = {
-        id: `txn-${Date.now()}`,
-        items: cartItems,
-        total: hirePurchaseData.downPayment,
-        timestamp: new Date(),
-        customerId: hirePurchaseData.customerId,
-        attendantId: 'demo-attendant',
-        paymentSplits: [{ method: 'cash', amount: hirePurchaseData.downPayment }],
-        status: 'completed'
-      };
-
-      if (currentStore) {
-        addTransactionToStore(currentStore.id, downPaymentTransaction);
-      }
-    }
-
-    // In a real implementation, you would save the hire purchase to the store context
-    console.log('Created hire purchase:', { id: hirePurchaseId, ...hirePurchaseData });
-
-    // Clear cart and return to cart view
-    setCartItems([]);
-    setCurrentView('cart');
-    return hirePurchaseId;
-  };
-
-  const handleAddCustomer = (customerData: Omit<Customer, 'id' | 'createdAt'>) => {
-    // This would be implemented with the store context
-    console.log('Add customer:', customerData);
-  };
-
-  const handleUpdateCustomerLoyaltyPoints = (customerId: string, pointsUsed: number) => {
-    if (currentStore) {
-      const customer = customers.find(c => c.id === customerId);
-      if (customer) {
-        const updatedCustomer = {
-          ...customer,
-          loyaltyPoints: (customer.loyaltyPoints || 0) - pointsUsed
-        };
-        updateStoreCustomer(currentStore.id, customerId, updatedCustomer);
-      }
+    if (!isOnline) {
+      saveOfflineData('products', { storeId: currentStore.id, productId: id, action: 'delete' });
+    } else {
+      // Implement delete functionality
+      console.log('Delete product:', id);
     }
   };
 
-  const mockStoreSettings = {
-    storeName: currentStore?.name || 'M-Super POS',
-    storeAddress: currentStore?.address || '',
-    storePhone: currentStore?.phone || '',
-    storeEmail: '',
-    kraPin: '',
-    mpesaPaybill: '',
-    mpesaAccount: '',
-    mpesaTill: '',
-    bankAccount: '',
-    paymentInstructions: '',
-    paybill: '',
-    showStoreName: true,
-    showStoreAddress: true,
-    showStorePhone: true,
-    showCustomerName: true,
-    showCustomerPhone: true,
-    showCustomerAddress: true,
-    showNotes: true,
-    receiptHeader: 'Thank you for shopping with us!',
-    receiptFooter: 'Please come again',
-    showBarcode: false,
-    showQRCode: false,
-    autoPrintReceipt: false,
-    receiptCodeType: 'qr' as const
-  };
+  const renderContent = () => {
+    if (showBarcodeScanner) {
+      return (
+        <div className="p-6">
+          <EnhancedBarcodeScanner
+            products={products}
+            onProductFound={handleProductFound}
+            onClose={() => setShowBarcodeScanner(false)}
+          />
+        </div>
+      );
+    }
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  const renderMainContent = () => {
-    switch (currentView) {
+    switch (activeTab) {
+      case 'pos':
+        return <ProductManagement />;
       case 'dashboard':
         return (
-          <Dashboard
-            totalSales={totalSales}
-            todaySales={todaySales}
-            transactionCount={transactions.length}
-            transactions={transactions}
-            products={products}
-          />
-        );
-      case 'split-payment':
-        return (
-          <SplitPayment
-            totalAmount={cartTotal}
-            customers={customers}
-            onConfirmPayment={handleSplitPaymentComplete}
-            onCancel={() => setCurrentView('cart')}
-          />
-        );
-      case 'hire-purchase':
-        return (
-          <HirePurchaseComponent
-            totalAmount={cartTotal}
-            customers={customers}
-            cartItems={cartItems}
-            onCreateHirePurchase={handleCreateHirePurchase}
-            onCancel={() => setCurrentView('cart')}
-          />
-        );
-      case 'cart':
-        return (
-          <Cart
-            items={cartItems}
-            customers={customers}
-            onUpdateItem={handleUpdateCartItem}
-            onUpdateItemPrice={handleUpdateItemPrice}
-            onCompleteTransaction={handleCompleteTransaction}
-            onSplitPayment={() => setCurrentView('split-payment')}
-            onHirePurchase={() => setCurrentView('hire-purchase')}
-            onHoldTransaction={() => console.log('Hold transaction')}
-            onAddCustomer={handleAddCustomer}
-            onUpdateCustomerLoyaltyPoints={handleUpdateCustomerLoyaltyPoints}
-            storeSettings={mockStoreSettings}
-          />
-        );
-      case 'pos':
-        return (
-          <div className="space-y-4">
-            {/* Mobile Product Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {products.map(product => (
-                <Button
-                  key={product.id}
-                  variant="outline"
-                  className="h-auto p-3 flex flex-col items-center text-center"
-                  onClick={() => {
-                    const existingItem = cartItems.find(item => item.id === product.id);
-                    if (existingItem) {
-                      handleUpdateCartItem(product.id, existingItem.quantity + 1);
-                    } else {
-                      const cartItem: CartItem = {
-                        id: product.id,
-                        name: product.name,
-                        category: product.category,
-                        buyingCost: product.buyingCost,
-                        retailPrice: product.retailPrice,
-                        price: product.price,
-                        wholesalePrice: product.wholesalePrice,
-                        stock: product.stock,
-                        minStock: product.minStock,
-                        maxStock: product.maxStock,
-                        barcode: product.barcode,
-                        description: product.description,
-                        imageUrl: product.imageUrl,
-                        unit: product.unit || 'pcs',
-                        supplierId: product.supplierId,
-                        createdAt: product.createdAt,
-                        updatedAt: product.updatedAt,
-                        quantity: 1
-                      };
-                      setCartItems(prev => [...prev, cartItem]);
-                    }
-                  }}
-                  disabled={product.stock <= 0}
-                >
-                  <Package className="h-6 w-6 mb-2" />
-                  <span className="text-xs font-medium">{product.name}</span>
-                  <span className="text-xs text-green-600">KES {product.price.toLocaleString()}</span>
-                  <span className="text-xs text-gray-500">Stock: {product.stock}</span>
-                </Button>
-              ))}
-            </div>
-
-            {/* Cart Summary */}
-            {cartItems.length > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Cart ({cartItems.length} items)</span>
-                    <Button 
-                      size="sm" 
-                      onClick={() => setCurrentView('cart')}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      View Cart
-                    </Button>
-                  </div>
-                  <div className="text-lg font-bold text-green-600">
-                    Total: KES {cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          <div className="p-6">
+            <Dashboard
+              totalSales={totalSales}
+              todaySales={todaySales}
+              transactionCount={transactions.length}
+              transactions={transactions}
+              products={products}
+            />
           </div>
         );
-      case 'products':
-        return <ProductManagement />;
-      case 'customers':
-        return <CustomerManagement />;
-      case 'transactions':
-        return <TransactionHistory transactions={transactions} />;
-      case 'settings':
-        return <POSSettings onSaveSettings={handleSaveSettings} />;
-      case 'expenses':
-        return (
-          <ExpenseManagement
-            expenses={[]}
-            attendants={[]}
-            currentAttendant={{
-              id: 'demo-user',
-              name: 'Demo User',
-              email: 'demo@example.com',
-              phone: '+1234567890',
-              role: 'admin',
-              isActive: true,
-              createdAt: new Date(),
-              permissions: ['pos', 'products', 'customers', 'suppliers', 'reports', 'staff', 'settings']
-            }}
-            onAddExpense={() => {}}
-          />
-        );
-      case 'online-store':
-        return <OnlineStoreManager />;
-      case 'stores':
-        return <MultiStoreManagement />;
       case 'reports':
         return (
-          <Reports 
-            transactions={transactions}
-            products={products}
-            attendants={[]}
-          />
+          <div className="p-6">
+            <EnhancedReports
+              transactions={transactions}
+              products={products}
+              customers={customers}
+            />
+          </div>
+        );
+      case 'stores':
+        return (
+          <div className="p-6">
+            <MultiStoreManagement />
+          </div>
+        );
+      case 'online-store':
+        return (
+          <div className="p-6">
+            <OnlineStoreManager />
+          </div>
+        );
+      case 'settings':
+        return (
+          <div className="p-6">
+            <div className="space-y-6">
+              <Settings />
+              
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Enhanced Product Management</h3>
+                <EnhancedProductManagement
+                  products={products}
+                  onAddProduct={handleAddProduct}
+                  onUpdateProduct={handleUpdateProduct}
+                  onDeleteProduct={handleDeleteProduct}
+                />
+              </div>
+            </div>
+          </div>
         );
       default:
-        return <div>Feature coming soon...</div>;
+        return <ProductManagement />;
     }
   };
 
-  const menuItems = [
-    { id: 'dashboard' as POSView, label: 'Dashboard', icon: BarChart3, badge: null },
-    { id: 'pos' as POSView, label: 'POS', icon: ShoppingCart, badge: null },
-    { id: 'cart' as POSView, label: 'Cart', icon: ShoppingCart, badge: cartItems.length },
-    { id: 'products' as POSView, label: 'Products', icon: Package, badge: products.length },
-    { id: 'customers' as POSView, label: 'Customers', icon: Users, badge: customers.length },
-    { id: 'transactions' as POSView, label: 'Transactions', icon: Receipt, badge: transactions.length },
-    { id: 'online-store' as POSView, label: 'Online Store', icon: Globe, badge: null },
-    { id: 'stores' as POSView, label: 'Multi Store', icon: Store, badge: null },
-    { id: 'reports' as POSView, label: 'Reports', icon: FileText, badge: null },
-    { id: 'expenses' as POSView, label: 'Expenses', icon: CreditCard, badge: null },
-    { id: 'settings' as POSView, label: 'Settings', icon: Settings, badge: null },
-  ];
-
-  const MobileNavigation = () => (
-    <div className="space-y-1 p-2">
-      {menuItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => {
-            setCurrentView(item.id);
-            setSidebarOpen(false);
-          }}
-          className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors ${
-            currentView === item.id
-              ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-          }`}
-        >
-          <div className="flex items-center">
-            <item.icon className="h-5 w-5 mr-3" />
-            {item.label}
-          </div>
-          {item.badge !== null && (
-            <Badge variant="secondary" className="text-xs">
-              {item.badge}
-            </Badge>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="px-4">
-          <div className="flex justify-between items-center h-14">
-            <div className="flex items-center">
-              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="mr-2 lg:hidden">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-72 p-0">
-                  <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {currentStore?.name || 'M-Super POS'}
-                    </h2>
-                    <p className="text-sm text-gray-500">Point of Sale</p>
-                  </div>
-                  <MobileNavigation />
-                </SheetContent>
-              </Sheet>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  {menuItems.find(item => item.id === currentView)?.label || 'Dashboard'}
-                </h1>
-              </div>
-            </div>
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header */}
+        <header className="bg-white border-b px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             
-            <div className="flex items-center space-x-2">
-              {lowStockProducts.length > 0 && (
-                <Badge variant="destructive" className="animate-pulse text-xs">
-                  {lowStockProducts.length}
-                </Badge>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">M-Super POS</h1>
+              {currentStore && (
+                <Badge variant="outline">{currentStore.name}</Badge>
               )}
-              <Badge variant="outline" className="text-xs">
-                KES {todaySales.toLocaleString()}
-              </Badge>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="p-4">
-        {renderMainContent()}
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t lg:hidden">
-        <div className="grid grid-cols-5 gap-1 p-2">
-          {menuItems.slice(0, 5).map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setCurrentView(item.id)}
-              className={`flex flex-col items-center py-2 px-1 rounded-lg transition-colors ${
-                currentView === item.id
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium truncate">{item.label}</span>
-              {item.badge !== null && (
-                <Badge variant="secondary" className="text-xs mt-1 scale-75">
-                  {item.badge}
+          <div className="flex items-center gap-3">
+            {/* Offline Status */}
+            <div className="flex items-center gap-2">
+              {isOnline ? (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Wifi className="h-4 w-4" />
+                  <span className="text-sm">Online</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-red-600">
+                  <WifiOff className="h-4 w-4" />
+                  <span className="text-sm">Offline</span>
+                </div>
+              )}
+              
+              {pendingSyncCount > 0 && (
+                <Badge variant="secondary">
+                  {pendingSyncCount} pending
                 </Badge>
               )}
-            </button>
-          ))}
-        </div>
-      </div>
+            </div>
 
-      {/* Mobile spacing for bottom nav */}
-      <div className="h-20 lg:hidden"></div>
+            {/* Sync Button */}
+            {isOnline && pendingSyncCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={syncOfflineData}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Sync
+              </Button>
+            )}
+
+            {/* Enhanced Barcode Scanner Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBarcodeScanner(true)}
+            >
+              <Scan className="h-4 w-4 mr-1" />
+              Scanner
+            </Button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">
+          {renderContent()}
+        </main>
+      </div>
     </div>
   );
 };
