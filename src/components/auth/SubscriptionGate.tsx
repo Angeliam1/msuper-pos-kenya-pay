@@ -36,7 +36,9 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({
 
   // Default subscription upgrade prompt
   const getUpgradeMessage = () => {
-    if (subscriptionStatus === 'past_due') {
+    const status = subscriptionStatus as string;
+    
+    if (status === 'past_due') {
       return {
         title: 'Payment Required',
         description: 'Your subscription payment is overdue. Please update your payment method to continue using premium features.',
@@ -45,7 +47,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({
       };
     }
 
-    if (subscriptionStatus === 'suspended' || subscriptionStatus === 'cancelled') {
+    if (status === 'suspended' || status === 'cancelled') {
       return {
         title: 'Subscription Suspended',
         description: 'Your subscription has been suspended. Please contact support or reactivate your subscription.',

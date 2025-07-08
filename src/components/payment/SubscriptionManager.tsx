@@ -79,7 +79,8 @@ export const SubscriptionManager: React.FC = () => {
   };
 
   const getStatusIcon = () => {
-    switch (subscriptionStatus) {
+    const status = subscriptionStatus as string;
+    switch (status) {
       case 'active':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'past_due':
@@ -92,7 +93,8 @@ export const SubscriptionManager: React.FC = () => {
   };
 
   const getStatusColor = () => {
-    switch (subscriptionStatus) {
+    const status = subscriptionStatus as string;
+    switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
       case 'past_due':
